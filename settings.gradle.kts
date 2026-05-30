@@ -23,7 +23,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Dnd helper"
+rootProject.name = "DndHelper"
 include(":app")
 include(":shared")
 include(":desktop")

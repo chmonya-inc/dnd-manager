@@ -48,6 +48,7 @@ fun CharacterListScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CharacterListContent(
     state: CharacterListState,
