@@ -30,7 +30,10 @@ User defined full project scope:
 - [x] `CharacterCard` — card composable with icon, name, race/class/level, player name
 
 ### Shared UI
-- [x] `DndHelperTheme` in `:shared` — Material 3 theme for Android + Desktop
+- [x] `DndHelperTheme` in `:shared` — Material 3 dark theme for Android + Desktop
+  - Arcane Violet (`#B794F6`) primary, Mystic Teal (`#82DBC4`) secondary
+  - Deep dungeon surface (`#141218`) with full M3 tonal palette
+  - Full `darkColorScheme` with primary/secondary/error containers and inverse colors
 - [x] `App()` composable — entry point with Koin DI and CharacterListScreen
 
 ### Platform Entry Points

@@ -14,6 +14,7 @@ version = "1.0"
 dependencies {
     implementation(project(":shared"))
     implementation(compose.desktop.currentOs)
+    implementation(libs.kotlinx.coroutines.swing)
 }
 
 compose.desktop {

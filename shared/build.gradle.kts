@@ -52,12 +52,14 @@ kotlin {
             dependencies {
                 implementation(libs.androidx.activity.compose)
                 implementation(libs.ktor.client.okhttp)
+                implementation(libs.kotlinx.coroutines.android)
             }
         }
 
         val desktopMain by getting {
             dependencies {
                 implementation(libs.ktor.client.java)
+                implementation(libs.kotlinx.coroutines.swing)
             }
         }
     }
