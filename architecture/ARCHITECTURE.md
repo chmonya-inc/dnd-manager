@@ -17,8 +17,9 @@ D&D Helper is a Kotlin Multiplatform (KMP) application for Dungeons & Dragons 5t
 
 ### Backend
 - **Google Sheets** — single shared spreadsheet per campaign, editable by anyone with link
-- **Google Sheets REST API** — with OAuth for read/write access
-- **No local database** — all data fetched from Google Sheets directly
+- **Google Apps Script** — deployed as a Web App that proxies read/write requests to Google Sheets
+- **No OAuth** — Apps Script Web App handles all Google authentication server-side
+- **No local database** — all data fetched from Google Sheets via Apps Script
 
 ## High-Level Architecture
 
@@ -52,7 +53,7 @@ We follow **Clean Architecture** with **MVVM** presentation pattern.
 | State Management | ViewModel + StateFlow |
 | DI | Koin (KMP-compatible) |
 | Network | Ktor client + kotlinx.serialization |
-| Backend | Google Sheets REST API (OAuth 2.0) |
+| Backend | Google Apps Script Web App (Ktor POST) |
 | Navigation | navigation-compose 2.8+ (type-safe routes) |
 | Image Loading | Coil 3 (Compose Multiplatform) |
 | Build | Gradle with version catalogs (.kts) |
@@ -60,7 +61,7 @@ We follow **Clean Architecture** with **MVVM** presentation pattern.
 ## Data Flow
 
 ```
-Compose Screen → ViewModel → UseCase → Repository → Google Sheets DataSource (Ktor + OAuth)
+Compose Screen → ViewModel → Repository → GoogleAppsScriptDataSource (Ktor POST)
                     ↑                                              |
                     └──────── StateFlow ← Result ←──────────────────┘
 ```
@@ -76,8 +77,8 @@ Compose Screen → ViewModel → UseCase → Repository → Google Sheets DataSo
 
 :shared
 ├── commonMain: Koin, Compose, Navigation, Ktor, kotlinx.serialization, Coil 3
-├── androidMain: Android-specific OAuth bindings
-└── desktopMain: Desktop-specific OAuth bindings
+├── androidMain: Android-specific platform bindings
+└── desktopMain: Desktop-specific platform bindings
 ```
 
 ## Key Architectural Decisions
@@ -104,11 +105,11 @@ Compose Screen → ViewModel → UseCase → Repository → Google Sheets DataSo
 - When the codebase grows, extract `:feature:*` modules.
 - This avoids premature modularization and speeds up initial development.
 
-### 6. Platform-Specific OAuth
-- Google Sign-In / OAuth 2.0 flow is platform-specific:
-  - **Android**: Google Sign-In SDK or Custom Tabs
-  - **Desktop**: System browser + local callback server
-- Boundary: `interface AuthProvider` in `commonMain`, platform implementations in `androidMain`/`desktopMain`.
+### 6. Google Apps Script Backend
+- **No OAuth in the app** — authentication is handled server-side by the Apps Script Web App.
+- **Ktor POST requests** — the app sends JSON payloads to the Apps Script Web App URL with an `action` field (e.g., `getCharacters`, `saveCharacter`).
+- **Apps Script handles Sheets API** — all Google Sheets read/write operations happen in the Apps Script code, not in the Kotlin app.
+- **Simple deployment** — just paste the Web App URL into `GoogleAppsScriptConfig.WEB_APP_URL`.
 
 ## Error Handling Strategy
 
@@ -139,7 +140,7 @@ sealed interface AppError {
 | Capability | Boundary Shape | Location |
 |-----------|---------------|----------|
 | Network | Ktor (common) | `:shared/commonMain` |
-| OAuth / Auth | `interface AuthProvider` + platform binding | `:shared/commonMain` + `androidMain`/`desktopMain` |
+| Network | Ktor client POST to Apps Script Web App | `:shared/commonMain` |
 | File I/O | `expect`/`actual` or interface | `:shared/commonMain` |
 | Preferences | `expect`/`actual` or interface | `:shared/commonMain` |
 | Platform UI (if any) | `expect` composable leaf | `:shared/commonMain` |
@@ -194,7 +195,7 @@ fun App(platform: Platform) {
 
 - [ ] Whether to add iOS target (pending Apple Developer account)
 - [ ] When to extract `:feature:*` modules from `:shared`
-- [ ] Google Sheets OAuth implementation details (Google Sign-In SDK vs Custom Tabs vs generic OAuth)
+- [x] Backend approach: Google Apps Script Web App (no in-app OAuth)
 - [ ] Desktop window management (single window vs multiple windows for DM)
 - [ ] Image storage: Google Sheets cell images vs external hosting vs Google Drive
 - [ ] Real-time sync: polling Google Sheets vs push notifications (not possible with Sheets API)

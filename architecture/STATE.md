@@ -49,27 +49,35 @@ User defined full project scope:
 - [ ] Gradle sync / build verification (not yet tested)
 
 ## Not Yet Implemented
-- [ ] Google Sheets data source (Ktor + OAuth)
-- [ ] Real repository implementations
 - [ ] Navigation setup (NavHost with type-safe routes)
 - [ ] Admin mode UI
 - [ ] Game mode UI
 - [ ] Location management
 - [ ] Equipment/monster creation
 - [ ] Image loading with Coil 3
-- [ ] Platform-specific OAuth implementation
+
+## Recently Implemented
+- [x] Google Apps Script backend (replaced OAuth approach)
+  - `GoogleAppsScriptDataSource` — Ktor POST to Apps Script Web App
+  - `CharacterRepository` + `CharacterRepositoryImpl` — clean architecture data layer
+  - `GoogleAppsScriptConfig.WEB_APP_URL` — single config constant for the backend URL
+  - Request/response models: `AppsScriptRequest`, `AppsScriptResponse<T>`
+  - `CharacterListViewModel` now uses real repository instead of mock data
+  - `Result<T>` + `AppError` sealed classes for error handling across layers
+  - `apps-script/Code.gs` — complete server-side script with CRUD operations
+  - `apps-script/README.md` — deployment instructions
 
 ## Known Issues / Blockers
 - Current Java target is 11; should migrate to 21 for better performance and AGP 9 compatibility. **(Done in Gradle files, needs verification)**
 - AGP 9 KMP library plugin constraints: `:shared` uses `com.android.kotlin.multiplatform.library`.
-- Google Sheets OAuth requires platform-specific implementation (Android vs Desktop).
+- Backend uses Google Apps Script Web App — requires user to deploy their own script and set the URL in config.
 
 ## Next Immediate Tasks
 1. Verify Gradle build succeeds
 2. Fix any compilation errors
-3. Add Google Sheets data source with OAuth
-4. Add navigation to character detail screen
-5. Build admin mode selection for Desktop
+3. Add navigation to character detail screen
+4. Build admin mode selection for Desktop
+5. Write the Google Apps Script code (doPost handler for character CRUD)
 
 ## Notes
 - Skill file `.kimi/skills/dnd-kmp/SKILL.md` created on 2026-05-30.
