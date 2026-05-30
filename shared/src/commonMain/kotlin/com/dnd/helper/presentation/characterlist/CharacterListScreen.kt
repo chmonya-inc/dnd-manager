@@ -15,11 +15,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,6 +33,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import com.dnd.helper.domain.model.Character
 
@@ -65,9 +72,28 @@ private fun CharacterListContent(
         topBar = {
             TopAppBar(
                 title = { Text("Characters") },
+                actions = {
+                    IconButton(
+                        onClick = { onEvent(CharacterListEvent.Refresh) },
+                        enabled = !state.isLoading,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh",
+                        )
+                    }
+                },
             )
         },
-        modifier = modifier,
+        modifier = modifier
+            .onPreviewKeyEvent { event ->
+                if (event.key == Key.F5 && event.type == KeyEventType.KeyUp) {
+                    onEvent(CharacterListEvent.Refresh)
+                    true
+                } else {
+                    false
+                }
+            },
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
