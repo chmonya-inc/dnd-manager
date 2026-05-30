@@ -15,6 +15,11 @@ import kotlinx.serialization.json.JsonObject
 class GoogleAppsScriptDataSource(
     private val httpClient: HttpClient,
 ) {
+    private val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+        isLenient = true
+    }
 
     suspend fun getCharacters(): Result<List<Character>> =
         execute(request = AppsScriptRequest(action = "getCharacters"))
@@ -36,8 +41,8 @@ class GoogleAppsScriptDataSource(
      * JSON in the URL, we avoid the redirect issue entirely.
      */
     private fun buildUrl(request: AppsScriptRequest): String {
-        val json = Json.encodeToString(request)
-        val encoded = json.encodeURLQueryComponent()
+        val jsonStr = json.encodeToString(request)
+        val encoded = jsonStr.encodeURLQueryComponent()
         return "${GoogleAppsScriptConfig.WEB_APP_URL}?request=$encoded"
     }
 
@@ -61,11 +66,29 @@ class GoogleAppsScriptDataSource(
             }
 
             val parsed = try {
-                Json.decodeFromString<AppsScriptResponse<T>>(rawBody)
+                json.decodeFromString<AppsScriptResponse<T>>(rawBody)
             } catch (e: Exception) {
-                println(e)
+                println("[AppsScript] JSON parse error: $e")
+                // Fallback for single object vs list: 
+                // If we expected T (e.g. Character) but got [T], try to parse as List<T> and take first
+                if (rawBody.contains("\"data\":[")) {
+                    try {
+                        val listParsed = json.decodeFromString<AppsScriptResponse<List<T>>>(rawBody)
+                        if (listParsed.success && !listParsed.data.isNullOrEmpty()) {
+                            val first = listParsed.data.first()
+                            // This only works if T is what's inside the list. 
+                            // Since we can't easily check T at runtime here, we just return Success(first)
+                            // and let the caller handle type mismatches if any.
+                            @Suppress("UNCHECKED_CAST")
+                            return Result.Success(first as T)
+                        }
+                    } catch (e2: Exception) {
+                        println("[AppsScript] Fallback parse failed: $e2")
+                    }
+                }
+                
                 return Result.Error(
-                    AppError.Unknown("e: $e, JSON parse failed: ${rawBody.take(200)}")
+                    AppError.Unknown("JSON parse failed: ${e.message}")
                 )
             }
 
@@ -110,10 +133,10 @@ class GoogleAppsScriptDataSource(
             }
 
             val parsed = try {
-                Json.decodeFromString<AppsScriptResponse<JsonObject?>>(rawBody)
+                json.decodeFromString<AppsScriptResponse<JsonObject?>>(rawBody)
             } catch (e: Exception) {
                 return Result.Error(
-                    AppError.Unknown("JSON parse failed: ${rawBody.take(200)}")
+                    AppError.Unknown("JSON parse failed: ${e.message}")
                 )
             }
 

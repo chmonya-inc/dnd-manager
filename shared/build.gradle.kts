@@ -86,6 +86,7 @@ kotlin {
                 implementation(libs.coil.network.ktor3)
 
                 implementation(libs.lifecycle.viewmodel)
+                implementation(libs.navigation.compose)
             }
         }
 
