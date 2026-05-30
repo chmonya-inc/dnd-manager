@@ -259,14 +259,14 @@ function handleDeleteCharacter(id) {
  */
 function rowToCharacter(row) {
   return {
-    id: row[0],
-    name: row[1],
-    playerName: row[2],
-    race: row[3],
-    characterClass: row[4],
-    level: row[5],
-    description: row[6],
-    imageUrl: row[7] || null,
+    id: String(row[0] ?? ""),
+    name: String(row[1] ?? ""),
+    playerName: String(row[2] ?? ""),
+    race: String(row[3] ?? ""),
+    characterClass: String(row[4] ?? ""),
+    level: Number(row[5]) || 0,
+    description: String(row[6] ?? ""),
+    imageUrl: row[7] ? String(row[7]) : null,
     maxHp: Number(row[8]) || 0,
     currentHp: Number(row[9]) || 0,
     stats: {

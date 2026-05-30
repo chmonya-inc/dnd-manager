@@ -28,6 +28,7 @@ User defined full project scope:
 - [x] `CharacterListViewModel` — loads characters, handles events, mock data for now
 - [x] `CharacterListScreen` — Compose UI with LazyColumn, loading, error, empty states
 - [x] `CharacterCard` — card composable with icon, name, race/class/level, player name
+- [x] Pull-to-refresh — `PullToRefreshBox` with Material 3 indicator; triggers `CharacterListEvent.Refresh`
 
 ### Shared UI
 - [x] `DndHelperTheme` in `:shared` — Material 3 dark theme for Android + Desktop
@@ -64,8 +65,10 @@ User defined full project scope:
   - Request/response models: `AppsScriptRequest`, `AppsScriptResponse<T>`
   - `CharacterListViewModel` now uses real repository instead of mock data
   - `Result<T>` + `AppError` sealed classes for error handling across layers
-  - `apps-script/Code.gs` — complete server-side script with CRUD operations
+  - `apps-script/Code.gs` — complete server-side script with CRUD operations (GET-based, handles 302 redirects)
   - `apps-script/README.md` — deployment instructions
+  - `SPREADSHEET_ID` constant in Apps Script — target any sheet by ID or use bound sheet
+  - `local.properties` build-time config — `apps.script.url` is injected at compile time, never committed
 
 ## Known Issues / Blockers
 - Current Java target is 11; should migrate to 21 for better performance and AGP 9 compatibility. **(Done in Gradle files, needs verification)**

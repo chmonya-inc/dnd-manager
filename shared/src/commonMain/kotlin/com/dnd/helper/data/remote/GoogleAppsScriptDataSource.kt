@@ -43,88 +43,93 @@ class GoogleAppsScriptDataSource(
 
     private suspend inline fun <reified T> execute(
         request: AppsScriptRequest,
-    ): Result<T> = try {
-        val url = buildUrl(request)
-        println("[AppsScript] → GET $url")
+    ): Result<T> {
+        return try {
+            val url = buildUrl(request)
+            println("[AppsScript] → GET $url")
 
-        val response = httpClient.get(url)
-        val rawBody: String = response.body()
+            val response = httpClient.get(url)
+            val rawBody: String = response.body()
 
-        println("[AppsScript] ← Status: ${response.status}")
-        println("[AppsScript] ← Raw: ${rawBody.take(400)}")
+            println("[AppsScript] ← Status: ${response.status}")
+            println("[AppsScript] ← Raw: ${rawBody.take(400)}")
 
-        if (!response.status.isSuccess()) {
-            return Result.Error(
-                AppError.Unknown(httpErrorHint(response.status.value, rawBody))
-            )
-        }
+            if (!response.status.isSuccess()) {
+                return Result.Error(
+                    AppError.Unknown(httpErrorHint(response.status.value, rawBody))
+                )
+            }
 
-        val parsed = try {
-            Json.decodeFromString<AppsScriptResponse<T>>(rawBody)
+            val parsed = try {
+                Json.decodeFromString<AppsScriptResponse<T>>(rawBody)
+            } catch (e: Exception) {
+                println(e)
+                return Result.Error(
+                    AppError.Unknown("e: $e, JSON parse failed: ${rawBody.take(200)}")
+                )
+            }
+
+            if (parsed.success && parsed.data != null) {
+                Result.Success(parsed.data)
+            } else {
+                Result.Error(
+                    AppError.Unknown(parsed.error ?: "Server returned success=false")
+                )
+            }
+        } catch (e: java.net.UnknownHostException) {
+            Result.Error(AppError.Network)
+        } catch (e: java.net.SocketTimeoutException) {
+            Result.Error(AppError.Unknown("Connection timed out"))
         } catch (e: Exception) {
-            return Result.Error(
-                AppError.Unknown("JSON parse failed: ${rawBody.take(200)}")
-            )
+            val msg = "${e::class.simpleName}: ${e.message}"
+            println("[AppsScript] ← ERROR: $msg")
+            Result.Error(AppError.Unknown(msg))
         }
-
-        if (parsed.success && parsed.data != null) {
-            Result.Success(parsed.data)
-        } else {
-            Result.Error(
-                AppError.Unknown(parsed.error ?: "Server returned success=false")
-            )
-        }
-    } catch (e: java.net.UnknownHostException) {
-        Result.Error(AppError.Network)
-    } catch (e: java.net.SocketTimeoutException) {
-        Result.Error(AppError.Unknown("Connection timed out"))
-    } catch (e: Exception) {
-        val msg = "${e::class.simpleName}: ${e.message}"
-        println("[AppsScript] ← ERROR: $msg")
-        Result.Error(AppError.Unknown(msg))
     }
 
     private suspend fun executeUnit(
         request: AppsScriptRequest,
-    ): Result<Unit> = try {
-        val url = buildUrl(request)
-        println("[AppsScript] → GET $url")
+    ): Result<Unit> {
+        return try {
+            val url = buildUrl(request)
+            println("[AppsScript] → GET $url")
 
-        val response = httpClient.get(url)
-        val rawBody: String = response.body()
+            val response = httpClient.get(url)
+            val rawBody: String = response.body()
 
-        println("[AppsScript] ← Status: ${response.status}")
-        println("[AppsScript] ← Raw: ${rawBody.take(400)}")
+            println("[AppsScript] ← Status: ${response.status}")
+            println("[AppsScript] ← Raw: ${rawBody.take(400)}")
 
-        if (!response.status.isSuccess()) {
-            return Result.Error(
-                AppError.Unknown(httpErrorHint(response.status.value, rawBody))
-            )
-        }
+            if (!response.status.isSuccess()) {
+                return Result.Error(
+                    AppError.Unknown(httpErrorHint(response.status.value, rawBody))
+                )
+            }
 
-        val parsed = try {
-            Json.decodeFromString<AppsScriptResponse<JsonObject?>>(rawBody)
+            val parsed = try {
+                Json.decodeFromString<AppsScriptResponse<JsonObject?>>(rawBody)
+            } catch (e: Exception) {
+                return Result.Error(
+                    AppError.Unknown("JSON parse failed: ${rawBody.take(200)}")
+                )
+            }
+
+            if (parsed.success) {
+                Result.Success(Unit)
+            } else {
+                Result.Error(
+                    AppError.Unknown(parsed.error ?: "Server returned success=false")
+                )
+            }
+        } catch (e: java.net.UnknownHostException) {
+            Result.Error(AppError.Network)
+        } catch (e: java.net.SocketTimeoutException) {
+            Result.Error(AppError.Unknown("Connection timed out"))
         } catch (e: Exception) {
-            return Result.Error(
-                AppError.Unknown("JSON parse failed: ${rawBody.take(200)}")
-            )
+            val msg = "${e::class.simpleName}: ${e.message}"
+            println("[AppsScript] ← ERROR: $msg")
+            Result.Error(AppError.Unknown(msg))
         }
-
-        if (parsed.success) {
-            Result.Success(Unit)
-        } else {
-            Result.Error(
-                AppError.Unknown(parsed.error ?: "Server returned success=false")
-            )
-        }
-    } catch (e: java.net.UnknownHostException) {
-        Result.Error(AppError.Network)
-    } catch (e: java.net.SocketTimeoutException) {
-        Result.Error(AppError.Unknown("Connection timed out"))
-    } catch (e: Exception) {
-        val msg = "${e::class.simpleName}: ${e.message}"
-        println("[AppsScript] ← ERROR: $msg")
-        Result.Error(AppError.Unknown(msg))
     }
 
     private fun httpErrorHint(status: Int, rawBody: String): String {

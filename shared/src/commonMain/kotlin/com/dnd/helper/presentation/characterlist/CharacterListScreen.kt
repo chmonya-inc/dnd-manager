@@ -24,6 +24,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,6 +58,9 @@ private fun CharacterListContent(
     onCharacterClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val pullRefreshState = rememberPullToRefreshState()
+    val isRefreshing = state.isLoading && state.characters.isNotEmpty()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -64,22 +69,31 @@ private fun CharacterListContent(
         },
         modifier = modifier,
     ) { padding ->
-        Box(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { onEvent(CharacterListEvent.Refresh) },
+            state = pullRefreshState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
         ) {
             when {
-                state.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center),
-                    )
+                // Initial load — fullscreen spinner so user has something to look at
+                state.isLoading && state.characters.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
 
-                state.error != null -> {
+                // Error on first load (no data to show yet)
+                state.error != null && state.characters.isEmpty() -> {
                     Column(
-                        modifier = Modifier.align(Alignment.Center),
+                        modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Text(
                             text = "Error: ${state.error}",
@@ -93,22 +107,29 @@ private fun CharacterListContent(
                     }
                 }
 
+                // Empty sheet
                 state.characters.isEmpty() -> {
-                    Text(
-                        text = "No characters found",
-                        modifier = Modifier.align(Alignment.Center),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "No characters found",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
                 }
 
+                // Normal list — pull-to-refresh is active here
                 else -> {
+                    val uniqueCharacters = state.characters.distinctBy { it.id }
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         items(
-                            items = state.characters,
+                            items = uniqueCharacters,
                             key = { it.id },
                         ) { character ->
                             CharacterCard(
