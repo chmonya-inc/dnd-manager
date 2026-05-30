@@ -12,11 +12,12 @@ User defined full project scope:
 ## What's Implemented
 
 ### Project Structure
-- [x] `:shared` KMP module with `commonMain`, `androidMain`, `desktopMain` source sets
+- [x] `:shared` KMP module with `commonMain`, `androidMain`, `desktopMain`, `wasmJsMain` source sets
 - [x] `:app` Android application module depending on `:shared`
 - [x] `:desktop` Desktop application module depending on `:shared`
+- [x] `:web` Web Browser application module (Kotlin/Wasm) depending on `:shared`
 - [x] Gradle configuration with version catalogs for KMP, Ktor, Koin, Coil, Serialization
-- [x] Compose Multiplatform setup in `:shared`
+- [x] Compose Multiplatform setup in `:shared` (Android, Desktop, Web)
 
 ### Domain Layer
 - [x] `Character` domain model (id, name, playerName, race, class, level, description, imageUrl, stats, hp)
@@ -40,6 +41,7 @@ User defined full project scope:
 ### Platform Entry Points
 - [x] Android `MainActivity` — calls `App()`
 - [x] Desktop `main.kt` — window with `App()`
+- [x] Web `main.kt` — `CanvasBasedWindow` with `App()`, mobile-like phone frame HTML/CSS
 
 ### Architecture docs
 - [x] `ARCHITECTURE.md` — high-level architecture, tech stack, decisions
@@ -69,6 +71,14 @@ User defined full project scope:
   - `apps-script/README.md` — deployment instructions
   - `SPREADSHEET_ID` constant in Apps Script — target any sheet by ID or use bound sheet
   - `local.properties` build-time config — `apps.script.url` is injected at compile time, never committed
+  - Pull-to-refresh — `PullToRefreshBox` with Material 3 indicator (Android + Desktop)
+  - Refresh button + F5 keyboard shortcut in `TopAppBar` (Desktop-friendly)
+- [x] Web Browser target (`:web`)
+  - Kotlin/Wasm (`wasmJs`) target in `:shared`
+  - `ktor-client-js` for Ktor HTTP on web
+  - `CanvasBasedWindow` entry point rendering to HTML5 canvas
+  - Mobile-like view — CSS phone frame with notch, rounded corners, dark background
+  - Responsive: full-screen on real mobile devices, phone frame on desktop browsers
 
 ## Known Issues / Blockers
 - Current Java target is 11; should migrate to 21 for better performance and AGP 9 compatibility. **(Done in Gradle files, needs verification)**

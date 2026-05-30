@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-D&D Helper is a Kotlin Multiplatform (KMP) application for Dungeons & Dragons 5th Edition sessions. It supports **Android** (primary, player-only) and **Desktop** (JVM, with Player and Admin/DM modes).
+D&D Helper is a Kotlin Multiplatform (KMP) application for Dungeons & Dragons 5th Edition sessions. It supports **Android** (primary, player-only), **Desktop** (JVM, with Player and Admin/DM modes), and **Web Browser** (player-only, mobile-like view).
 
 ### Platform Modes
 
@@ -10,6 +10,7 @@ D&D Helper is a Kotlin Multiplatform (KMP) application for Dungeons & Dragons 5t
 |----------|-------|
 | Android | Player only |
 | Desktop | Player copy + Admin (DM) |
+| Web Browser | Player only (mobile-like view) |
 
 ### Admin (DM) Desktop Mode Sub-Modes
 - **Preparation Mode** — create locations, characters, equipment, monsters, bosses
@@ -30,8 +31,9 @@ We follow **Clean Architecture** with **MVVM** presentation pattern.
 ```
 :shared                     ← KMP shared module (UI, domain, data logic)
 ├── commonMain              ← Shared Compose UI, ViewModels, UseCases, Repositories
-├── androidMain             ← Android-specific bindings (OAuth, platform APIs)
-└── desktopMain             ← Desktop-specific bindings (OAuth, window state)
+├── androidMain             ← Android-specific platform bindings
+├── desktopMain             ← Desktop-specific platform bindings
+└── wasmJsMain              ← Web-specific platform bindings
 
 :app                        ← Android application module
 ├── MainActivity.kt         ← Entry point, calls shared App()
@@ -41,6 +43,10 @@ We follow **Clean Architecture** with **MVVM** presentation pattern.
 :desktop                    ← Desktop application module
 ├── main.kt                 ← Entry point, calls shared App()
 └── Koin Desktop init
+
+:web                        ← Web Browser application module (Kotlin/Wasm)
+├── main.kt                 ← Entry point, calls shared App() inside CanvasBasedWindow
+└── index.html              ← Mobile-like phone frame wrapper
 ```
 
 **Why not feature-vertical modules yet?** The project is small. We keep everything in `:shared` initially. When it grows, extract `:feature:*` modules from `:shared/commonMain`.
@@ -75,10 +81,14 @@ Compose Screen → ViewModel → Repository → GoogleAppsScriptDataSource (Ktor
 :desktop
 └── :shared (desktopMain artifacts)
 
+:web
+└── :shared (wasmJsMain artifacts)
+
 :shared
 ├── commonMain: Koin, Compose, Navigation, Ktor, kotlinx.serialization, Coil 3
 ├── androidMain: Android-specific platform bindings
-└── desktopMain: Desktop-specific platform bindings
+├── desktopMain: Desktop-specific platform bindings
+└── wasmJsMain: Web-specific platform bindings (ktor-client-js)
 ```
 
 ## Key Architectural Decisions
@@ -167,7 +177,19 @@ class MainActivity : ComponentActivity() {
 fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "D&D Helper") {
         DndHelperTheme {
-            App(platform = Platform.DESKTOP)
+            App()
+        }
+    }
+}
+```
+
+### Web Browser (`:web`)
+```kotlin
+@OptIn(ExperimentalComposeUiApi::class)
+fun main() {
+    CanvasBasedWindow("D&D Helper", canvasElementId = "ComposeTarget") {
+        DndHelperTheme {
+            App()
         }
     }
 }
@@ -176,20 +198,21 @@ fun main() = application {
 ### Shared (`:shared`)
 ```kotlin
 @Composable
-fun App(platform: Platform) {
-    // Mode selection for Desktop, fixed Player for Android
+fun App() {
+    // Player mode for Android + Web, Player/DM mode selection for Desktop
     // Navigation host with type-safe routes
 }
 ```
 
 ## Build Configuration
 
-- **AGP**: 9.2.1
-- **Kotlin**: 2.2.10
-- **Compose BOM**: 2026.02.01
+- **AGP**: 8.13.2
+- **Kotlin**: 2.1.0
+- **Compose Multiplatform**: 1.7.3
 - **Min SDK**: 29
 - **Target SDK**: 36
-- **Java/Kotlin target**: 21 (migrating from 11)
+- **Java/Kotlin target**: 21
+- **Web target**: Kotlin/Wasm (wasmJs) with Canvas-based rendering
 
 ## Open Questions / Future Decisions
 

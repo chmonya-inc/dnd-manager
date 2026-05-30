@@ -20,6 +20,45 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+
+        exclusiveContent {
+            forRepository {
+                ivy("https://nodejs.org/dist") {
+                    name = "Node Distributions"
+                    patternLayout {
+                        artifact("v[revision]/[artifact]-v[revision]-[classifier].[ext]")
+                    }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeGroup("org.nodejs") }
+        }
+
+        exclusiveContent {
+            forRepository {
+                ivy("https://github.com/yarnpkg/yarn/releases/download") {
+                    name = "Yarn Distributions"
+                    patternLayout {
+                        artifact("v[revision]/[artifact]-v[revision].[ext]")
+                    }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeGroup("com.yarnpkg") }
+        }
+
+        exclusiveContent {
+            forRepository {
+                ivy("https://github.com/WebAssembly/binaryen/releases/download") {
+                    name = "Binaryen Distributions"
+                    patternLayout {
+                        artifact("version_[revision]/[module]-version_[revision]-[classifier].[ext]")
+                    }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeGroup("com.github.webassembly") }
+        }
     }
 }
 
@@ -27,3 +66,4 @@ rootProject.name = "DndHelper"
 include(":app")
 include(":shared")
 include(":desktop")
+include(":web")

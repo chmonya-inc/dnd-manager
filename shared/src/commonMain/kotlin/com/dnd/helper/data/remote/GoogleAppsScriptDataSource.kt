@@ -76,14 +76,17 @@ class GoogleAppsScriptDataSource(
                     AppError.Unknown(parsed.error ?: "Server returned success=false")
                 )
             }
-        } catch (e: java.net.UnknownHostException) {
-            Result.Error(AppError.Network)
-        } catch (e: java.net.SocketTimeoutException) {
-            Result.Error(AppError.Unknown("Connection timed out"))
         } catch (e: Exception) {
             val msg = "${e::class.simpleName}: ${e.message}"
             println("[AppsScript] ← ERROR: $msg")
-            Result.Error(AppError.Unknown(msg))
+            
+            // Handle some common network exceptions by name to avoid JVM-specific imports
+            when (e::class.simpleName) {
+                "UnknownHostException" -> Result.Error(AppError.Network)
+                "SocketTimeoutException", "ConnectTimeoutException", "HttpRequestTimeoutException" -> 
+                    Result.Error(AppError.Unknown("Connection timed out"))
+                else -> Result.Error(AppError.Unknown(msg))
+            }
         }
     }
 
@@ -121,14 +124,17 @@ class GoogleAppsScriptDataSource(
                     AppError.Unknown(parsed.error ?: "Server returned success=false")
                 )
             }
-        } catch (e: java.net.UnknownHostException) {
-            Result.Error(AppError.Network)
-        } catch (e: java.net.SocketTimeoutException) {
-            Result.Error(AppError.Unknown("Connection timed out"))
         } catch (e: Exception) {
             val msg = "${e::class.simpleName}: ${e.message}"
             println("[AppsScript] ← ERROR: $msg")
-            Result.Error(AppError.Unknown(msg))
+
+            // Handle some common network exceptions by name to avoid JVM-specific imports
+            when (e::class.simpleName) {
+                "UnknownHostException" -> Result.Error(AppError.Network)
+                "SocketTimeoutException", "ConnectTimeoutException", "HttpRequestTimeoutException" -> 
+                    Result.Error(AppError.Unknown("Connection timed out"))
+                else -> Result.Error(AppError.Unknown(msg))
+            }
         }
     }
 

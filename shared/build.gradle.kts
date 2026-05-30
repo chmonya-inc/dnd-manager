@@ -53,6 +53,9 @@ kotlin {
         }
     }
     jvm("desktop")
+    wasmJs {
+        browser()
+    }
 
     sourceSets {
         val commonMain by getting {
@@ -98,6 +101,12 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.java)
                 implementation(libs.kotlinx.coroutines.swing)
+            }
+        }
+
+        val wasmJsMain by getting {
+            dependencies {
+                implementation(libs.ktor.client.js)
             }
         }
     }
