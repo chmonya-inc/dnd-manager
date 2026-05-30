@@ -35,7 +35,11 @@ function doGet(e) {
   console.log("=== doGet START ===");
   console.log("Query parameters:", JSON.stringify(e.parameter));
 
+  var lock = LockService.getScriptLock();
   try {
+    // Wait for up to 30 seconds for other processes to finish.
+    lock.waitLock(30000);
+
     var requestJson = e.parameter.request;
     if (!requestJson) {
       console.error("Missing 'request' query parameter");
@@ -46,6 +50,9 @@ function doGet(e) {
     console.log("Parsed request:", JSON.stringify(request));
     var result = handleRequest(request);
 
+    // Ensure all changes are committed before returning
+    SpreadsheetApp.flush();
+
     console.log("Result:", JSON.stringify(result));
     console.log("=== doGet END ===");
     return jsonOutput(result);
@@ -53,6 +60,8 @@ function doGet(e) {
     console.error("CRITICAL ERROR in doGet:", error);
     console.error("Stack:", error.stack);
     return jsonOutput({ success: false, error: error.toString(), stack: error.stack });
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -202,8 +211,7 @@ function handleGetCharacter(id) {
  * Saves (inserts or updates) a character.
  */
 function handleSaveCharacter(character) {
-  console.log("handleSaveCharacter() called");
-  console.log("Character object:", JSON.stringify(character));
+  console.log("handleSaveCharacter() called with:", JSON.stringify(character));
 
   if (!character || !character.id) {
     console.error("Invalid character object — missing id");
@@ -212,15 +220,21 @@ function handleSaveCharacter(character) {
 
   var sheet = getSheet();
   var values = sheet.getDataRange().getValues();
-  console.log("Sheet has", values.length, "rows");
+  var searchId = String(character.id).trim();
+  console.log("Searching for ID:", searchId);
 
   // Try to find existing row by ID and update it
   for (var i = 1; i < values.length; i++) {
-    if (values[i][0] == character.id) {
+    var currentRowId = String(values[i][0]).trim();
+    if (currentRowId === searchId) {
       var rowIndex = i + 1; // Sheets are 1-indexed
       console.log("Updating existing character at row", rowIndex);
+      var rowData = characterToRow(character);
+      console.log("Writing row data:", JSON.stringify(rowData));
       sheet.getRange(rowIndex, 1, 1, HEADERS.length)
-        .setValues([characterToRow(character)]);
+        .setValues([rowData]);
+
+      SpreadsheetApp.flush();
       console.log("Update complete");
       return { success: true };
     }
@@ -228,7 +242,9 @@ function handleSaveCharacter(character) {
 
   // Not found — append as new row
   console.log("Character not found, appending new row");
-  sheet.appendRow(characterToRow(character));
+  var newRowData = characterToRow(character);
+  sheet.appendRow(newRowData);
+  SpreadsheetApp.flush();
   console.log("Append complete");
   return { success: true };
 }
@@ -286,21 +302,21 @@ function rowToCharacter(row) {
 function characterToRow(character) {
   var s = character.stats || {};
   return [
-    character.id,
-    character.name,
-    character.playerName,
-    character.race,
-    character.characterClass,
-    character.level,
-    character.description,
-    character.imageUrl || "",
-    character.maxHp,
-    character.currentHp,
-    s.strength,
-    s.dexterity,
-    s.constitution,
-    s.intelligence,
-    s.wisdom,
-    s.charisma
+    String(character.id || ""),
+    String(character.name || ""),
+    String(character.playerName || ""),
+    String(character.race || ""),
+    String(character.characterClass || ""),
+    Number(character.level) || 0,
+    String(character.description || ""),
+    String(character.imageUrl || ""),
+    Number(character.maxHp) || 0,
+    Number(character.currentHp) || 0,
+    Number(s.strength) || 0,
+    Number(s.dexterity) || 0,
+    Number(s.constitution) || 0,
+    Number(s.intelligence) || 0,
+    Number(s.wisdom) || 0,
+    Number(s.charisma) || 0
   ];
 }

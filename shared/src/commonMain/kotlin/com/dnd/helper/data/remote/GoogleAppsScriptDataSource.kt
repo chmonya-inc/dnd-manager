@@ -10,6 +10,7 @@ import io.ktor.client.request.get
 import io.ktor.http.encodeURLQueryComponent
 import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
 class GoogleAppsScriptDataSource(
@@ -19,6 +20,7 @@ class GoogleAppsScriptDataSource(
         ignoreUnknownKeys = true
         coerceInputValues = true
         isLenient = true
+        encodeDefaults = true
     }
 
     suspend fun getCharacters(): Result<List<Character>> =
@@ -133,7 +135,7 @@ class GoogleAppsScriptDataSource(
             }
 
             val parsed = try {
-                json.decodeFromString<AppsScriptResponse<JsonObject?>>(rawBody)
+                json.decodeFromString<AppsScriptResponse<JsonElement?>>(rawBody)
             } catch (e: Exception) {
                 return Result.Error(
                     AppError.Unknown("JSON parse failed: ${e.message}")
