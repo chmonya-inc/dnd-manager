@@ -2,11 +2,15 @@ package com.dnd.helper.presentation.characterdetail.stats
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -47,17 +51,23 @@ fun StatsTab(character: Character) {
 
         val abilities = listOf(
             AbilityData("STR", stats.strength, Icons.Default.FitnessCenter, Color(0xFFE53935)),
-            AbilityData("DEX", stats.dexterity, Icons.Default.DirectionsRun, Color(0xFF43A047)),
+            AbilityData("DEX", stats.dexterity, Icons.AutoMirrored.Filled.DirectionsRun, Color(0xFF43A047)),
             AbilityData("CON", stats.constitution, Icons.Default.Shield, Color(0xFFFB8C00)),
             AbilityData("INT", stats.intelligence, Icons.Default.Psychology, Color(0xFF1E88E5)),
             AbilityData("WIS", stats.wisdom, Icons.Default.Visibility, Color(0xFF8E24AA)),
             AbilityData("CHA", stats.charisma, Icons.Default.Star, Color(0xFFFDD835)),
         )
 
-        for (i in 0 until 3) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AbilityCard(abilities[i * 2], Modifier.weight(1f))
-                AbilityCard(abilities[i * 2 + 1], Modifier.weight(1f))
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(260.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(abilities) { ability ->
+                AbilityCard(ability)
             }
         }
 
@@ -160,12 +170,12 @@ private data class AbilityData(
 )
 
 @Composable
-private fun AbilityCard(data: AbilityData, modifier: Modifier = Modifier) {
+private fun AbilityCard(data: AbilityData) {
     val mod = abilityModifier(data.score)
     val modText = if (mod >= 0) "+$mod" else "$mod"
 
     Card(
-        modifier = modifier,
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = data.color.copy(alpha = 0.08f)
         ),

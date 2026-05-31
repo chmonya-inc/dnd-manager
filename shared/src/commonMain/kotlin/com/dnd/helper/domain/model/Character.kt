@@ -25,6 +25,7 @@ data class Character(
     val proficiencies: CharacterProficiencies = CharacterProficiencies(),
     val weapons: List<Weapon> = emptyList(),
     val features: CharacterFeatures = CharacterFeatures(),
+    val skills: List<Skill> = emptyList(),
     val items: List<Item> = emptyList(),
 ) {
     val imageUrl: String?

@@ -29,6 +29,7 @@ User defined full project scope:
   - `CharacterFeatures` — classFeatures, racialTraits, feats
   - `Weapon` — id, name, attackBonus, damage, damageType, notes
   - `Item` — id, name, slot, rarity, stats, description, equipped
+  - `Skill` — id, name, description, iconName, damage, damageType, resourceCost, range, castingTime, duration, level, school, isPassive
 - [x] `EquipmentSlot` / `ItemRarity` enums
 - [x] `DndSkill` enum — all 18 D&D 5e skills with ability mapping
 - [x] `CharacterStorage` interface — platform-agnostic key-value storage for character ID
@@ -83,27 +84,34 @@ User defined full project scope:
   - HP card with progress bar, color-coded by health ratio, damage/heal controls
   - Stats grid (2×3) with color-coded icons and Russian descriptive tags
   - Biography section
-  - **Bottom navigation** — 5 tabs:
+  - **Bottom navigation** — 6 tabs:
     - **Overview** — Header (name, race, class, subclass, background, level, XP), appearance chips (age, gender, height, etc.), AC/HP/hit dice/death saves, status bar (initiative, speed, passive perception, proficiency), inspiration, exhaustion, conditions
     - **Stats** — 6 ability score cards with modifiers, saving throws with proficiency dots, 18 skills grouped by ability
     - **Inventory** — Diablo-style equipment panel + item grid
     - **Combat** — Weapons & attacks table
     - **Features** — Background, subclass, proficiencies (armor/weapons/tools/languages) as chips, class features, racial traits, feats, biography
+    - **Skills** — Grid of skill/spell cards with icon, name, level, and resource cost; tap opens floating detail dialog with full stats (damage, range, casting time, duration, school, description)
   - Edit mode: full form with all editable fields
   - TopAppBar with Back, Edit ✓/✕, Refresh actions + unsaved-changes dot
   - Auto-refresh polling via `DisposableEffect` (start/stop with screen lifecycle)
 
 ### Presentation Layer — Character Create Screen (Desktop)
-- [x] `CharacterCreateState` — UI state for creation form (all character fields + item list)
-- [x] `CharacterCreateEvent` — sealed interface for every field change, item add/remove/edit, save
-- [x] `CharacterCreateViewModel` — validates input, builds `Character` with `items`, saves via repository
-- [x] `CharacterCreateScreen` — scrollable form with:
-  - Basic info: name, race, class, level, player name, image URL
-  - HP: max/current
-  - Ability scores: STR, DEX, CON, INT, WIS, CHA
-  - Description text area
-  - **Item editor** — add/remove items, each with name, slot dropdown, rarity dropdown, equipped checkbox, description
-  - Save button in TopAppBar and at bottom of form
+- [x] `CharacterCreateState` — UI state for creation form (all character fields + item list + weapon list + skill list)
+- [x] `CharacterCreateEvent` — sealed interface for every field change, item/weapon/skill add/remove/edit, save
+- [x] `CharacterCreateViewModel` — validates input, builds `Character` with `items`, `weapons`, `skills`, saves via repository
+- [x] `CharacterCreateScreen` — compact scrollable form with styled sections:
+  - Section headers with icons and accent-colored dividers
+  - Basic info: name, race, class, subclass, background, level, XP, image URL (2-column layout)
+  - Appearance: age, gender, height, weight, eyes, hair, skin (2-column layout)
+  - Ability scores: color-coded cards (STR=red, DEX=green, CON=orange, INT=blue, WIS=purple, CHA=pink)
+  - Combat: HP, AC, initiative, speed, prof. bonus, hit dice (2-column layout)
+  - Status: inspiration switch, exhaustion, death saves, conditions
+  - Proficiencies: saving throws, skills, armor, weapons, tools, languages
+  - **Item editor** — add/remove items with name, slot dropdown, rarity dropdown, equipped checkbox, description
+  - **Weapon editor** — add/remove weapons with name, attack bonus, damage, damage type, notes
+  - **Skill editor** — add/remove skills with name, damage, damage type, resource cost, range, casting time, duration, level, school, icon name, passive toggle, description
+  - Features: class features, racial traits, feats (multi-line)
+  - Save button with loading state
 - [x] Navigation from `CharacterListScreen` via "+" button in TopAppBar
 
 ### Auto-Update / Real-Time Sync
@@ -173,7 +181,11 @@ User defined full project scope:
 - [x] **Character Create screen** — Full creation flow with all stats, description, and inline item editor; navigates from Character List "+" button
 - [x] **Expanded character sheet** — 5-tab layout (Overview, Stats, Inventory, Combat, Features) matching D&D 5e character sheet reference
 - [x] **Ability modifiers & skills** — Automatic modifier calculation `(score - 10) / 2`, passive perception, saving throws, all 18 skills with proficiency tracking
-- [x] **Backend JSON columns** — Apps Script stores nested character data (appearance, combat, proficiencies, weapons, features) as JSON strings in dedicated columns (Q-X) alongside flat fields (A-P)
+- [x] **Backend JSON columns** — Apps Script stores nested character data (appearance, combat, proficiencies, weapons, features, skills) as JSON strings in dedicated columns (Q-Y) alongside flat fields (A-P)
+- [x] **Skill domain model** — `Skill` with icon, damage, damageType, resourceCost, range, castingTime, duration, level, school, isPassive
+- [x] **Skills tab** — 6th bottom nav tab in Character Detail with adaptive grid of skill cards; floating detail dialog on tap
+- [x] **Dice roller** — Floating action button on Character List opens dice dialog; 7 dice types (d4,d6,d8,d10,d12,d20,d%); single tap rolls one, batch roll with count selectors
+- [x] **Enhanced Character Create screen** — Compact 2-column layout, color-coded ability scores with themed cards, section headers with icons and accent dividers, skill creation editor
 
 ## Known Issues / Blockers
 - Gradle build not yet verified (`JAVA_HOME` not set in current environment)

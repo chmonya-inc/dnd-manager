@@ -13,6 +13,7 @@ import com.dnd.helper.domain.model.CharacterStats
 import com.dnd.helper.domain.model.EquipmentSlot
 import com.dnd.helper.domain.model.Item
 import com.dnd.helper.domain.model.ItemRarity
+import com.dnd.helper.domain.model.Skill
 import com.dnd.helper.domain.model.Weapon
 import com.dnd.helper.domain.repository.CharacterRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -93,6 +94,7 @@ class CharacterCreateViewModel(
             is CharacterCreateEvent.ItemSlotChanged -> updateItem(event.index) { it.copy(slot = event.value) }
             is CharacterCreateEvent.ItemRarityChanged -> updateItem(event.index) { it.copy(rarity = event.value) }
             is CharacterCreateEvent.ItemDescriptionChanged -> updateItem(event.index) { it.copy(description = event.value) }
+            is CharacterCreateEvent.ItemImageUrlChanged -> updateItem(event.index) { it.copy(imageUrl = event.value) }
             is CharacterCreateEvent.ItemEquippedChanged -> updateItem(event.index) { it.copy(equipped = event.value) }
 
             // Weapons
@@ -103,6 +105,22 @@ class CharacterCreateViewModel(
             is CharacterCreateEvent.WeaponDamageChanged -> updateWeapon(event.index) { it.copy(damage = event.value) }
             is CharacterCreateEvent.WeaponDamageTypeChanged -> updateWeapon(event.index) { it.copy(damageType = event.value) }
             is CharacterCreateEvent.WeaponNotesChanged -> updateWeapon(event.index) { it.copy(notes = event.value) }
+
+            // Skills
+            CharacterCreateEvent.AddSkill -> addSkill()
+            is CharacterCreateEvent.RemoveSkill -> removeSkill(event.index)
+            is CharacterCreateEvent.SkillNameChanged -> updateSkill(event.index) { it.copy(name = event.value) }
+            is CharacterCreateEvent.SkillDescriptionChanged -> updateSkill(event.index) { it.copy(description = event.value) }
+            is CharacterCreateEvent.SkillIconNameChanged -> updateSkill(event.index) { it.copy(iconUrl = event.value.ifBlank { null }) }
+            is CharacterCreateEvent.SkillDamageChanged -> updateSkill(event.index) { it.copy(damage = event.value) }
+            is CharacterCreateEvent.SkillDamageTypeChanged -> updateSkill(event.index) { it.copy(damageType = event.value) }
+            is CharacterCreateEvent.SkillResourceCostChanged -> updateSkill(event.index) { it.copy(resourceCost = event.value) }
+            is CharacterCreateEvent.SkillRangeChanged -> updateSkill(event.index) { it.copy(range = event.value) }
+            is CharacterCreateEvent.SkillCastingTimeChanged -> updateSkill(event.index) { it.copy(castingTime = event.value) }
+            is CharacterCreateEvent.SkillDurationChanged -> updateSkill(event.index) { it.copy(duration = event.value) }
+            is CharacterCreateEvent.SkillLevelChanged -> updateSkill(event.index) { it.copy(level = event.value.toIntOrNull() ?: 0) }
+            is CharacterCreateEvent.SkillSchoolChanged -> updateSkill(event.index) { it.copy(school = event.value) }
+            is CharacterCreateEvent.SkillIsPassiveChanged -> updateSkill(event.index) { it.copy(isPassive = event.value) }
 
             // Features
             is CharacterCreateEvent.ClassFeaturesChanged -> _state.value = _state.value.copy(classFeatures = event.value)
@@ -167,6 +185,42 @@ class CharacterCreateViewModel(
         if (index in current.indices) {
             _state.value = _state.value.copy(
                 weapons = current.mapIndexed { i, wpn -> if (i == index) transform(wpn) else wpn }
+            )
+        }
+    }
+
+    // Skills
+    private fun addSkill() {
+        val newSkill = Skill(
+            id = "skl-${getRandomId()}",
+            name = "New Skill",
+            description = "",
+            iconUrl = null,
+            damage = "",
+            damageType = "",
+            resourceCost = "",
+            range = "",
+            castingTime = "",
+            duration = "",
+            level = 0,
+            school = "",
+            isPassive = false,
+        )
+        _state.value = _state.value.copy(skillList = _state.value.skillList + newSkill)
+    }
+
+    private fun removeSkill(index: Int) {
+        val current = _state.value.skillList
+        if (index in current.indices) {
+            _state.value = _state.value.copy(skillList = current.filterIndexed { i, _ -> i != index })
+        }
+    }
+
+    private fun updateSkill(index: Int, transform: (Skill) -> Skill) {
+        val current = _state.value.skillList
+        if (index in current.indices) {
+            _state.value = _state.value.copy(
+                skillList = current.mapIndexed { i, skl -> if (i == index) transform(skl) else skl }
             )
         }
     }
@@ -269,6 +323,7 @@ class CharacterCreateViewModel(
                 racialTraits = parseLineList(s.racialTraits),
                 feats = parseLineList(s.feats),
             ),
+            skills = s.skillList,
             items = s.items,
         )
 

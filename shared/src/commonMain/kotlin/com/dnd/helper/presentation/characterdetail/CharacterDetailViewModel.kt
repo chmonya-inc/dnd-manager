@@ -57,6 +57,9 @@ class CharacterDetailViewModel(
             is CharacterDetailEvent.UpdateHp -> updateHp(event.delta)
             is CharacterDetailEvent.UpdateMaxHp -> updateMaxHp(event.delta)
             is CharacterDetailEvent.UpdateLevel -> updateLevel(event.delta)
+            is CharacterDetailEvent.ToggleItemEquipped -> toggleItemEquipped(event.itemId)
+            CharacterDetailEvent.ToggleInspiration -> toggleInspiration()
+            CharacterDetailEvent.RollDeathSave -> rollDeathSave()
             CharacterDetailEvent.ToggleEdit -> {
                 val state = _state.value
                 if (state.isEditing) {
@@ -170,8 +173,23 @@ class CharacterDetailViewModel(
 
     private fun updateHp(delta: Int) {
         val currentCharacter = _state.value.character ?: return
+        val newHp = (currentCharacter.currentHp + delta).coerceIn(0, currentCharacter.maxHp)
+        val wasAtZero = currentCharacter.currentHp <= 0
+        val isNowAtZero = newHp <= 0
+        val resetDeathSaves = wasAtZero != isNowAtZero
+
+        val updatedCombat = if (resetDeathSaves) {
+            currentCharacter.combat.copy(
+                deathSaveSuccesses = 0,
+                deathSaveFailures = 0,
+            )
+        } else {
+            currentCharacter.combat
+        }
+
         val updatedCharacter = currentCharacter.copy(
-            currentHp = (currentCharacter.currentHp + delta).coerceIn(0, currentCharacter.maxHp)
+            currentHp = newHp,
+            combat = updatedCombat,
         )
         scheduleDebouncedSave(updatedCharacter)
     }
@@ -183,6 +201,42 @@ class CharacterDetailViewModel(
             maxHp = newMaxHp,
             currentHp = currentCharacter.currentHp.coerceAtMost(newMaxHp)
         )
+        scheduleDebouncedSave(updatedCharacter)
+    }
+
+    private fun toggleItemEquipped(itemId: String) {
+        val currentCharacter = _state.value.character ?: return
+        val updatedItems = currentCharacter.items.map { item ->
+            if (item.id == itemId) item.copy(equipped = !item.equipped) else item
+        }
+        val updatedCharacter = currentCharacter.copy(items = updatedItems)
+        scheduleDebouncedSave(updatedCharacter)
+    }
+
+    private fun toggleInspiration() {
+        val currentCharacter = _state.value.character ?: return
+        val updatedCombat = currentCharacter.combat.copy(
+            inspiration = !currentCharacter.combat.inspiration
+        )
+        val updatedCharacter = currentCharacter.copy(combat = updatedCombat)
+        scheduleDebouncedSave(updatedCharacter)
+    }
+
+    private fun rollDeathSave() {
+        val currentCharacter = _state.value.character ?: return
+        val combat = currentCharacter.combat
+        if (combat.deathSaveSuccesses >= 3 || combat.deathSaveFailures >= 3) return
+
+        val roll = (1..20).random()
+        val isSuccess = roll >= 10
+        val newSuccesses = (combat.deathSaveSuccesses + if (isSuccess) 1 else 0).coerceAtMost(3)
+        val newFailures = (combat.deathSaveFailures + if (!isSuccess) 1 else 0).coerceAtMost(3)
+
+        val updatedCombat = combat.copy(
+            deathSaveSuccesses = newSuccesses,
+            deathSaveFailures = newFailures
+        )
+        val updatedCharacter = currentCharacter.copy(combat = updatedCombat)
         scheduleDebouncedSave(updatedCharacter)
     }
 

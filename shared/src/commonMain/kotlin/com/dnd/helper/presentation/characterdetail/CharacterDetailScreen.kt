@@ -102,6 +102,7 @@ import com.dnd.helper.presentation.characterdetail.combat.CombatTab
 import com.dnd.helper.presentation.characterdetail.features.FeaturesTab
 import com.dnd.helper.presentation.characterdetail.inventory.InventoryTab
 import com.dnd.helper.presentation.characterdetail.overview.OverviewTab
+import com.dnd.helper.presentation.characterdetail.skills.SkillsTab
 import com.dnd.helper.presentation.characterdetail.stats.StatsTab
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
 
@@ -220,6 +221,12 @@ fun CharacterDetailScreen(
                     selected = selectedTab == 4,
                     onClick = { selectedTab = 4 }
                 )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.AutoFixHigh, null) },
+                    label = { Text("Skills") },
+                    selected = selectedTab == 5,
+                    onClick = { selectedTab = 5 }
+                )
             }
         }
     ) { padding ->
@@ -236,11 +243,12 @@ fun CharacterDetailScreen(
             } else {
                 state.character?.let { character ->
                     when (selectedTab) {
-                        0 -> OverviewTab(character)
+                        0 -> OverviewTab(character, viewModel::onEvent)
                         1 -> StatsTab(character)
-                        2 -> InventoryTab(items = character.items)
+                        2 -> InventoryTab(items = character.items, onEvent = viewModel::onEvent)
                         3 -> CombatTab(character)
                         4 -> FeaturesTab(character)
+                        5 -> SkillsTab(character)
                     }
                 }
             }
@@ -262,13 +270,13 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
             value = edited.race,
             onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(race = it))) },
             label = { Text("Race") },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxWidth(0.33f)
         )
         OutlinedTextField(
             value = edited.characterClass,
             onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(characterClass = it))) },
             label = { Text("Class") },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.fillMaxWidth(0.33f)
         )
         OutlinedTextField(
             value = edited.level.toString(),
@@ -277,7 +285,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
                 viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = value))) 
             },
             label = { Text("Lvl") },
-            modifier = Modifier.width(70.dp),
+            modifier = Modifier.fillMaxWidth(0.33f),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
     }
@@ -290,7 +298,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
                 viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(currentHp = value))) 
             },
             label = { Text("Cur HP") },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(0.5f),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
         OutlinedTextField(
@@ -300,7 +308,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
                 viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(maxHp = value))) 
             },
             label = { Text("Max HP") },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(0.5f),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
     }
@@ -315,7 +323,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
                 viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(strength = value)))) 
             },
             label = { Text("STR") },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(0.33f),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
         OutlinedTextField(
@@ -325,7 +333,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
                 viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(dexterity = value)))) 
             },
             label = { Text("DEX") },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(0.33f),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
         OutlinedTextField(
@@ -335,7 +343,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
                 viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(constitution = value)))) 
             },
             label = { Text("CON") },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(0.33f),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
     }
@@ -348,7 +356,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
                 viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(intelligence = value)))) 
             },
             label = { Text("INT") },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(0.33f),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
         OutlinedTextField(
@@ -358,7 +366,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
                 viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(wisdom = value)))) 
             },
             label = { Text("WIS") },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(0.33f),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
         OutlinedTextField(
@@ -368,7 +376,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
                 viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(charisma = value)))) 
             },
             label = { Text("CHA") },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(0.33f),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
     }
@@ -727,8 +735,8 @@ private fun StatsGrid(character: com.dnd.helper.domain.model.Character, viewMode
         // Display in 2x3 grid using Rows
         for (i in 0 until 3) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard(stats[i * 2], viewModel, Modifier.weight(1f))
-                StatCard(stats[i * 2 + 1], viewModel, Modifier.weight(1f))
+                StatCard(stats[i * 2], viewModel, Modifier.fillMaxWidth(0.5f))
+                StatCard(stats[i * 2 + 1], viewModel, Modifier.fillMaxWidth(0.5f))
             }
         }
     }

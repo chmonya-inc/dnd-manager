@@ -169,6 +169,12 @@ Compose Screen → ViewModel → Repository → GoogleAppsScriptDataSource (Ktor
 - **Edit-aware** — `CharacterDetailViewModel` skips auto-refresh while `isEditing` to avoid overwriting the user's in-progress changes.
 - **Trade-off**: polling consumes quota (2,880 requests/day per active screen at 30s intervals). Acceptable for a small-party D&D app.
 
+### 10. Never use `Modifier.weight`
+- `Modifier.weight` requires `androidx.compose.foundation.layout.weight` import, which is easy to miss and causes confusing "Unresolved reference" build errors.
+- **Alternative for Rows**: use `horizontalArrangement = Arrangement.spacedBy` or `Arrangement.SpaceBetween` combined with `Modifier.fillMaxWidth(fraction)` (e.g. `fillMaxWidth(0.5f)` for two equal columns).
+- **Alternative for Columns**: use `Modifier.fillMaxHeight(fraction)` instead of `weight` to split vertical space.
+- For "fill remaining space" patterns, prefer restructuring the layout to use `Arrangement.SpaceBetween` on the parent Row/Column rather than relying on weight.
+
 ## Error Handling Strategy
 
 We use a sealed `Result<T>` class across all layers:

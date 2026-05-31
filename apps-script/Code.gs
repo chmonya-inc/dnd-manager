@@ -21,11 +21,12 @@ const CHARACTER_HEADERS = [
   "Description", "ImageUrl", "MaxHP", "CurrentHP",
   "Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma",
   "Subclass", "Background", "ExperiencePoints",
-  "AppearanceJSON", "CombatJSON", "ProficienciesJSON", "WeaponsJSON", "FeaturesJSON"
+  "AppearanceJSON", "CombatJSON", "ProficienciesJSON", "WeaponsJSON", "FeaturesJSON",
+  "SkillsJSON"
 ];
 
 const ITEM_HEADERS = [
-  "ItemID", "ItemName", "Slot", "Rarity", "StatsJSON", "Description", "Equipped"
+  "ItemID", "ItemName", "Slot", "Rarity", "StatsJSON", "Description", "Equipped", "ImageUrl"
 ];
 
 /** Actions that modify data and require a lock. */
@@ -358,12 +359,14 @@ function rowToCharacter(row) {
   var proficiencies = {};
   var weapons = [];
   var features = {};
+  var skills = [];
 
   try { appearance = JSON.parse(row[19] || "{}"); } catch (e) { console.warn("Bad AppearanceJSON:", row[19]); }
   try { combat = JSON.parse(row[20] || "{}"); } catch (e) { console.warn("Bad CombatJSON:", row[20]); }
   try { proficiencies = JSON.parse(row[21] || "{}"); } catch (e) { console.warn("Bad ProficienciesJSON:", row[21]); }
   try { weapons = JSON.parse(row[22] || "[]"); } catch (e) { console.warn("Bad WeaponsJSON:", row[22]); }
   try { features = JSON.parse(row[23] || "{}"); } catch (e) { console.warn("Bad FeaturesJSON:", row[23]); }
+  try { skills = JSON.parse(row[24] || "[]"); } catch (e) { console.warn("Bad SkillsJSON:", row[24]); }
 
   return {
     id: String(row[0] ?? ""),
@@ -392,6 +395,7 @@ function rowToCharacter(row) {
     proficiencies: proficiencies,
     weapons: weapons,
     features: features,
+    skills: skills,
     items: []
   };
 }
@@ -422,7 +426,8 @@ function characterToRow(character) {
     JSON.stringify(character.combat || {}),
     JSON.stringify(character.proficiencies || {}),
     JSON.stringify(character.weapons || []),
-    JSON.stringify(character.features || {})
+    JSON.stringify(character.features || {}),
+    JSON.stringify(character.skills || [])
   ];
 }
 
@@ -447,7 +452,8 @@ function rowToItem(row) {
     rarity: String(row[3] ?? "COMMON"),
     stats: stats,
     description: String(row[5] ?? ""),
-    equipped: String(row[6]).toLowerCase() === "true" || row[6] === true || row[6] === 1
+    equipped: String(row[6]).toLowerCase() === "true" || row[6] === true || row[6] === 1,
+    imageUrl: row[7] ? String(row[7]) : null
   };
 }
 
@@ -468,6 +474,7 @@ function itemToRow(item) {
     String(item.rarity || "COMMON"),
     statsJson,
     String(item.description || ""),
-    item.equipped ? "true" : "false"
+    item.equipped ? "true" : "false",
+    item.imageUrl || ""
   ];
 }

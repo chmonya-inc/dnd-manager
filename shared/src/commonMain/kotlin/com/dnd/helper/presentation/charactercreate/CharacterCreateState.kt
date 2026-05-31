@@ -1,6 +1,7 @@
 package com.dnd.helper.presentation.charactercreate
 
 import com.dnd.helper.domain.model.Item
+import com.dnd.helper.domain.model.Skill
 import com.dnd.helper.domain.model.Weapon
 
 data class CharacterCreateState(
@@ -62,6 +63,7 @@ data class CharacterCreateState(
     // Lists
     val items: List<Item> = emptyList(),
     val weapons: List<Weapon> = emptyList(),
+    val skillList: List<Skill> = emptyList(),
 
     // Features (newline-separated)
     val classFeatures: String = "",

@@ -66,6 +66,7 @@ sealed interface CharacterCreateEvent {
     data class ItemSlotChanged(val index: Int, val value: EquipmentSlot?) : CharacterCreateEvent
     data class ItemRarityChanged(val index: Int, val value: ItemRarity) : CharacterCreateEvent
     data class ItemDescriptionChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class ItemImageUrlChanged(val index: Int, val value: String) : CharacterCreateEvent
     data class ItemEquippedChanged(val index: Int, val value: Boolean) : CharacterCreateEvent
 
     // Weapons
@@ -76,6 +77,22 @@ sealed interface CharacterCreateEvent {
     data class WeaponDamageChanged(val index: Int, val value: String) : CharacterCreateEvent
     data class WeaponDamageTypeChanged(val index: Int, val value: String) : CharacterCreateEvent
     data class WeaponNotesChanged(val index: Int, val value: String) : CharacterCreateEvent
+
+    // Skills
+    data object AddSkill : CharacterCreateEvent
+    data class RemoveSkill(val index: Int) : CharacterCreateEvent
+    data class SkillNameChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SkillDescriptionChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SkillIconNameChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SkillDamageChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SkillDamageTypeChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SkillResourceCostChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SkillRangeChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SkillCastingTimeChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SkillDurationChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SkillLevelChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SkillSchoolChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SkillIsPassiveChanged(val index: Int, val value: Boolean) : CharacterCreateEvent
 
     // Features
     data class ClassFeaturesChanged(val value: String) : CharacterCreateEvent

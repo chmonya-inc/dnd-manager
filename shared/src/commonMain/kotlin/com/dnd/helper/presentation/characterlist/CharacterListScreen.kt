@@ -235,7 +235,7 @@ private fun CharacterCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.fillMaxWidth(0.8f)) {
                 Text(
                     text = character.name,
                     style = MaterialTheme.typography.titleMedium,

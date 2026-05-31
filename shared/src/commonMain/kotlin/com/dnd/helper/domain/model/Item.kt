@@ -21,4 +21,5 @@ data class Item(
     val stats: Map<String, Int> = emptyMap(),
     val description: String = "",
     val equipped: Boolean = false,
+    val imageUrl: String? = null,
 )

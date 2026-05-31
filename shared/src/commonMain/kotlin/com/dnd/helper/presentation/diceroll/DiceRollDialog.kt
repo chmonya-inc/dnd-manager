@@ -397,20 +397,22 @@ private fun ResultRow(result: DiceResult) {
                 shape = RoundedCornerShape(6.dp),
             )
             .padding(horizontal = 10.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = result.diceType.displayName,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.width(36.dp),
-        )
-        Text(
-            text = result.rolls.joinToString(", "),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = result.diceType.displayName,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.width(36.dp),
+            )
+            Text(
+                text = result.rolls.joinToString(", "),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
         if (result.rolls.size > 1) {
             Text(
                 text = "= ${result.total}",
