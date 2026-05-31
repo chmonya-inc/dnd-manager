@@ -107,13 +107,31 @@ fun CharacterDetailScreen(
     // Also skips refresh while the user is editing (handled inside the ViewModel).
     DisposableEffect(viewModel) {
         viewModel.startAutoRefresh()
-        onDispose { viewModel.stopAutoRefresh() }
+        onDispose {
+            // Force-flush any pending debounced save before leaving the screen
+            // so the user doesn't lose rapid stat/HP/level clicks.
+            viewModel.flushPendingSave()
+            viewModel.stopAutoRefresh()
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.character?.name ?: "Character") },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(state.character?.name ?: "Character")
+                        if (state.hasUnsavedChanges) {
+                            // Small orange dot — indicates pending debounced save
+                            Box(
+                                modifier = Modifier
+                                    .padding(start = 8.dp)
+                                    .size(8.dp)
+                                    .background(Color(0xFFFB8C00), RoundedCornerShape(4.dp))
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -162,26 +180,16 @@ fun CharacterDetailScreen(
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
                     ) {
-                        if (character.imageUrl != null) {
+                        if (!character.imageUrl.isNullOrBlank()) {
                             Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
                                 AsyncImage(
                                     model = character.imageUrl,
                                     contentDescription = character.name,
                                     modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(
-                                            Brush.verticalGradient(
-                                                colors = listOf(
-                                                    Color.Transparent,
-                                                    MaterialTheme.colorScheme.surface
-                                                ),
-                                                startY = 400f
-                                            )
-                                        )
+                                    contentScale = ContentScale.Fit,
+                                    onError = { state ->
+                                        println("[AsyncImage] Failed to load hero image for ${character.name}: ${state.result.throwable}")
+                                    },
                                 )
                             }
                         }

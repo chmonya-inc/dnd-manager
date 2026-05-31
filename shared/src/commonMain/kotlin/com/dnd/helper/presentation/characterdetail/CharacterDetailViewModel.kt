@@ -33,6 +33,19 @@ class CharacterDetailViewModel(
      */
     private var hasPendingLocalChange: Boolean = false
 
+    /**
+     * Active debounced save job. When the user rapidly edits stats/HP/level,
+     * each click cancels the previous job and starts a new 5-second timer.
+     * Only when the timer fires is the data pushed to the server.
+     */
+    private var debouncedSaveJob: Job? = null
+
+    /**
+     * The character state that needs to be synced to the server.
+     * Updated on every optimistic local change. Flushed after 5s of inactivity.
+     */
+    private var pendingSaveCharacter: com.dnd.helper.domain.model.Character? = null
+
     init {
         loadCharacter()
     }
@@ -80,6 +93,22 @@ class CharacterDetailViewModel(
         pollingJob = null
     }
 
+    /**
+     * Cancels any pending debounced save and immediately flushes to the server.
+     * Call when navigating away from the screen or when the app goes to background
+     * so that no local changes are lost.
+     */
+    fun flushPendingSave() {
+        debouncedSaveJob?.cancel()
+        debouncedSaveJob = null
+        val character = pendingSaveCharacter
+        if (character != null) {
+            pendingSaveCharacter = null
+            performSave(character)
+        }
+        _state.value = _state.value.copy(hasUnsavedChanges = false)
+    }
+
     private suspend fun checkForUpdates() {
         when (val result = repository.getLastModified()) {
             is Result.Success -> {
@@ -110,28 +139,9 @@ class CharacterDetailViewModel(
 
     private fun saveChanges() {
         val edited = _state.value.editedCharacter ?: return
+        // Edit-mode "Save" is an explicit user action — save immediately.
+        performSave(edited)
         _state.value = _state.value.copy(isSaving = true)
-        hasPendingLocalChange = true
-
-        viewModelScope.launch {
-            when (val result = repository.saveCharacter(edited)) {
-                is Result.Success -> {
-                    _state.value = _state.value.copy(
-                        character = edited,
-                        isEditing = false,
-                        editedCharacter = null,
-                        isSaving = false
-                    )
-                }
-                is Result.Error -> {
-                    hasPendingLocalChange = false
-                    _state.value = _state.value.copy(
-                        error = "Failed to save changes: ${result.error}",
-                        isSaving = false
-                    )
-                }
-            }
-        }
     }
 
     private fun updateLevel(delta: Int) {
@@ -139,7 +149,7 @@ class CharacterDetailViewModel(
         val updatedCharacter = currentCharacter.copy(
             level = (currentCharacter.level + delta).coerceAtLeast(1)
         )
-        saveCharacter(updatedCharacter)
+        scheduleDebouncedSave(updatedCharacter)
     }
 
     private fun updateStat(statName: String, delta: Int) {
@@ -155,7 +165,7 @@ class CharacterDetailViewModel(
             else -> stats
         }
         val updatedCharacter = currentCharacter.copy(stats = newStats)
-        saveCharacter(updatedCharacter)
+        scheduleDebouncedSave(updatedCharacter)
     }
 
     private fun updateHp(delta: Int) {
@@ -163,7 +173,7 @@ class CharacterDetailViewModel(
         val updatedCharacter = currentCharacter.copy(
             currentHp = (currentCharacter.currentHp + delta).coerceIn(0, currentCharacter.maxHp)
         )
-        saveCharacter(updatedCharacter)
+        scheduleDebouncedSave(updatedCharacter)
     }
 
     private fun updateMaxHp(delta: Int) {
@@ -173,26 +183,58 @@ class CharacterDetailViewModel(
             maxHp = newMaxHp,
             currentHp = currentCharacter.currentHp.coerceAtMost(newMaxHp)
         )
-        saveCharacter(updatedCharacter)
+        scheduleDebouncedSave(updatedCharacter)
     }
 
-    private fun saveCharacter(character: com.dnd.helper.domain.model.Character) {
-        // Optimistic update
+    /**
+     * Schedules a debounced save. Each new call cancels the previous timer.
+     * After 5 seconds of inactivity the character is pushed to the server.
+     * The UI is updated optimistically immediately.
+     */
+    private fun scheduleDebouncedSave(character: com.dnd.helper.domain.model.Character) {
+        // Optimistic update — reflect change in UI immediately
         val previousCharacter = _state.value.character
-        _state.value = _state.value.copy(character = character)
+        _state.value = _state.value.copy(
+            character = character,
+            hasUnsavedChanges = true,
+        )
+        pendingSaveCharacter = character
+
+        // Cancel any existing debounce timer
+        debouncedSaveJob?.cancel()
+
+        debouncedSaveJob = viewModelScope.launch {
+            delay(5_000L)
+            // Timer fired — user hasn't made another change in 5s
+            pendingSaveCharacter = null
+            performSave(character)
+        }
+    }
+
+    /**
+     * Performs the actual network save. Used by both immediate saves (edit mode)
+     * and debounced saves (stat/HP/level clicks).
+     */
+    private fun performSave(character: com.dnd.helper.domain.model.Character) {
+        val previousCharacter = _state.value.character
         hasPendingLocalChange = true
 
         viewModelScope.launch {
             when (val result = repository.saveCharacter(character)) {
                 is Result.Success -> {
-                    // Success, state is already updated
+                    _state.value = _state.value.copy(
+                        isSaving = false,
+                        hasUnsavedChanges = false,
+                    )
                 }
                 is Result.Error -> {
                     hasPendingLocalChange = false
                     // Rollback on error
                     _state.value = _state.value.copy(
                         character = previousCharacter,
-                        error = "Failed to update: ${result.error}"
+                        error = "Failed to update: ${result.error}",
+                        isSaving = false,
+                        hasUnsavedChanges = false,
                     )
                 }
             }

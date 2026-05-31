@@ -60,6 +60,9 @@ User defined full project scope:
 - [x] `CharacterDetailState` — UI state (character, editedCharacter, isEditing, isSaving, isLoading, error)
 - [x] `CharacterDetailEvent` — sealed interface (Refresh, UpdateStat, UpdateHp, UpdateMaxHp, UpdateLevel, ToggleEdit, EditCharacter, SaveChanges)
 - [x] `CharacterDetailViewModel` — loads single character, handles stat/HP/level updates, edit/save with optimistic updates + rollback
+  - **Debounced saves** — rapid stat/HP/level clicks are batched locally; pushed to server after 5s of inactivity
+  - `flushPendingSave()` — force-flushes pending changes when navigating away
+  - `hasUnsavedChanges` flag + orange dot in TopAppBar for visual feedback
 - [x] `CharacterDetailScreen` — full character sheet with:
   - Hero image via Coil 3 `AsyncImage` with gradient overlay
   - Name, race/class chip, level control (± with amount input)
@@ -67,7 +70,7 @@ User defined full project scope:
   - Stats grid (2×3) with color-coded icons and Russian descriptive tags
   - Biography section
   - Edit mode: full form with all editable fields (name, race, class, level, HP, stats, player name, image URL, description)
-  - TopAppBar with Back, Edit ✓/✕, Refresh actions
+  - TopAppBar with Back, Edit ✓/✕, Refresh actions + unsaved-changes dot
   - Auto-refresh polling via `DisposableEffect` (start/stop with screen lifecycle)
 
 ### Auto-Update / Real-Time Sync
@@ -125,9 +128,12 @@ User defined full project scope:
   - `handleSaveCharacter` / `handleDeleteCharacter` update the timestamp after every write
   - New `getLastModified` action — lightweight poll endpoint (just a timestamp string)
   - `CharacterRepository.getLastModified()` + `GoogleAppsScriptDataSource.getLastModified()`
-  - `CharacterListViewModel` & `CharacterDetailViewModel` poll every 30s via `viewModelScope`
+  - `CharacterListViewModel` & `CharacterDetailViewModel` poll every 4s via `viewModelScope`
   - `DisposableEffect` in Compose screens starts/stops polling with screen lifecycle
   - Auto-refresh is **paused while editing** in Character Detail to avoid overwriting user changes
+- [x] **Debounced saves** — rapid stat/HP/level clicks batch locally, flush after 5s inactivity
+- [x] **Network optimizations** — Apps Script reads no longer acquire `ScriptLock` or call `flush()`; `handleGetCharacter` uses `createTextFinder()` instead of O(n) scan
+- [x] **Self-initiated change skip** — App that performed an update skips its own auto-reload to avoid redundant flicker
 
 ## Known Issues / Blockers
 - Gradle build not yet verified (`JAVA_HOME` not set in current environment)

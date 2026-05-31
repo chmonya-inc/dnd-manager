@@ -9,4 +9,6 @@ data class CharacterDetailState(
     val isSaving: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
+    /** True when stat/HP/level changes are queued for debounced save. */
+    val hasUnsavedChanges: Boolean = false,
 )

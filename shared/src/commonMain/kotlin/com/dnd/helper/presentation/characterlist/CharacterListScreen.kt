@@ -202,7 +202,7 @@ private fun CharacterCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (character.imageUrl != null) {
+            if (!character.imageUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = character.imageUrl,
                     contentDescription = character.name,
@@ -210,6 +210,9 @@ private fun CharacterCard(
                         .size(48.dp)
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop,
+                    onError = { state ->
+                        println("[AsyncImage] Failed to load avatar for ${character.name}: ${state.result.throwable}")
+                    },
                 )
             } else {
                 Icon(
