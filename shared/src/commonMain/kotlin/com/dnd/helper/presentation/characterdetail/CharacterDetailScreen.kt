@@ -64,6 +64,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -102,6 +103,7 @@ import com.dnd.helper.presentation.characterdetail.features.FeaturesTab
 import com.dnd.helper.presentation.characterdetail.inventory.InventoryTab
 import com.dnd.helper.presentation.characterdetail.overview.OverviewTab
 import com.dnd.helper.presentation.characterdetail.stats.StatsTab
+import com.dnd.helper.presentation.diceroll.DiceRollDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -123,6 +125,12 @@ fun CharacterDetailScreen(
             viewModel.flushPendingSave()
             viewModel.stopAutoRefresh()
         }
+    }
+
+    var showDiceDialog by remember { mutableStateOf(false) }
+
+    if (showDiceDialog) {
+        DiceRollDialog(onDismiss = { showDiceDialog = false })
     }
 
     Scaffold(
@@ -171,6 +179,14 @@ fun CharacterDetailScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 )
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showDiceDialog = true }) {
+                Text(
+                    text = "🎲",
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+            }
         },
         bottomBar = {
             NavigationBar {
