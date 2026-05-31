@@ -19,7 +19,9 @@ const METADATA_SHEET_NAME = "Metadata";
 const CHARACTER_HEADERS = [
   "ID", "Name", "PlayerName", "Race", "Class", "Level",
   "Description", "ImageUrl", "MaxHP", "CurrentHP",
-  "Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"
+  "Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma",
+  "Subclass", "Background", "ExperiencePoints",
+  "AppearanceJSON", "CombatJSON", "ProficienciesJSON", "WeaponsJSON", "FeaturesJSON"
 ];
 
 const ITEM_HEADERS = [
@@ -350,13 +352,29 @@ function handleDeleteCharacter(id) {
 // ============================================================================
 
 function rowToCharacter(row) {
+  // Parse JSON columns for nested objects
+  var appearance = {};
+  var combat = {};
+  var proficiencies = {};
+  var weapons = [];
+  var features = {};
+
+  try { appearance = JSON.parse(row[19] || "{}"); } catch (e) { console.warn("Bad AppearanceJSON:", row[19]); }
+  try { combat = JSON.parse(row[20] || "{}"); } catch (e) { console.warn("Bad CombatJSON:", row[20]); }
+  try { proficiencies = JSON.parse(row[21] || "{}"); } catch (e) { console.warn("Bad ProficienciesJSON:", row[21]); }
+  try { weapons = JSON.parse(row[22] || "[]"); } catch (e) { console.warn("Bad WeaponsJSON:", row[22]); }
+  try { features = JSON.parse(row[23] || "{}"); } catch (e) { console.warn("Bad FeaturesJSON:", row[23]); }
+
   return {
     id: String(row[0] ?? ""),
     name: String(row[1] ?? ""),
     playerName: String(row[2] ?? ""),
     race: String(row[3] ?? ""),
     characterClass: String(row[4] ?? ""),
+    subclass: String(row[16] ?? ""),
+    background: String(row[17] ?? ""),
     level: Number(row[5]) || 0,
+    experiencePoints: Number(row[18]) || 0,
     description: String(row[6] ?? ""),
     imageUrl: (row[7] && String(row[7]).trim()) ? String(row[7]).trim() : null,
     maxHp: Number(row[8]) || 0,
@@ -369,6 +387,11 @@ function rowToCharacter(row) {
       wisdom: Number(row[14]) || 0,
       charisma: Number(row[15]) || 0
     },
+    appearance: appearance,
+    combat: combat,
+    proficiencies: proficiencies,
+    weapons: weapons,
+    features: features,
     items: []
   };
 }
@@ -391,7 +414,15 @@ function characterToRow(character) {
     Number(s.constitution) || 0,
     Number(s.intelligence) || 0,
     Number(s.wisdom) || 0,
-    Number(s.charisma) || 0
+    Number(s.charisma) || 0,
+    String(character.subclass || ""),
+    String(character.background || ""),
+    Number(character.experiencePoints) || 0,
+    JSON.stringify(character.appearance || {}),
+    JSON.stringify(character.combat || {}),
+    JSON.stringify(character.proficiencies || {}),
+    JSON.stringify(character.weapons || []),
+    JSON.stringify(character.features || {})
   ];
 }
 

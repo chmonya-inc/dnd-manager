@@ -97,7 +97,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.dnd.helper.presentation.characterdetail.combat.CombatTab
+import com.dnd.helper.presentation.characterdetail.features.FeaturesTab
 import com.dnd.helper.presentation.characterdetail.inventory.InventoryTab
+import com.dnd.helper.presentation.characterdetail.overview.OverviewTab
+import com.dnd.helper.presentation.characterdetail.stats.StatsTab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -171,16 +175,34 @@ fun CharacterDetailScreen(
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Face, null) },
-                    label = { Text("Characteristics") },
+                    icon = { Icon(Icons.Default.Shield, null) },
+                    label = { Text("Overview") },
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.ShoppingBag, null) },
-                    label = { Text("Inventory") },
+                    icon = { Icon(Icons.Default.FitnessCenter, null) },
+                    label = { Text("Stats") },
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.ShoppingBag, null) },
+                    label = { Text("Inventory") },
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.SportsMartialArts, null) },
+                    label = { Text("Combat") },
+                    selected = selectedTab == 3,
+                    onClick = { selectedTab = 3 }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Star, null) },
+                    label = { Text("Features") },
+                    selected = selectedTab == 4,
+                    onClick = { selectedTab = 4 }
                 )
             }
         }
@@ -198,8 +220,11 @@ fun CharacterDetailScreen(
             } else {
                 state.character?.let { character ->
                     when (selectedTab) {
-                        0 -> CharacteristicsContent(character, state, viewModel)
-                        1 -> InventoryTab(items = character.items)
+                        0 -> OverviewTab(character)
+                        1 -> StatsTab(character)
+                        2 -> InventoryTab(items = character.items)
+                        3 -> CombatTab(character)
+                        4 -> FeaturesTab(character)
                     }
                 }
             }

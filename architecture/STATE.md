@@ -20,10 +20,17 @@ User defined full project scope:
 - [x] Compose Multiplatform setup in `:shared` (Android, Desktop, Web)
 
 ### Domain Layer
-- [x] `Character` domain model (id, name, playerName, race, class, level, description, imageUrl, stats, hp, **items**)
-- [x] `CharacterStats` data class (str, dex, con, int, wis, cha)
-- [x] `Item` domain model (id, name, slot, rarity, stats, description, equipped)
+- [x] `Character` domain model with nested data classes:
+  - Core: id, name, playerName, race, characterClass, subclass, background, level, experiencePoints, description, imageUrl
+  - `CharacterStats` — str, dex, con, int, wis, cha
+  - `CharacterAppearance` — age, gender, height, weight, eyes, hair, skin
+  - `CharacterCombat` — armorClass, initiative, speed, proficiencyBonus, tempHp, hitDice, hitDiceCurrent, inspiration, exhaustion, conditions, deathSaveSuccesses, deathSaveFailures
+  - `CharacterProficiencies` — savingThrows, skills, armor, weapons, tools, languages
+  - `CharacterFeatures` — classFeatures, racialTraits, feats
+  - `Weapon` — id, name, attackBonus, damage, damageType, notes
+  - `Item` — id, name, slot, rarity, stats, description, equipped
 - [x] `EquipmentSlot` / `ItemRarity` enums
+- [x] `DndSkill` enum — all 18 D&D 5e skills with ability mapping
 - [x] `CharacterStorage` interface — platform-agnostic key-value storage for character ID
 - [x] `Result<T>` + `AppError` sealed classes for error handling across layers
 
@@ -76,8 +83,13 @@ User defined full project scope:
   - HP card with progress bar, color-coded by health ratio, damage/heal controls
   - Stats grid (2×3) with color-coded icons and Russian descriptive tags
   - Biography section
-  - **Bottom navigation** — Characteristics tab (existing content) and Inventory tab (Diablo-style equipment + item grid)
-  - Edit mode: full form with all editable fields (name, race, class, level, HP, stats, player name, image URL, description)
+  - **Bottom navigation** — 5 tabs:
+    - **Overview** — Header (name, race, class, subclass, background, level, XP), appearance chips (age, gender, height, etc.), AC/HP/hit dice/death saves, status bar (initiative, speed, passive perception, proficiency), inspiration, exhaustion, conditions
+    - **Stats** — 6 ability score cards with modifiers, saving throws with proficiency dots, 18 skills grouped by ability
+    - **Inventory** — Diablo-style equipment panel + item grid
+    - **Combat** — Weapons & attacks table
+    - **Features** — Background, subclass, proficiencies (armor/weapons/tools/languages) as chips, class features, racial traits, feats, biography
+  - Edit mode: full form with all editable fields
   - TopAppBar with Back, Edit ✓/✕, Refresh actions + unsaved-changes dot
   - Auto-refresh polling via `DisposableEffect` (start/stop with screen lifecycle)
 
@@ -158,7 +170,10 @@ User defined full project scope:
 - [x] **Per-character sheets** — Apps Script backend migrated from single "Characters" sheet to one sheet per character; each sheet stores character info (rows 1-2) and items (rows 4+)
 - [x] **Item domain model** — `Item`, `EquipmentSlot`, `ItemRarity` with `@Serializable`; added `items: List<Item>` to `Character`
 - [x] **Inventory tab** — Diablo-style equipment panel (top) + item grid (bottom) with rarity-colored borders; loads real items from server
-- [x] **Character Create screen** — Desktop-only full creation flow with all stats, description, and inline item editor; navigates from Character List "+" button
+- [x] **Character Create screen** — Full creation flow with all stats, description, and inline item editor; navigates from Character List "+" button
+- [x] **Expanded character sheet** — 5-tab layout (Overview, Stats, Inventory, Combat, Features) matching D&D 5e character sheet reference
+- [x] **Ability modifiers & skills** — Automatic modifier calculation `(score - 10) / 2`, passive perception, saving throws, all 18 skills with proficiency tracking
+- [x] **Backend JSON columns** — Apps Script stores nested character data (appearance, combat, proficiencies, weapons, features) as JSON strings in dedicated columns (Q-X) alongside flat fields (A-P)
 
 ## Known Issues / Blockers
 - Gradle build not yet verified (`JAVA_HOME` not set in current environment)
