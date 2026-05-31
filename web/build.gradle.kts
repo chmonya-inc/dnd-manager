@@ -10,6 +10,10 @@ kotlin {
         browser {
             commonWebpackConfig {
                 outputFileName = "web.js"
+                // Use source-map instead of eval-based devtool for CSP compliance.
+                // Kotlin/Wasm runtime requires 'unsafe-eval' CSP; eval-based source maps
+                // trigger additional CSP violations in some browsers.
+                devtool = "source-map"
             }
         }
         binaries.executable()

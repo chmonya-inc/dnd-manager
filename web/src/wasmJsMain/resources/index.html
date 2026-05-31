@@ -2,7 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!--
+      CSP for Kotlin/Wasm:
+      - 'unsafe-eval' + 'wasm-unsafe-eval' are REQUIRED by the Kotlin/Wasm JS runtime.
+      - 'unsafe-inline' for styles is needed because we have inline CSS.
+      - img-src * allows images from any URL (character portraits).
+      - connect-src * allows network requests to Google Apps Script backend.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src * blob: data:; connect-src *;">
     <title>D&D Helper</title>
     <style>
         * {
@@ -13,19 +21,38 @@
 
         html, body {
             width: 100%;
+            /* 100dvh accounts for mobile browser chrome (address bar / bottom nav).
+               Fallback to 100% for older browsers. */
             height: 100%;
+            height: 100dvh;
             background: #141218;
             overflow: hidden;
+            /* Prevent the body from expanding beyond the viewport on iOS Safari. */
+            position: fixed;
+            inset: 0;
+            /* Disable double-tap zoom, keep pinch-zoom for accessibility. */
+            touch-action: manipulation;
+            /* Prevent rubber-band / pull-to-refresh on the page level
+               (Compose handles its own pull-to-refresh inside the canvas). */
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: auto;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #ComposeTarget {
             width: 100%;
             height: 100%;
             display: block;
+            /* Compose captures all pointer/touch events inside the canvas. */
+            touch-action: none;
+            outline: none;
+            /* Ensure the canvas is never scaled by browser zoom. */
+            image-rendering: auto;
         }
     </style>
 </head>
 <body>
     <canvas id="ComposeTarget"></canvas>
+    <script type="application/javascript" src="web.js"></script>
 </body>
 </html>

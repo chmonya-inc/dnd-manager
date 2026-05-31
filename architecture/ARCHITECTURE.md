@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-D&D Helper is a Kotlin Multiplatform (KMP) application for Dungeons & Dragons 5th Edition sessions. It supports **Android** (primary, player-only), **Desktop** (JVM, with Player and Admin/DM modes), and **Web Browser** (player-only, mobile-like view).
+D&D Helper is a Kotlin Multiplatform (KMP) application for Dungeons & Dragons 5th Edition sessions. It supports **Android** (primary, player-only), **Desktop** (JVM, with Player and Admin/DM modes), and **Web Browser** (player-only, full-screen canvas).
 
 ### Platform Modes
 
@@ -10,7 +10,7 @@ D&D Helper is a Kotlin Multiplatform (KMP) application for Dungeons & Dragons 5t
 |----------|-------|
 | Android | Player only |
 | Desktop | Player copy + Admin (DM) |
-| Web Browser | Player only (mobile-like view) |
+| Web Browser | Player only (full-screen canvas) |
 
 ### Admin (DM) Desktop Mode Sub-Modes
 - **Preparation Mode** — create locations, characters, equipment, monsters, bosses
@@ -31,9 +31,9 @@ We follow **Clean Architecture** with **MVVM** presentation pattern.
 ```
 :shared                     ← KMP shared module (UI, domain, data logic)
 ├── commonMain              ← Shared Compose UI, ViewModels, UseCases, Repositories
-├── androidMain             ← Android-specific platform bindings
-├── desktopMain             ← Desktop-specific platform bindings
-└── wasmJsMain              ← Web-specific platform bindings
+├── androidMain             ← Android-specific platform bindings (SharedPreferences)
+├── desktopMain             ← Desktop-specific platform bindings (java.util.prefs)
+└── wasmJsMain              ← Web-specific platform bindings (localStorage)
 
 :app                        ← Android application module
 ├── MainActivity.kt         ← Entry point, calls shared App()
@@ -46,7 +46,7 @@ We follow **Clean Architecture** with **MVVM** presentation pattern.
 
 :web                        ← Web Browser application module (Kotlin/Wasm)
 ├── main.kt                 ← Entry point, calls shared App() inside CanvasBasedWindow
-└── index.html              ← Mobile-like phone frame wrapper
+└── index.html              ← Full-screen canvas, no phone frame
 ```
 
 **Why not feature-vertical modules yet?** The project is small. We keep everything in `:shared` initially. When it grows, extract `:feature:*` modules from `:shared/commonMain`.
@@ -59,15 +59,38 @@ We follow **Clean Architecture** with **MVVM** presentation pattern.
 | State Management | ViewModel + StateFlow |
 | DI | Koin (KMP-compatible) |
 | Network | Ktor client + kotlinx.serialization |
-| Backend | Google Apps Script Web App (Ktor POST) |
-| Navigation | navigation-compose 2.8+ (type-safe routes) |
+| Backend | Google Apps Script Web App (Ktor GET with query parameter) |
+| Navigation | navigation-compose 2.8+ (type-safe routes via `@Serializable`) |
 | Image Loading | Coil 3 (Compose Multiplatform) |
+| Platform Storage | `expect`/`actual` `CharacterStorage` interface |
 | Build | Gradle with version catalogs (.kts) |
+
+## Navigation
+
+Type-safe navigation using `@Serializable` route objects (Navigation Compose 2.8+):
+
+```kotlin
+@Serializable object Start
+@Serializable object CharacterList
+@Serializable data class CharacterDetail(val id: String)
+```
+
+### Navigation Graph
+
+```
+Start (mobile/web) ──Load Character──→ CharacterDetail(id)
+                                         ↑
+CharacterList (desktop default) ──Click──┘
+```
+
+- **Android & Web**: Start at `Start` screen (character ID input)
+- **Desktop**: Start at `CharacterList` (skips ID input screen)
+- `CharacterDetail` supports viewing, inline stat/HP/level editing, and full character edit mode
 
 ## Data Flow
 
 ```
-Compose Screen → ViewModel → Repository → GoogleAppsScriptDataSource (Ktor POST)
+Compose Screen → ViewModel → Repository → GoogleAppsScriptDataSource (Ktor GET)
                     ↑                                              |
                     └──────── StateFlow ← Result ←──────────────────┘
 ```
@@ -86,9 +109,9 @@ Compose Screen → ViewModel → Repository → GoogleAppsScriptDataSource (Ktor
 
 :shared
 ├── commonMain: Koin, Compose, Navigation, Ktor, kotlinx.serialization, Coil 3
-├── androidMain: Android-specific platform bindings
-├── desktopMain: Desktop-specific platform bindings
-└── wasmJsMain: Web-specific platform bindings (ktor-client-js)
+├── androidMain: Android-specific platform bindings, SharedPreferences storage
+├── desktopMain: Desktop-specific platform bindings, java.util.prefs storage
+└── wasmJsMain: Web-specific platform bindings, localStorage, ktor-client-js
 ```
 
 ## Key Architectural Decisions
@@ -109,6 +132,7 @@ Compose Screen → ViewModel → Repository → GoogleAppsScriptDataSource (Ktor
 ### 4. Type-Safe Navigation
 - Navigation Compose 2.8+ supports `@Serializable` route objects.
 - No string-based routes — compile-time safety.
+- Three routes: `Start` (object), `CharacterList` (object), `CharacterDetail(id: String)` (data class).
 
 ### 5. Single `:shared` Module (for now)
 - All UI, domain, and data code starts in `:shared/commonMain`.
@@ -117,9 +141,20 @@ Compose Screen → ViewModel → Repository → GoogleAppsScriptDataSource (Ktor
 
 ### 6. Google Apps Script Backend
 - **No OAuth in the app** — authentication is handled server-side by the Apps Script Web App.
-- **Ktor POST requests** — the app sends JSON payloads to the Apps Script Web App URL with an `action` field (e.g., `getCharacters`, `saveCharacter`).
+- **Ktor GET requests** — the app sends JSON-encoded requests as a `?request=` query parameter to the Apps Script Web App URL (GET avoids 302 redirect issues with POST).
 - **Apps Script handles Sheets API** — all Google Sheets read/write operations happen in the Apps Script code, not in the Kotlin app.
-- **Simple deployment** — just paste the Web App URL into `GoogleAppsScriptConfig.WEB_APP_URL`.
+- **Build-time URL injection** — the Web App URL is read from `local.properties` (`apps.script.url`) and injected at compile time into `GeneratedConfig.kt`. Never committed to Git.
+
+### 7. Platform-Specific Storage (`expect`/`actual`)
+- `CharacterStorage` interface provides `saveCharacterId(id)` and `getCharacterId()`.
+- **Android actual**: `SharedPreferences` via `androidContext()`.
+- **Desktop actual**: `java.util.prefs.Preferences`.
+- **Web actual**: `kotlinx.browser.localStorage`.
+- Used by `StartViewModel` to persist the last entered character ID.
+
+### 8. Platform-Specific Start Destination
+- Desktop (`isDesktop = true`) skips the `Start` screen and opens directly to `CharacterList`.
+- Android and Web (`isDesktop = false`) show the `Start` screen first for character ID input.
 
 ## Error Handling Strategy
 
@@ -150,9 +185,8 @@ sealed interface AppError {
 | Capability | Boundary Shape | Location |
 |-----------|---------------|----------|
 | Network | Ktor (common) | `:shared/commonMain` |
-| Network | Ktor client POST to Apps Script Web App | `:shared/commonMain` |
-| File I/O | `expect`/`actual` or interface | `:shared/commonMain` |
-| Preferences | `expect`/`actual` or interface | `:shared/commonMain` |
+| Network | Ktor client GET to Apps Script Web App | `:shared/commonMain` |
+| Preferences | `expect`/`actual` `CharacterStorage` | `:shared/commonMain` + platform source sets |
 | Platform UI (if any) | `expect` composable leaf | `:shared/commonMain` |
 
 ## App Entry Points
@@ -164,9 +198,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            DndHelperTheme {
-                App(platform = Platform.ANDROID)
-            }
+            App()
         }
     }
 }
@@ -176,9 +208,7 @@ class MainActivity : ComponentActivity() {
 ```kotlin
 fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "D&D Helper") {
-        DndHelperTheme {
-            App()
-        }
+        App()
     }
 }
 ```
@@ -188,9 +218,7 @@ fun main() = application {
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     CanvasBasedWindow("D&D Helper", canvasElementId = "ComposeTarget") {
-        DndHelperTheme {
-            App()
-        }
+        App()
     }
 }
 ```
@@ -198,11 +226,32 @@ fun main() {
 ### Shared (`:shared`)
 ```kotlin
 @Composable
-fun App() {
-    // Player mode for Android + Web, Player/DM mode selection for Desktop
-    // Navigation host with type-safe routes
+fun App(koinConfiguration: KoinAppDeclaration = {}) {
+    // KoinApplication with appModule + platformModule
+    // NavHost with Start / CharacterList / CharacterDetail routes
+    // Desktop starts at CharacterList; Mobile/Web starts at Start
 }
 ```
+
+## Presentation Screens
+
+### Start Screen
+- Character ID input with persistence via `CharacterStorage`
+- "Load Character" button navigates to `CharacterDetail(id)`
+- Shown on Android and Web; skipped on Desktop
+
+### Character List Screen
+- LazyColumn of character cards
+- Pull-to-refresh (`PullToRefreshBox`) on Android
+- Refresh button + F5 keyboard shortcut in `TopAppBar` on Desktop
+- Click navigates to `CharacterDetail(id)`
+
+### Character Detail Screen
+- Full character sheet: image (Coil 3 `AsyncImage`), name, race/class/level, HP bar, stats grid (2×3), biography
+- **View mode**: displays all fields, stat/HP/level increment/decrement with inline amount input
+- **Edit mode**: full form editing (name, race, class, level, HP, all stats, player name, image URL, description)
+- Optimistic updates with rollback on save failure
+- TopAppBar actions: Edit ✓/✕, Refresh ↻
 
 ## Build Configuration
 

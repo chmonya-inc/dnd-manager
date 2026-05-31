@@ -1,10 +1,14 @@
 package com.dnd.helper
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.network.ktor3.KtorNetworkFetcherFactory
 import com.dnd.helper.data.remote.GoogleAppsScriptDataSource
 import com.dnd.helper.data.repository.CharacterRepositoryImpl
 import com.dnd.helper.domain.repository.CharacterRepository
@@ -19,14 +23,11 @@ import com.dnd.helper.presentation.start.StartViewModel
 import com.dnd.helper.theme.DndHelperTheme
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.logging.DEFAULT
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.Logging
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.koin.compose.KoinApplication
+import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.KoinAppDeclaration
@@ -45,15 +46,17 @@ val appModule = module {
     single {
         HttpClient {
             install(ContentNegotiation) {
-                json(Json { 
+                json(Json {
                     ignoreUnknownKeys = true
                     encodeDefaults = true
                 })
             }
+            /*
             install(Logging) {
                 level = LogLevel.INFO
                 logger = Logger.DEFAULT
             }
+            */
         }
     }
     single { GoogleAppsScriptDataSource(get()) }
@@ -71,10 +74,24 @@ fun App(koinConfiguration: KoinAppDeclaration = {}) {
         koinConfiguration()
         modules(appModule, platformModule)
     }) {
+        // Initialize Coil's singleton ImageLoader with Ktor network fetching.
+        // Must be inside KoinApplication so getKoin() works.
+        val koin = getKoin()
+        val httpClient = remember { koin.get<HttpClient>() }
+        remember(httpClient) {
+            SingletonImageLoader.setSafe { context ->
+                ImageLoader.Builder(context)
+                    .components {
+                        add(KtorNetworkFetcherFactory({httpClient}))
+                    }
+                    .build()
+            }
+        }
+
         DndHelperTheme {
             val navController = rememberNavController()
             val startDestination = if (isDesktop) CharacterList else Start
-            
+
             NavHost(
                 navController = navController,
                 startDestination = startDestination
