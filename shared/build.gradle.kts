@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.debugImplementation
+import org.gradle.kotlin.dsl.invoke
 import java.util.Properties
 
 plugins {
