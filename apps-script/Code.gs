@@ -1,31 +1,29 @@
 /**
- * D&D Helper — Google Apps Script Backend
+ * D&D Helper — Google Apps Script Backend (Per-Character Sheets)
  *
- * This script acts as a proxy between the Kotlin Multiplatform app and Google Sheets.
- * Deploy it as a Web App (Deploy → New deployment → Web app) with:
+ * Each character lives in its own sheet (tab) named after the character ID.
+ * Character info is in rows 1-2, items in rows 4+.
+ *
+ * Deploy as a Web App (Deploy → New deployment → Web app) with:
  *   - Execute as: Me
  *   - Who has access: Anyone
  *
  * SPREADSHEET_ID:
  *   - Leave empty ("") to use the spreadsheet this script is bound to.
- *   - Paste a Spreadsheet ID to target a specific sheet (script can be standalone).
- *   - Spreadsheet ID is the long string in the URL:
- *     https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
- *
- * IMPORTANT: This script receives requests via GET (not POST).
- * Google Apps Script Web Apps redirect POST requests, dropping the body.
- * The Kotlin app sends the JSON request as a URL query parameter: ?request=JSON
- *
- * DEBUG: View logs at https://script.google.com (choose your project → Executions)
+ *   - Paste a Spreadsheet ID to target a specific sheet.
  */
 
 const SPREADSHEET_ID = ""; // <-- Paste your Spreadsheet ID here, or leave empty
-const SHEET_NAME = "Characters";
 const METADATA_SHEET_NAME = "Metadata";
-const HEADERS = [
+
+const CHARACTER_HEADERS = [
   "ID", "Name", "PlayerName", "Race", "Class", "Level",
   "Description", "ImageUrl", "MaxHP", "CurrentHP",
   "Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"
+];
+
+const ITEM_HEADERS = [
+  "ItemID", "ItemName", "Slot", "Rarity", "StatsJSON", "Description", "Equipped"
 ];
 
 /** Actions that modify data and require a lock. */
@@ -34,14 +32,6 @@ const WRITE_ACTIONS = ["saveCharacter", "deleteCharacter"];
 /** Actions that only read data — no lock needed. */
 const READ_ACTIONS = ["getCharacters", "getCharacter", "getLastModified"];
 
-/**
- * Main entry point for GET requests from the Kotlin app.
- * The request JSON is passed in the ?request= URL query parameter.
- *
- * OPTIMIZATION: Read operations (getCharacters, getCharacter, getLastModified)
- * do NOT acquire ScriptLock or call SpreadsheetApp.flush(). Only writes do.
- * This cuts 1–3 seconds off every read request.
- */
 function doGet(e) {
   console.log("=== doGet START ===");
   console.log("Query parameters:", JSON.stringify(e.parameter));
@@ -60,10 +50,8 @@ function doGet(e) {
     var result;
 
     if (READ_ACTIONS.indexOf(action) >= 0) {
-      // Fast path — no lock, no flush for reads
       result = handleRequest(request);
     } else if (WRITE_ACTIONS.indexOf(action) >= 0) {
-      // Write path — acquire lock to prevent concurrent sheet modifications
       var lock = LockService.getScriptLock();
       lock.waitLock(30000);
       try {
@@ -76,9 +64,9 @@ function doGet(e) {
       result = { success: false, error: "Unknown action: " + action };
     }
 
-    console.log("Result:", JSON.stringify(result));
+    console.log("Result:", JSON.stringify(result).substring(0, 500));
     console.log("=== doGet END ===");
-    return jsonOutput(result);
+    return jsonOutput(result, action);
   } catch (error) {
     console.error("CRITICAL ERROR in doGet:", error);
     console.error("Stack:", error.stack);
@@ -86,24 +74,17 @@ function doGet(e) {
   }
 }
 
-/**
- * Kept for backward compatibility (e.g., browser form submissions).
- * For the Kotlin app, doGet is used exclusively.
- */
 function doPost(e) {
   console.log("=== doPost START ===");
-
   var lock = LockService.getScriptLock();
   lock.waitLock(30000);
-
   try {
     var request = JSON.parse(e.postData.contents);
     console.log("Parsed request:", JSON.stringify(request));
     var result = handleRequest(request);
     SpreadsheetApp.flush();
-
     console.log("=== doPost END ===");
-    return jsonOutput(result);
+    return jsonOutput(result, request.action);
   } catch (error) {
     console.error("CRITICAL ERROR in doPost:", error);
     console.error("Stack:", error.stack);
@@ -113,9 +94,6 @@ function doPost(e) {
   }
 }
 
-/**
- * Shared request router used by both doGet and doPost.
- */
 function handleRequest(request) {
   var action = request.action;
   console.log("Action:", action);
@@ -128,7 +106,7 @@ function handleRequest(request) {
       console.log("Routing to handleGetCharacter, id:", request.id);
       return handleGetCharacter(request.id);
     case "saveCharacter":
-      console.log("Routing to handleSaveCharacter, character:", JSON.stringify(request.character));
+      console.log("Routing to handleSaveCharacter");
       return handleSaveCharacter(request.character);
     case "deleteCharacter":
       console.log("Routing to handleDeleteCharacter, id:", request.id);
@@ -142,18 +120,11 @@ function handleRequest(request) {
   }
 }
 
-/**
- * Returns a JSON text output for the Web App response.
- * Adds cache headers for lightweight read endpoints.
- */
 function jsonOutput(data, action) {
-  console.log("jsonOutput:", JSON.stringify(data).substring(0, 500));
   var output = ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 
-  // Cache getLastModified for 2 seconds — clients poll every 4s,
-  // so a short cache avoids redundant sheet reads.
   if (action === "getLastModified") {
     output.setHeaders({ "Cache-Control": "max-age=2, public" });
   }
@@ -161,10 +132,6 @@ function jsonOutput(data, action) {
   return output;
 }
 
-/**
- * Opens the target spreadsheet.
- * Uses SPREADSHEET_ID if set, otherwise falls back to the active (bound) spreadsheet.
- */
 function getSpreadsheet() {
   if (SPREADSHEET_ID && SPREADSHEET_ID.trim() !== "") {
     console.log("Opening spreadsheet by ID:", SPREADSHEET_ID);
@@ -174,41 +141,9 @@ function getSpreadsheet() {
   return SpreadsheetApp.getActiveSpreadsheet();
 }
 
-/**
- * Gets the "Characters" sheet, creating it with headers if it doesn't exist.
- */
-function getSheet() {
-  console.log("getSheet() called");
-  var spreadsheet = getSpreadsheet();
-  var sheet = spreadsheet.getSheetByName(SHEET_NAME);
-
-  if (!sheet) {
-    console.log("Sheet not found, creating new sheet:", SHEET_NAME);
-    sheet = spreadsheet.insertSheet(SHEET_NAME);
-    sheet.appendRow(HEADERS);
-
-    // Format header row as bold
-    sheet.getRange(1, 1, 1, HEADERS.length)
-      .setFontWeight("bold")
-      .setBackground("#4285f4")
-      .setFontColor("#ffffff");
-
-    console.log("Sheet created with headers:", HEADERS.join(", "));
-  } else {
-    console.log("Sheet found:", SHEET_NAME);
-  }
-
-  return sheet;
-}
-
-/**
- * Gets the "Metadata" sheet, creating it if it doesn't exist.
- * Stores a single timestamp in B1 representing the last time any character was modified.
- */
 function getMetadataSheet() {
   var spreadsheet = getSpreadsheet();
   var sheet = spreadsheet.getSheetByName(METADATA_SHEET_NAME);
-
   if (!sheet) {
     sheet = spreadsheet.insertSheet(METADATA_SHEET_NAME);
     sheet.getRange("A1").setValue("lastModified");
@@ -217,146 +152,175 @@ function getMetadataSheet() {
   return sheet;
 }
 
-/**
- * Updates the last-modified timestamp in the Metadata sheet.
- */
 function updateLastModified() {
   var sheet = getMetadataSheet();
   sheet.getRange("B1").setValue(new Date().toISOString());
 }
 
-/**
- * Returns the current last-modified timestamp.
- * Clients poll this lightweight endpoint to detect changes.
- */
 function handleGetLastModified() {
   var sheet = getMetadataSheet();
   var timestamp = sheet.getRange("B1").getValue();
   return { success: true, data: timestamp ? timestamp.toString() : new Date().toISOString() };
 }
 
-/**
- * Reads all characters from the sheet.
- */
+// ============================================================================
+// Character Sheet Helpers
+// ============================================================================
+
+function getCharacterSheet(id, createIfMissing) {
+  var spreadsheet = getSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(id);
+
+  if (!sheet && createIfMissing) {
+    console.log("Creating new character sheet:", id);
+    sheet = spreadsheet.insertSheet(id);
+
+    // Write character headers
+    sheet.getRange(1, 1, 1, CHARACTER_HEADERS.length).setValues([CHARACTER_HEADERS]);
+    sheet.getRange(1, 1, 1, CHARACTER_HEADERS.length)
+      .setFontWeight("bold")
+      .setBackground("#4285f4")
+      .setFontColor("#ffffff");
+
+    // Write item headers at row 4
+    sheet.getRange(4, 1, 1, ITEM_HEADERS.length).setValues([ITEM_HEADERS]);
+    sheet.getRange(4, 1, 1, ITEM_HEADERS.length)
+      .setFontWeight("bold")
+      .setBackground("#34a853")
+      .setFontColor("#ffffff");
+
+    console.log("Sheet created for character:", id);
+  }
+
+  return sheet;
+}
+
+// ============================================================================
+// Read Operations
+// ============================================================================
+
 function handleGetCharacters() {
   console.log("handleGetCharacters() called");
-  var sheet = getSheet();
-  var values = sheet.getDataRange().getValues();
-  console.log("Total rows in sheet (including header):", values.length);
-
+  var spreadsheet = getSpreadsheet();
+  var sheets = spreadsheet.getSheets();
   var characters = [];
 
-  // Skip header row (index 0)
-  for (var i = 1; i < values.length; i++) {
-    characters.push(rowToCharacter(values[i]));
+  for (var i = 0; i < sheets.length; i++) {
+    var sheet = sheets[i];
+    var name = sheet.getName();
+    if (name === METADATA_SHEET_NAME) continue;
+
+    var values = sheet.getDataRange().getValues();
+    if (values.length < 2) {
+      console.log("Sheet", name, "has no character data, skipping");
+      continue;
+    }
+
+    var rowValues = values[1]; // Row 2 (index 1)
+    var character = rowToCharacter(rowValues);
+    characters.push(character);
   }
 
   console.log("Returning", characters.length, "characters");
   return { success: true, data: characters };
 }
 
-/**
- * Reads a single character by ID.
- *
- * OPTIMIZATION: Uses sheet.createTextFinder() instead of iterating all rows.
- * This is a native Sheets search API, much faster than O(n) scan.
- */
 function handleGetCharacter(id) {
   console.log("handleGetCharacter() called, id:", id);
-  var sheet = getSheet();
+  var sheet = getCharacterSheet(id, false);
 
-  // Search column A (ID column) for the character ID
-  var finder = sheet.createTextFinder(String(id))
-    .matchEntireCell(true)
-    .matchCase(false)
-    .matchFormulaText(false);
-
-  var range = finder.findNext();
-
-  if (range) {
-    var row = range.getRow();
-    console.log("Character found at row", row);
-    var rowValues = sheet.getRange(row, 1, 1, HEADERS.length).getValues()[0];
-    return { success: true, data: rowToCharacter(rowValues) };
+  if (!sheet) {
+    console.warn("Character sheet not found:", id);
+    return { success: false, error: "Character not found: " + id };
   }
 
-  console.warn("Character not found:", id);
-  return { success: false, error: "Character not found: " + id };
+  var values = sheet.getDataRange().getValues();
+  if (values.length < 2) {
+    return { success: false, error: "Character sheet is empty: " + id };
+  }
+
+  // Read character from row 2
+  var character = rowToCharacter(values[1]);
+
+  // Read items from row 5 onward (index 4)
+  var items = [];
+  if (values.length > 4) {
+    for (var i = 4; i < values.length; i++) {
+      var item = rowToItem(values[i]);
+      if (item && item.id) {
+        items.push(item);
+      }
+    }
+  }
+  character.items = items;
+
+  console.log("Character loaded:", character.name, "with", items.length, "items");
+  return { success: true, data: character };
 }
 
-/**
- * Saves (inserts or updates) a character.
- */
+// ============================================================================
+// Write Operations
+// ============================================================================
+
 function handleSaveCharacter(character) {
-  console.log("handleSaveCharacter() called with:", JSON.stringify(character));
+  console.log("handleSaveCharacter() called with id:", character ? character.id : "null");
 
   if (!character || !character.id) {
     console.error("Invalid character object — missing id");
     return { success: false, error: "Invalid character: missing id" };
   }
 
-  var sheet = getSheet();
-  var searchId = String(character.id).trim();
-  console.log("Searching for ID:", searchId);
+  var sheet = getCharacterSheet(character.id, true);
+  var id = String(character.id).trim();
 
-  // Try to find existing row by ID using textFinder (faster than iterating)
-  var finder = sheet.createTextFinder(searchId)
-    .matchEntireCell(true)
-    .matchCase(false)
-    .matchFormulaText(false);
-  var range = finder.findNext();
+  // Write character data to row 2
+  var charRow = characterToRow(character);
+  sheet.getRange(2, 1, 1, CHARACTER_HEADERS.length).setValues([charRow]);
 
-  if (range) {
-    var rowIndex = range.getRow();
-    console.log("Updating existing character at row", rowIndex);
-    var rowData = characterToRow(character);
-    console.log("Writing row data:", JSON.stringify(rowData));
-    sheet.getRange(rowIndex, 1, 1, HEADERS.length)
-      .setValues([rowData]);
+  // Write items
+  var items = character.items || [];
+  console.log("Writing", items.length, "items");
 
-    updateLastModified();
-    console.log("Update complete");
-    return { success: true };
+  // Clear existing item rows (from row 5 onward)
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 4) {
+    sheet.deleteRows(5, lastRow - 4);
   }
 
-  // Not found — append as new row
-  console.log("Character not found, appending new row");
-  var newRowData = characterToRow(character);
-  sheet.appendRow(newRowData);
+  // Write new item rows
+  if (items.length > 0) {
+    var itemRows = [];
+    for (var i = 0; i < items.length; i++) {
+      itemRows.push(itemToRow(items[i]));
+    }
+    sheet.getRange(5, 1, itemRows.length, ITEM_HEADERS.length).setValues(itemRows);
+  }
+
   updateLastModified();
-  console.log("Append complete");
+  console.log("Save complete for character:", id);
   return { success: true };
 }
 
-/**
- * Deletes a character by ID.
- */
 function handleDeleteCharacter(id) {
   console.log("handleDeleteCharacter() called, id:", id);
-  var sheet = getSheet();
+  var spreadsheet = getSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(String(id));
 
-  var finder = sheet.createTextFinder(String(id))
-    .matchEntireCell(true)
-    .matchCase(false)
-    .matchFormulaText(false);
-  var range = finder.findNext();
-
-  if (range) {
-    var row = range.getRow();
-    console.log("Deleting character at row", row);
-    sheet.deleteRow(row);
+  if (sheet) {
+    spreadsheet.deleteSheet(sheet);
     updateLastModified();
-    console.log("Delete complete");
+    console.log("Deleted sheet for character:", id);
     return { success: true };
   }
 
-  console.warn("Character not found for deletion:", id);
+  console.warn("Character sheet not found for deletion:", id);
   return { success: false, error: "Character not found: " + id };
 }
 
-/**
- * Converts a sheet row array into a Character JSON object.
- */
+// ============================================================================
+// Converters: Sheet Row ↔ Object
+// ============================================================================
+
 function rowToCharacter(row) {
   return {
     id: String(row[0] ?? ""),
@@ -376,13 +340,11 @@ function rowToCharacter(row) {
       intelligence: Number(row[13]) || 0,
       wisdom: Number(row[14]) || 0,
       charisma: Number(row[15]) || 0
-    }
+    },
+    items: []
   };
 }
 
-/**
- * Converts a Character JSON object into a sheet row array.
- */
 function characterToRow(character) {
   var s = character.stats || {};
   return [
@@ -402,5 +364,51 @@ function characterToRow(character) {
     Number(s.intelligence) || 0,
     Number(s.wisdom) || 0,
     Number(s.charisma) || 0
+  ];
+}
+
+function rowToItem(row) {
+  var slotValue = row[2];
+  var slot = (slotValue && String(slotValue).trim()) ? String(slotValue).trim() : null;
+
+  var statsJson = row[4];
+  var stats = {};
+  if (statsJson && String(statsJson).trim()) {
+    try {
+      stats = JSON.parse(String(statsJson));
+    } catch (e) {
+      console.warn("Failed to parse item stats JSON:", statsJson, e);
+    }
+  }
+
+  return {
+    id: String(row[0] ?? ""),
+    name: String(row[1] ?? ""),
+    slot: slot,
+    rarity: String(row[3] ?? "COMMON"),
+    stats: stats,
+    description: String(row[5] ?? ""),
+    equipped: String(row[6]).toLowerCase() === "true" || row[6] === true || row[6] === 1
+  };
+}
+
+function itemToRow(item) {
+  var statsJson = "";
+  if (item.stats && Object.keys(item.stats).length > 0) {
+    try {
+      statsJson = JSON.stringify(item.stats);
+    } catch (e) {
+      console.warn("Failed to stringify item stats:", item.stats);
+    }
+  }
+
+  return [
+    String(item.id || ""),
+    String(item.name || ""),
+    item.slot || "",
+    String(item.rarity || "COMMON"),
+    statsJson,
+    String(item.description || ""),
+    item.equipped ? "true" : "false"
   ];
 }

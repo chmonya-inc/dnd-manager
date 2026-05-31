@@ -15,6 +15,8 @@ import com.dnd.helper.data.repository.CharacterRepositoryImpl
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.di.isDesktop
 import com.dnd.helper.di.platformModule
+import com.dnd.helper.presentation.charactercreate.CharacterCreateScreen
+import com.dnd.helper.presentation.charactercreate.CharacterCreateViewModel
 import com.dnd.helper.presentation.characterdetail.CharacterDetailScreen
 import com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
@@ -38,6 +40,9 @@ object CharacterList
 object Start
 
 @Serializable
+object CharacterCreate
+
+@Serializable
 data class CharacterDetail(val id: String)
 
 val appModule = module {
@@ -52,6 +57,7 @@ val appModule = module {
     single<CharacterRepository> { CharacterRepositoryImpl(get()) }
     factory { CharacterListViewModel(get(), get()) }
     factory { StartViewModel(get()) }
+    factory { CharacterCreateViewModel(get()) }
     factory { (characterId: String) ->
         CharacterDetailViewModel(get(), characterId)
     }
@@ -98,6 +104,17 @@ fun App(koinConfiguration: KoinAppDeclaration = {}) {
                     CharacterListScreen(
                         onCharacterClick = { characterId ->
                             navController.navigate(CharacterDetail(id = characterId))
+                        },
+                        onCreateCharacter = {
+                            navController.navigate(CharacterCreate)
+                        }
+                    )
+                }
+                composable<CharacterCreate> {
+                    CharacterCreateScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onCharacterCreated = {
+                            navController.popBackStack()
                         }
                     )
                 }

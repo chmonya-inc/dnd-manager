@@ -7,7 +7,7 @@ User defined full project scope:
 - **Android** — player-only app
 - **Desktop** — player mode + admin (DM) mode with preparation and game sub-modes
 - **Backend** — Google Sheets via Apps Script Web App, no local database
-- **Screens** — Start (ID input) → Character List → Character Detail (view + edit)
+- **Screens** — Start (ID input) → Character List → Character Detail (view + edit) / Character Create (desktop)
 
 ## What's Implemented
 
@@ -20,8 +20,10 @@ User defined full project scope:
 - [x] Compose Multiplatform setup in `:shared` (Android, Desktop, Web)
 
 ### Domain Layer
-- [x] `Character` domain model (id, name, playerName, race, class, level, description, imageUrl, stats, hp)
+- [x] `Character` domain model (id, name, playerName, race, class, level, description, imageUrl, stats, hp, **items**)
 - [x] `CharacterStats` data class (str, dex, con, int, wis, cha)
+- [x] `Item` domain model (id, name, slot, rarity, stats, description, equipped)
+- [x] `EquipmentSlot` / `ItemRarity` enums
 - [x] `CharacterStorage` interface — platform-agnostic key-value storage for character ID
 - [x] `Result<T>` + `AppError` sealed classes for error handling across layers
 
@@ -31,14 +33,18 @@ User defined full project scope:
 - [x] `GoogleAppsScriptConfig.WEB_APP_URL` — build-time injection from `local.properties`
 - [x] Request/response models: `AppsScriptRequest`, `AppsScriptResponse<T>`
 - [x] `apps-script/Code.gs` — complete server-side script with CRUD operations (GET-based)
+  - **Per-character sheets** — each character has its own sheet (tab) named by character ID
+  - Character data in rows 1-2, item table in rows 4+
+  - `getCharacters` iterates all sheets; `getCharacter` reads both character + items; `saveCharacter` writes both sections
 - [x] `apps-script/README.md` — deployment instructions
 
 ### Navigation
 - [x] Type-safe routes with `@Serializable` objects/data classes
   - `Start` — character ID input screen
   - `CharacterList` — list of all characters
+  - `CharacterCreate` — create new character (desktop/admin)
   - `CharacterDetail(id: String)` — single character sheet
-- [x] `NavHost` in `App()` with three destinations
+- [x] `NavHost` in `App()` with four destinations
 - [x] Platform-specific start destination: Desktop → `CharacterList`, Mobile/Web → `Start`
 
 ### Presentation Layer — Start Screen
@@ -55,6 +61,7 @@ User defined full project scope:
 - [x] `CharacterCard` — card composable with icon, name, race/class/level, player name
 - [x] Pull-to-refresh — `PullToRefreshBox` with Material 3 indicator (Android + Web)
 - [x] Refresh button + F5 keyboard shortcut in `TopAppBar` (Desktop)
+- [x] **Create Character button** — "+" icon in TopAppBar navigates to `CharacterCreate` (available on all platforms)
 
 ### Presentation Layer — Character Detail Screen
 - [x] `CharacterDetailState` — UI state (character, editedCharacter, isEditing, isSaving, isLoading, error)
@@ -69,9 +76,23 @@ User defined full project scope:
   - HP card with progress bar, color-coded by health ratio, damage/heal controls
   - Stats grid (2×3) with color-coded icons and Russian descriptive tags
   - Biography section
+  - **Bottom navigation** — Characteristics tab (existing content) and Inventory tab (Diablo-style equipment + item grid)
   - Edit mode: full form with all editable fields (name, race, class, level, HP, stats, player name, image URL, description)
   - TopAppBar with Back, Edit ✓/✕, Refresh actions + unsaved-changes dot
   - Auto-refresh polling via `DisposableEffect` (start/stop with screen lifecycle)
+
+### Presentation Layer — Character Create Screen (Desktop)
+- [x] `CharacterCreateState` — UI state for creation form (all character fields + item list)
+- [x] `CharacterCreateEvent` — sealed interface for every field change, item add/remove/edit, save
+- [x] `CharacterCreateViewModel` — validates input, builds `Character` with `items`, saves via repository
+- [x] `CharacterCreateScreen` — scrollable form with:
+  - Basic info: name, race, class, level, player name, image URL
+  - HP: max/current
+  - Ability scores: STR, DEX, CON, INT, WIS, CHA
+  - Description text area
+  - **Item editor** — add/remove items, each with name, slot dropdown, rarity dropdown, equipped checkbox, description
+  - Save button in TopAppBar and at bottom of form
+- [x] Navigation from `CharacterListScreen` via "+" button in TopAppBar
 
 ### Auto-Update / Real-Time Sync
 - [x] Apps Script `Metadata` sheet — stores global `lastModified` timestamp
@@ -134,6 +155,10 @@ User defined full project scope:
 - [x] **Debounced saves** — rapid stat/HP/level clicks batch locally, flush after 5s inactivity
 - [x] **Network optimizations** — Apps Script reads no longer acquire `ScriptLock` or call `flush()`; `handleGetCharacter` uses `createTextFinder()` instead of O(n) scan
 - [x] **Self-initiated change skip** — App that performed an update skips its own auto-reload to avoid redundant flicker
+- [x] **Per-character sheets** — Apps Script backend migrated from single "Characters" sheet to one sheet per character; each sheet stores character info (rows 1-2) and items (rows 4+)
+- [x] **Item domain model** — `Item`, `EquipmentSlot`, `ItemRarity` with `@Serializable`; added `items: List<Item>` to `Character`
+- [x] **Inventory tab** — Diablo-style equipment panel (top) + item grid (bottom) with rarity-colored borders; loads real items from server
+- [x] **Character Create screen** — Desktop-only full creation flow with all stats, description, and inline item editor; navigates from Character List "+" button
 
 ## Known Issues / Blockers
 - Gradle build not yet verified (`JAVA_HOME` not set in current environment)
@@ -152,6 +177,7 @@ User defined full project scope:
 3. Add Location management (preparation mode)
 4. Add Equipment/Monster creation screens
 5. Implement Game Mode (DM live session)
+6. Add item editing inside Character Detail screen (equip/unequip, add/remove items)
 
 ## Notes
 - Skill file `.kimi/skills/dnd-kmp/SKILL.md` created on 2026-05-30.

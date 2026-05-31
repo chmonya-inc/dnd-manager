@@ -72,6 +72,7 @@ Type-safe navigation using `@Serializable` route objects (Navigation Compose 2.8
 ```kotlin
 @Serializable object Start
 @Serializable object CharacterList
+@Serializable object CharacterCreate
 @Serializable data class CharacterDetail(val id: String)
 ```
 
@@ -81,11 +82,14 @@ Type-safe navigation using `@Serializable` route objects (Navigation Compose 2.8
 Start (mobile/web) ──Load Character──→ CharacterDetail(id)
                                          ↑
 CharacterList (desktop default) ──Click──┘
+    │
+    └──Click (+)──→ CharacterCreate
 ```
 
 - **Android & Web**: Start at `Start` screen (character ID input)
 - **Desktop**: Start at `CharacterList` (skips ID input screen)
 - `CharacterDetail` supports viewing, inline stat/HP/level editing, and full character edit mode
+- `CharacterCreate` is a full creation form with stats, description, and item editor; available on all platforms via the "+" button in Character List
 
 ## Data Flow
 
@@ -143,6 +147,7 @@ Compose Screen → ViewModel → Repository → GoogleAppsScriptDataSource (Ktor
 - **No OAuth in the app** — authentication is handled server-side by the Apps Script Web App.
 - **Ktor GET requests** — the app sends JSON-encoded requests as a `?request=` query parameter to the Apps Script Web App URL (GET avoids 302 redirect issues with POST).
 - **Apps Script handles Sheets API** — all Google Sheets read/write operations happen in the Apps Script code, not in the Kotlin app.
+- **Per-character sheets** — each character gets its own sheet (tab) named by character ID. Character data lives in rows 1-2, items in rows 4+.
 - **Build-time URL injection** — the Web App URL is read from `local.properties` (`apps.script.url`) and injected at compile time into `GeneratedConfig.kt`. Never committed to Git.
 
 ### 7. Platform-Specific Storage (`expect`/`actual`)

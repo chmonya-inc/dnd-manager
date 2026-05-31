@@ -15,4 +15,5 @@ data class Character(
     val stats: CharacterStats = CharacterStats(),
     val maxHp: Int,
     val currentHp: Int,
+    val items: List<Item> = emptyList(),
 )

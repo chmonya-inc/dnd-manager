@@ -56,8 +56,11 @@ import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsMartialArts
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Card
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -77,6 +80,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -93,6 +97,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.dnd.helper.presentation.characterdetail.inventory.InventoryTab
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +106,7 @@ fun CharacterDetailScreen(
     onBackClick: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     // Start auto-refresh polling when the screen is visible.
     // Stops automatically when the user navigates away.
@@ -161,6 +167,22 @@ fun CharacterDetailScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 )
             )
+        },
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Face, null) },
+                    label = { Text("Characteristics") },
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.ShoppingBag, null) },
+                    label = { Text("Inventory") },
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 }
+                )
+            }
         }
     ) { padding ->
         Box(
@@ -175,64 +197,9 @@ fun CharacterDetailScreen(
                 Text(text = state.error!!, color = MaterialTheme.colorScheme.error)
             } else {
                 state.character?.let { character ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        if (!character.imageUrl.isNullOrBlank()) {
-                            Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
-                                AsyncImage(
-                                    model = character.imageUrl,
-                                    contentDescription = character.name,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Fit,
-                                    onError = { state ->
-                                        println("[AsyncImage] Failed to load hero image for ${character.name}: ${state.result.throwable}")
-                                    },
-                                )
-                            }
-                        }
-
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            if (state.isEditing) {
-                                state.editedCharacter?.let { edited ->
-                                    EditFields(edited, viewModel)
-                                }
-                            } else {
-                                CharacterHeader(character, viewModel)
-                                
-                                Spacer(modifier = Modifier.height(24.dp))
-                                
-                                HealthSection(character, viewModel)
-
-                                Spacer(modifier = Modifier.height(24.dp))
-                                
-                                Text(
-                                    text = "Characteristics",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                
-                                StatsGrid(character, viewModel)
-
-                                Spacer(modifier = Modifier.height(24.dp))
-                                
-                                Text(
-                                    text = "Biography",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = character.description,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    lineHeight = 24.sp,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                                )
-                            }
-                        }
+                    when (selectedTab) {
+                        0 -> CharacteristicsContent(character, state, viewModel)
+                        1 -> InventoryTab(items = character.items)
                     }
                 }
             }
@@ -824,6 +791,73 @@ private fun StatCard(
                 ) {
                     Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CharacteristicsContent(
+    character: com.dnd.helper.domain.model.Character,
+    state: CharacterDetailState,
+    viewModel: CharacterDetailViewModel
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        if (!character.imageUrl.isNullOrBlank()) {
+            Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
+                AsyncImage(
+                    model = character.imageUrl,
+                    contentDescription = character.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                    onError = { imageState ->
+                        println("[AsyncImage] Failed to load hero image for ${character.name}: ${imageState.result.throwable}")
+                    },
+                )
+            }
+        }
+
+        Column(modifier = Modifier.padding(16.dp)) {
+            if (state.isEditing) {
+                state.editedCharacter?.let { edited ->
+                    EditFields(edited, viewModel)
+                }
+            } else {
+                CharacterHeader(character, viewModel)
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                HealthSection(character, viewModel)
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Characteristics",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                StatsGrid(character, viewModel)
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Biography",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = character.description,
+                    style = MaterialTheme.typography.bodyLarge,
+                    lineHeight = 24.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                )
             }
         }
     }

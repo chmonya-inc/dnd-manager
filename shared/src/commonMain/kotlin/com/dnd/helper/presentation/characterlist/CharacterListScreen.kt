@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
@@ -49,6 +50,7 @@ import com.dnd.helper.domain.model.Character
 @Composable
 fun CharacterListScreen(
     onCharacterClick: (String) -> Unit,
+    onCreateCharacter: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CharacterListViewModel = org.koin.compose.viewmodel.koinViewModel(),
 ) {
@@ -65,6 +67,7 @@ fun CharacterListScreen(
         state = state,
         onEvent = viewModel::onEvent,
         onCharacterClick = onCharacterClick,
+        onCreateCharacter = onCreateCharacter,
         modifier = modifier,
     )
 }
@@ -75,6 +78,7 @@ private fun CharacterListContent(
     state: CharacterListState,
     onEvent: (CharacterListEvent) -> Unit,
     onCharacterClick: (String) -> Unit,
+    onCreateCharacter: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val pullRefreshState = rememberPullToRefreshState()
@@ -85,6 +89,12 @@ private fun CharacterListContent(
             TopAppBar(
                 title = { Text("Characters") },
                 actions = {
+                    IconButton(onClick = onCreateCharacter) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Create Character",
+                        )
+                    }
                     IconButton(
                         onClick = { onEvent(CharacterListEvent.Refresh) },
                         enabled = !state.isLoading,
