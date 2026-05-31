@@ -1,7 +1,3 @@
-@file:OptIn(ExperimentalWasmDsl::class)
-
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.multiplatform)
@@ -10,7 +6,7 @@ plugins {
 
 kotlin {
     wasmJs {
-        outputModuleName.set("web")
+        moduleName = "web"
         browser {
             commonWebpackConfig {
                 outputFileName = "web.js"

@@ -1,12 +1,6 @@
 @file:OptIn(ExperimentalWasmDsl::class)
 
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootEnvSpec
-import org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootPlugin
-import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
-import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin
-import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
-import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
@@ -18,27 +12,26 @@ plugins {
     alias(libs.plugins.compose.multiplatform) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.kotlin.android) apply false
-    alias(libs.plugins.compose.hot.reload) apply false
 }
 
 // Disable automatic repository injection for Kotlin/JS and Kotlin/Wasm tools
 // because we have declared them manually in settings.gradle.kts to satisfy
 // RepositoriesMode.FAIL_ON_PROJECT_REPOS.
-//
+
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
-    rootProject.extensions.configure<NodeJsEnvSpec>("kotlinNodeJsSpec") {
-        downloadBaseUrl.set(null as String?)
+    rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension> {
+        downloadBaseUrl = null
     }
 }
 
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
-    rootProject.extensions.configure<YarnRootEnvSpec>("kotlinYarnSpec") {
-        downloadBaseUrl.set(null as String?)
+    rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension> {
+        downloadBaseUrl = null
     }
 }
 
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootPlugin> {
-    rootProject.extensions.configure<BinaryenRootEnvSpec>("kotlinBinaryenSpec") {
-        downloadBaseUrl.set(null as String?)
+    rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootExtension> {
+        downloadBaseUrl = null
     }
 }

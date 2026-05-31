@@ -9,8 +9,8 @@ fun main() = application {
         onCloseRequest = ::exitApplication,
         title = "D&D Helper",
     ) {
-            DndHelperTheme {
-                App()
-            }
+        DndHelperTheme {
+            App()
+        }
     }
 }
