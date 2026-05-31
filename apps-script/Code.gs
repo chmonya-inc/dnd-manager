@@ -121,15 +121,12 @@ function handleRequest(request) {
 }
 
 function jsonOutput(data, action) {
-  var output = ContentService
+  // Note: ContentService.createTextOutput() returns a TextOutput object.
+  // TextOutput does NOT support custom HTTP headers (setHeaders is not available).
+  // The only configurable property is the MIME type.
+  return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
-
-  if (action === "getLastModified") {
-    output.setHeaders({ "Cache-Control": "max-age=2, public" });
-  }
-
-  return output;
 }
 
 function getSpreadsheet() {
@@ -145,8 +142,15 @@ function getMetadataSheet() {
   var spreadsheet = getSpreadsheet();
   var sheet = spreadsheet.getSheetByName(METADATA_SHEET_NAME);
   if (!sheet) {
+    console.log("Creating Metadata sheet");
     sheet = spreadsheet.insertSheet(METADATA_SHEET_NAME);
     sheet.getRange("A1").setValue("lastModified");
+    sheet.getRange("B1").setValue(new Date().toISOString());
+  }
+  // Ensure B1 has a value even if the sheet existed but was empty
+  var b1Value = sheet.getRange("B1").getValue();
+  if (!b1Value) {
+    console.log("Metadata B1 was empty, initializing timestamp");
     sheet.getRange("B1").setValue(new Date().toISOString());
   }
   return sheet;
@@ -154,13 +158,37 @@ function getMetadataSheet() {
 
 function updateLastModified() {
   var sheet = getMetadataSheet();
-  sheet.getRange("B1").setValue(new Date().toISOString());
+  var newTimestamp = new Date().toISOString();
+  sheet.getRange("B1").setValue(newTimestamp);
+  console.log("Metadata timestamp updated to:", newTimestamp);
 }
 
 function handleGetLastModified() {
   var sheet = getMetadataSheet();
   var timestamp = sheet.getRange("B1").getValue();
-  return { success: true, data: timestamp ? timestamp.toString() : new Date().toISOString() };
+  var result = timestamp ? timestamp.toString() : new Date().toISOString();
+  console.log("getLastModified returning:", result);
+  return { success: true, data: result };
+}
+
+/**
+ * Simple trigger that fires when any cell is edited directly in Google Sheets.
+ * This ensures the lastModified timestamp updates even when users edit sheets
+ * manually (not through the app), so auto-refresh polling detects changes.
+ *
+ * Note: This does NOT fire when the Web App writes data via setValues().
+ */
+function onEdit(e) {
+  try {
+    var sheet = e.range.getSheet();
+    var sheetName = sheet.getName();
+    if (sheetName !== METADATA_SHEET_NAME) {
+      console.log("onEdit triggered on sheet:", sheetName, "— updating timestamp");
+      updateLastModified();
+    }
+  } catch (err) {
+    console.error("onEdit error:", err);
+  }
 }
 
 // ============================================================================
