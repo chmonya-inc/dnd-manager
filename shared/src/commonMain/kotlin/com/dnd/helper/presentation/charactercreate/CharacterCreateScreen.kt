@@ -88,56 +88,45 @@ fun CharacterCreateScreen(
             item { SectionTitle("Basic Information") }
             item {
                 CardSection {
-                    OutlinedTextField(
-                        value = state.name,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.NameChanged(it)) },
-                        label = { Text("Character Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    TwoColumnRow {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedTextField(
+                            value = state.name,
+                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.NameChanged(it)) },
+                            label = { Text("Character Name") },
+                        )
                         OutlinedTextField(
                             value = state.playerName,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.PlayerNameChanged(it)) },
                             label = { Text("Player Name") },
-                            modifier = Modifier.fillMaxWidth(1f),
                         )
                         OutlinedTextField(
                             value = state.race,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.RaceChanged(it)) },
                             label = { Text("Race") },
-                            modifier = Modifier.fillMaxWidth(1f),
                         )
                     }
                     Spacer(Modifier.height(8.dp))
-                    TwoColumnRow {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedTextField(
                             value = state.characterClass,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ClassChanged(it)) },
                             label = { Text("Class") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = state.subclass,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SubclassChanged(it)) },
                             label = { Text("Subclass") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    TwoColumnRow {
+                            )
                         OutlinedTextField(
                             value = state.background,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.BackgroundChanged(it)) },
                             label = { Text("Background") },
-                            modifier = Modifier.fillMaxWidth(1f),
                         )
                         OutlinedTextField(
                             value = state.level,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.LevelChanged(it)) },
                             label = { Text("Level") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(1f),
                         )
                     }
                     Spacer(Modifier.height(8.dp))
@@ -176,14 +165,12 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.AgeChanged(it)) },
                             label = { Text("Age") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = state.gender,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.GenderChanged(it)) },
                             label = { Text("Gender") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                     Spacer(Modifier.height(8.dp))
                     TwoColumnRow {
@@ -191,14 +178,12 @@ fun CharacterCreateScreen(
                             value = state.height,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.HeightChanged(it)) },
                             label = { Text("Height") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = state.weight,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeightChanged(it)) },
                             label = { Text("Weight") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                     Spacer(Modifier.height(8.dp))
                     TwoColumnRow {
@@ -206,14 +191,12 @@ fun CharacterCreateScreen(
                             value = state.eyes,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.EyesChanged(it)) },
                             label = { Text("Eyes") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = state.hair,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.HairChanged(it)) },
                             label = { Text("Hair") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
@@ -280,15 +263,13 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.MaxHpChanged(it)) },
                             label = { Text("Max HP") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = state.currentHp,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.CurrentHpChanged(it)) },
                             label = { Text("Current HP") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                     Spacer(Modifier.height(8.dp))
                     TwoColumnRow {
@@ -297,15 +278,13 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.TempHpChanged(it)) },
                             label = { Text("Temp HP") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = state.armorClass,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ArmorClassChanged(it)) },
                             label = { Text("Armor Class") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                     Spacer(Modifier.height(8.dp))
                     TwoColumnRow {
@@ -314,15 +293,13 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.InitiativeChanged(it)) },
                             label = { Text("Initiative") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = state.speed,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SpeedChanged(it)) },
                             label = { Text("Speed (ft)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                     Spacer(Modifier.height(8.dp))
                     TwoColumnRow {
@@ -331,14 +308,12 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ProficiencyBonusChanged(it)) },
                             label = { Text("Proficiency Bonus") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = state.hitDice,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.HitDiceChanged(it)) },
                             label = { Text("Hit Dice (e.g. 1d8)") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
@@ -372,15 +347,13 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ExhaustionChanged(it)) },
                             label = { Text("Exhaustion (0-6)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = state.deathSaveSuccesses,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.DeathSaveSuccessesChanged(it)) },
                             label = { Text("Death Save Successes (0-3)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
@@ -423,14 +396,12 @@ fun CharacterCreateScreen(
                             value = state.armorProficiencies,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ArmorProficienciesChanged(it)) },
                             label = { Text("Armor") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = state.weaponProficiencies,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponProficienciesChanged(it)) },
                             label = { Text("Weapons") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                     Spacer(Modifier.height(8.dp))
                     TwoColumnRow {
@@ -438,14 +409,12 @@ fun CharacterCreateScreen(
                             value = state.toolProficiencies,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ToolProficienciesChanged(it)) },
                             label = { Text("Tools") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = state.languages,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.LanguagesChanged(it)) },
                             label = { Text("Languages") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                 }
             }
@@ -461,8 +430,7 @@ fun CharacterCreateScreen(
                         Text(
                             text = "Item #${index + 1}",
                             style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         IconButton(onClick = { viewModel.onEvent(CharacterCreateEvent.RemoveItem(index)) }) {
                             Icon(Icons.Default.Delete, contentDescription = "Remove item")
                         }
@@ -524,8 +492,7 @@ fun CharacterCreateScreen(
                         Text(
                             text = "Weapon #${index + 1}",
                             style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         IconButton(onClick = { viewModel.onEvent(CharacterCreateEvent.RemoveWeapon(index)) }) {
                             Icon(Icons.Default.Delete, contentDescription = "Remove weapon")
                         }
@@ -543,14 +510,12 @@ fun CharacterCreateScreen(
                             value = weapon.attackBonus,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponAttackBonusChanged(index, it)) },
                             label = { Text("Attack Bonus") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = weapon.damage,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponDamageChanged(index, it)) },
                             label = { Text("Damage") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                     Spacer(Modifier.height(4.dp))
                     TwoColumnRow {
@@ -558,14 +523,12 @@ fun CharacterCreateScreen(
                             value = weapon.damageType,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponDamageTypeChanged(index, it)) },
                             label = { Text("Damage Type") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                         OutlinedTextField(
                             value = weapon.notes,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponNotesChanged(index, it)) },
                             label = { Text("Notes") },
-                            modifier = Modifier.fillMaxWidth(1f),
-                        )
+                            )
                     }
                 }
             }
@@ -686,7 +649,6 @@ private fun AbilityScoreField(label: String, value: String, onValueChange: (Stri
         onValueChange = onValueChange,
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = Modifier.fillMaxWidth(1f),
     )
 }
 
@@ -698,7 +660,6 @@ private fun EquipmentSlotDropdown(selected: EquipmentSlot?, onSelect: (Equipment
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
-        modifier = Modifier.fillMaxWidth(),
     ) {
         OutlinedTextField(
             value = selected?.name?.replace("_", " ")?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "None",
@@ -706,7 +667,6 @@ private fun EquipmentSlotDropdown(selected: EquipmentSlot?, onSelect: (Equipment
             readOnly = true,
             label = { Text("Slot") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth(),
         )
         ExposedDropdownMenu(
             expanded = expanded,
@@ -745,7 +705,6 @@ private fun ItemRarityDropdown(selected: ItemRarity, onSelect: (ItemRarity) -> U
             readOnly = true,
             label = { Text("Rarity") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth(),
         )
         ExposedDropdownMenu(
             expanded = expanded,

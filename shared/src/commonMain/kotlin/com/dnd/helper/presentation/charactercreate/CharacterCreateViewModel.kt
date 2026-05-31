@@ -221,7 +221,7 @@ class CharacterCreateViewModel(
             level = level,
             experiencePoints = experiencePoints,
             description = s.description.trim(),
-            imageUrl = s.imageUrl.trim().ifBlank { null },
+            _imageUrl = s.imageUrl.trim().ifBlank { null },
             appearance = CharacterAppearance(
                 age = age,
                 gender = s.gender.trim(),

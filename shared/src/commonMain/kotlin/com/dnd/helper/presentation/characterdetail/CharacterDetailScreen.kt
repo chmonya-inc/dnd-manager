@@ -382,7 +382,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
     Spacer(modifier = Modifier.height(8.dp))
     OutlinedTextField(
         value = edited.imageUrl ?: "",
-        onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(imageUrl = it.ifBlank { null }))) },
+        onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(_imageUrl = it.ifBlank { null }))) },
         label = { Text("Image URL") },
         modifier = Modifier.fillMaxWidth()
     )

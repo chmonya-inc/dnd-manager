@@ -16,9 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.CharacterStats
 import com.dnd.helper.domain.model.abilityModifier
@@ -66,6 +68,15 @@ private fun HeaderCard(character: Character) {
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            AsyncImage(
+                model = character.imageUrl,
+                contentDescription = character.name,
+                modifier = Modifier.size(200.dp).clip(RoundedCornerShape(10.dp)),
+                contentScale = ContentScale.Fit,
+                onError = { state ->
+                    println("[AsyncImage] Failed to load avatar for ${character.name}: ${state.result.throwable}")
+                },
+            )
             Text(
                 text = character.name,
                 style = MaterialTheme.typography.headlineMedium,
