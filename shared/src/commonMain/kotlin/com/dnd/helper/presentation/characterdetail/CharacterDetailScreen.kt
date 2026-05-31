@@ -74,6 +74,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,6 +101,14 @@ fun CharacterDetailScreen(
     onBackClick: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
+
+    // Start auto-refresh polling when the screen is visible.
+    // Stops automatically when the user navigates away.
+    // Also skips refresh while the user is editing (handled inside the ViewModel).
+    DisposableEffect(viewModel) {
+        viewModel.startAutoRefresh()
+        onDispose { viewModel.stopAutoRefresh() }
+    }
 
     Scaffold(
         topBar = {

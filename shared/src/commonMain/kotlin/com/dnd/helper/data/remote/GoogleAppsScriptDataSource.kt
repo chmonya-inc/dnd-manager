@@ -36,6 +36,14 @@ class GoogleAppsScriptDataSource(
         executeUnit(request = AppsScriptRequest(action = "deleteCharacter", id = id))
 
     /**
+     * Returns the last-modified timestamp from the server.
+     * This is a lightweight poll endpoint — clients call it frequently
+     * and only fetch full data when the timestamp changes.
+     */
+    suspend fun getLastModified(): Result<String> =
+        execute(request = AppsScriptRequest(action = "getLastModified"))
+
+    /**
      * Builds the request URL with the JSON payload encoded as a query parameter.
      *
      * Google Apps Script Web Apps return HTTP 302 for POST requests, converting

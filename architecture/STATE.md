@@ -68,6 +68,16 @@ User defined full project scope:
   - Biography section
   - Edit mode: full form with all editable fields (name, race, class, level, HP, stats, player name, image URL, description)
   - TopAppBar with Back, Edit ✓/✕, Refresh actions
+  - Auto-refresh polling via `DisposableEffect` (start/stop with screen lifecycle)
+
+### Auto-Update / Real-Time Sync
+- [x] Apps Script `Metadata` sheet — stores global `lastModified` timestamp
+- [x] Timestamp updated on every `saveCharacter` and `deleteCharacter`
+- [x] `getLastModified` action — lightweight poll endpoint (single ISO timestamp)
+- [x] `CharacterRepository.getLastModified()` — repository interface method
+- [x] `CharacterListViewModel` — polls every 4s, auto-reloads list when timestamp changes; smooth auto-refresh (no `isLoading` flicker)
+- [x] `CharacterDetailViewModel` — polls every 4s, auto-reloads character when timestamp changes; **skips poll while `isEditing`** to avoid overwriting user edits; **skips reload for self-initiated changes** (`hasPendingLocalChange` flag) so the app that performed the update doesn't redundantly reload itself
+- [x] `DisposableEffect(viewModel)` in both screens — starts polling on enter, stops on leave
 
 ### Platform Storage
 - [x] `expect`/`actual` `CharacterStorage` interface
@@ -110,6 +120,14 @@ User defined full project scope:
 - [x] **Platform start destination** — Desktop opens `CharacterList`, Mobile/Web opens `Start`
 - [x] **Web UI simplified** — removed phone frame, full-screen canvas fills browser viewport
 - [x] **Optimistic updates** — CharacterDetailViewModel updates UI immediately, rolls back on save failure
+- [x] **Auto-update / real-time sync** — When DM updates a character from Desktop, Android/Web auto-reloads
+  - Apps Script `Metadata` sheet stores a global `lastModified` timestamp
+  - `handleSaveCharacter` / `handleDeleteCharacter` update the timestamp after every write
+  - New `getLastModified` action — lightweight poll endpoint (just a timestamp string)
+  - `CharacterRepository.getLastModified()` + `GoogleAppsScriptDataSource.getLastModified()`
+  - `CharacterListViewModel` & `CharacterDetailViewModel` poll every 30s via `viewModelScope`
+  - `DisposableEffect` in Compose screens starts/stops polling with screen lifecycle
+  - Auto-refresh is **paused while editing** in Character Detail to avoid overwriting user changes
 
 ## Known Issues / Blockers
 - Gradle build not yet verified (`JAVA_HOME` not set in current environment)

@@ -24,4 +24,8 @@ class CharacterRepositoryImpl(
     override suspend fun deleteCharacter(id: String): Result<Unit> {
         return dataSource.deleteCharacter(id)
     }
+
+    override suspend fun getLastModified(): Result<String> {
+        return dataSource.getLastModified()
+    }
 }

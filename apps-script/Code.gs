@@ -21,6 +21,7 @@
 
 const SPREADSHEET_ID = ""; // <-- Paste your Spreadsheet ID here, or leave empty
 const SHEET_NAME = "Characters";
+const METADATA_SHEET_NAME = "Metadata";
 const HEADERS = [
   "ID", "Name", "PlayerName", "Race", "Class", "Level",
   "Description", "ImageUrl", "MaxHP", "CurrentHP",
@@ -111,6 +112,9 @@ function handleRequest(request) {
     case "deleteCharacter":
       console.log("Routing to handleDeleteCharacter, id:", request.id);
       return handleDeleteCharacter(request.id);
+    case "getLastModified":
+      console.log("Routing to handleGetLastModified");
+      return handleGetLastModified();
     default:
       console.warn("Unknown action received:", action);
       return { success: false, error: "Unknown action: " + action };
@@ -165,6 +169,41 @@ function getSheet() {
   }
 
   return sheet;
+}
+
+/**
+ * Gets the "Metadata" sheet, creating it if it doesn't exist.
+ * Stores a single timestamp in B1 representing the last time any character was modified.
+ */
+function getMetadataSheet() {
+  var spreadsheet = getSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(METADATA_SHEET_NAME);
+
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(METADATA_SHEET_NAME);
+    sheet.getRange("A1").setValue("lastModified");
+    sheet.getRange("B1").setValue(new Date().toISOString());
+  }
+  return sheet;
+}
+
+/**
+ * Updates the last-modified timestamp in the Metadata sheet.
+ */
+function updateLastModified() {
+  var sheet = getMetadataSheet();
+  sheet.getRange("B1").setValue(new Date().toISOString());
+  SpreadsheetApp.flush();
+}
+
+/**
+ * Returns the current last-modified timestamp.
+ * Clients poll this lightweight endpoint to detect changes.
+ */
+function handleGetLastModified() {
+  var sheet = getMetadataSheet();
+  var timestamp = sheet.getRange("B1").getValue();
+  return { success: true, data: timestamp ? timestamp.toString() : new Date().toISOString() };
 }
 
 /**
@@ -235,6 +274,7 @@ function handleSaveCharacter(character) {
         .setValues([rowData]);
 
       SpreadsheetApp.flush();
+      updateLastModified();
       console.log("Update complete");
       return { success: true };
     }
@@ -245,6 +285,7 @@ function handleSaveCharacter(character) {
   var newRowData = characterToRow(character);
   sheet.appendRow(newRowData);
   SpreadsheetApp.flush();
+  updateLastModified();
   console.log("Append complete");
   return { success: true };
 }
@@ -261,6 +302,7 @@ function handleDeleteCharacter(id) {
     if (values[i][0] == id) {
       console.log("Deleting character at row", i + 1);
       sheet.deleteRow(i + 1); // Sheets are 1-indexed
+      updateLastModified();
       console.log("Delete complete");
       return { success: true };
     }

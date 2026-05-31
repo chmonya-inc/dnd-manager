@@ -156,6 +156,14 @@ Compose Screen → ViewModel → Repository → GoogleAppsScriptDataSource (Ktor
 - Desktop (`isDesktop = true`) skips the `Start` screen and opens directly to `CharacterList`.
 - Android and Web (`isDesktop = false`) show the `Start` screen first for character ID input.
 
+### 9. Auto-Update / Real-Time Sync (Polling with Timestamp)
+- **No WebSockets** — Google Apps Script doesn't support persistent connections.
+- **Global timestamp** — A `Metadata` sheet stores a single `lastModified` ISO timestamp. Every write (`saveCharacter`, `deleteCharacter`) updates it.
+- **Lightweight polling** — `getLastModified()` returns just the timestamp string. ViewModels poll every 4s via `viewModelScope` + `delay()`.
+- **Screen-lifecycle bound** — `DisposableEffect` in Compose starts polling when the screen is visible and stops when the user navigates away.
+- **Edit-aware** — `CharacterDetailViewModel` skips auto-refresh while `isEditing` to avoid overwriting the user's in-progress changes.
+- **Trade-off**: polling consumes quota (2,880 requests/day per active screen at 30s intervals). Acceptable for a small-party D&D app.
+
 ## Error Handling Strategy
 
 We use a sealed `Result<T>` class across all layers:

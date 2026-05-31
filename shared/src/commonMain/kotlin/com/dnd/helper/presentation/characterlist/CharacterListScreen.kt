@@ -30,6 +30,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -52,6 +53,13 @@ fun CharacterListScreen(
     viewModel: CharacterListViewModel = org.koin.compose.viewmodel.koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+
+    // Start auto-refresh polling when the screen is visible,
+    // stop when the user navigates away.
+    DisposableEffect(viewModel) {
+        viewModel.startAutoRefresh()
+        onDispose { viewModel.stopAutoRefresh() }
+    }
 
     CharacterListContent(
         state = state,
