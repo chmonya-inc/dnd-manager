@@ -1,10 +1,9 @@
 @file:OptIn(ExperimentalWasmDsl::class)
 
-import org.gradle.kotlin.dsl.the
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootEnvSpec
 import org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootPlugin
-import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension
+import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec
@@ -26,22 +25,20 @@ plugins {
 // because we have declared them manually in settings.gradle.kts to satisfy
 // RepositoriesMode.FAIL_ON_PROJECT_REPOS.
 //
-//rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
-//    rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension> {
-//        // Change this line:
-//        downloadBaseUrlProperty.set(null)
-//    }
-//}
-//
-//rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
-//    rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension> {
-//        // Change this line:
-//        downloadBaseUrlProperty.set(null)
-//    }
-//}
-//
-//rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootPlugin> {
-//    rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenExtension> {
-//        downloadBaseUrl = null
-//    }
-//}
+rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
+    rootProject.extensions.configure<NodeJsEnvSpec>("kotlinNodeJsSpec") {
+        downloadBaseUrl.set(null as String?)
+    }
+}
+
+rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
+    rootProject.extensions.configure<YarnRootEnvSpec>("kotlinYarnSpec") {
+        downloadBaseUrl.set(null as String?)
+    }
+}
+
+rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootPlugin> {
+    rootProject.extensions.configure<BinaryenRootEnvSpec>("kotlinBinaryenSpec") {
+        downloadBaseUrl.set(null as String?)
+    }
+}

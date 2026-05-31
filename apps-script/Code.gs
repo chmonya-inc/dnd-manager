@@ -1,5 +1,5 @@
 /**
- * D&D Helper — Google Apps Script Backend (Optimized)
+ * D&D Helper — Google Apps Script Backend (Optimized + Items Support)
  */
 
 const SPREADSHEET_ID = "";
@@ -7,7 +7,7 @@ const METADATA_SHEET_NAME = "Metadata";
 const LOCATION_SHEET_NAME = "Locations";
 const MONSTER_SHEET_NAME = "Monsters";
 const NPC_SHEET_NAME = "Npcs";
-const SUMMARY_SHEET_NAME = "CharactersSummary"; // New summary sheet
+const SUMMARY_SHEET_NAME = "CharactersSummary";
 
 const CHARACTER_HEADERS = [
   "ID", "Name", "PlayerName", "Race", "Class", "Level",
@@ -15,7 +15,7 @@ const CHARACTER_HEADERS = [
   "Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma",
   "Subclass", "Background", "ExperiencePoints",
   "AppearanceJSON", "CombatJSON", "ProficienciesJSON", "WeaponsJSON", "FeaturesJSON",
-  "SkillsJSON"
+  "SkillsJSON", "ItemsJSON"
 ];
 
 const ITEM_HEADERS = ["ItemID", "ItemName", "Slot", "Rarity", "StatsJSON", "Description", "Equipped", "ImageUrl"];
@@ -91,16 +91,45 @@ function getSummarySheet() {
   return sheet;
 }
 
-// Optimized: Only reads ONE sheet instead of looping through all tabs
 function handleGetCharacters() {
   var sheet = getSummarySheet();
   var values = sheet.getDataRange().getValues();
   if (values.length < 2) return { success: true, data: [] };
 
+  var ss = getSpreadsheet();
   var characters = [];
   for (var i = 1; i < values.length; i++) {
-    if (values[i][0] && values[i][0] != "ID") {
-      characters.push(rowToCharacter(values[i]));
+    var charId = values[i][0];
+    if (charId && charId != "ID") {
+      var character = rowToCharacter(values[i]);
+
+      // Fetch fresh items from the character's individual sheet if it exists
+      // because the Summary sheet's ItemsJSON might be outdated or incomplete.
+      var charSheet = ss.getSheetByName(charId);
+      if (charSheet) {
+        var charValues = charSheet.getDataRange().getValues();
+        if (charValues.length > 4) {
+          var items = [];
+          for (var j = 4; j < charValues.length; j++) {
+            var itemRow = charValues[j];
+            if (itemRow[0]) {
+              items.push({
+                id: String(itemRow[0]),
+                name: String(itemRow[1]),
+                slot: itemRow[2] || null,
+                rarity: String(itemRow[3] || "COMMON"),
+                stats: JSON.parse(itemRow[4] || "{}"),
+                description: String(itemRow[5]),
+                equipped: String(itemRow[6]) === "true",
+                imageUrl: itemRow[7] || null
+              });
+            }
+          }
+          character.items = items;
+        }
+      }
+
+      characters.push(character);
     }
   }
   return { success: true, data: characters };
@@ -109,19 +138,16 @@ function handleGetCharacters() {
 function handleSaveCharacter(character) {
   if (!character || !character.id) return { success: false, error: "Invalid ID" };
 
-  // 1. Save detail to dedicated sheet
   var ss = getSpreadsheet();
   var charSheet = ss.getSheetByName(character.id) || ss.insertSheet(character.id);
 
-  // Clear and write headers if new
   if (charSheet.getLastRow() === 0) {
     charSheet.getRange(1, 1, 1, CHARACTER_HEADERS.length).setValues([CHARACTER_HEADERS]);
     charSheet.getRange(4, 1, 1, ITEM_HEADERS.length).setValues([ITEM_HEADERS]);
   }
 
-  charSheet.getRange(2, 1, 1, CHARACTER_HEADERS.length).setValues([characterToRow(character)]);
+  charSheet.getRange(2, 1, 1, CHARACTER_HEADERS.length - 1).setValues([characterToRow(character).slice(0, -1)]);
 
-  // Save items
   var lastRow = charSheet.getLastRow();
   if (lastRow > 4) charSheet.deleteRows(5, lastRow - 4);
   var items = character.items || [];
@@ -129,7 +155,6 @@ function handleSaveCharacter(character) {
     charSheet.getRange(5, 1, items.length, ITEM_HEADERS.length).setValues(items.map(itemToRow));
   }
 
-  // 2. Sync to Summary Sheet (The secret to speed)
   var summarySheet = getSummarySheet();
   var summaryData = summarySheet.getDataRange().getValues();
   var rowIndex = -1;
@@ -148,16 +173,15 @@ function handleSaveCharacter(character) {
   return { success: true };
 }
 
-// ... rest of the helper functions (rowToCharacter, itemToRow, etc.) stay the same ...
-
 function rowToCharacter(row) {
-  var appearance = {}; var combat = {}; var proficiencies = {}; var weapons = []; var features = {}; var skills = [];
+  var appearance = {}; var combat = {}; var proficiencies = {}; var weapons = []; var features = {}; var skills = []; var items = [];
   try { appearance = JSON.parse(row[19] || "{}"); } catch (e) {}
   try { combat = JSON.parse(row[20] || "{}"); } catch (e) {}
   try { proficiencies = JSON.parse(row[21] || "{}"); } catch (e) {}
   try { weapons = JSON.parse(row[22] || "[]"); } catch (e) {}
   try { features = JSON.parse(row[23] || "{}"); } catch (e) {}
   try { skills = JSON.parse(row[24] || "[]"); } catch (e) {}
+  try { items = JSON.parse(row[25] || "[]"); } catch (e) {}
 
   return {
     id: String(row[0] || ""), name: String(row[1] || ""), playerName: String(row[2] || ""),
@@ -172,7 +196,7 @@ function rowToCharacter(row) {
     subclass: String(row[16] || ""), background: String(row[17] || ""),
     experiencePoints: Number(row[18]) || 0,
     appearance: appearance, combat: combat, proficiencies: proficiencies,
-    weapons: weapons, features: features, skills: skills, items: []
+    weapons: weapons, features: features, skills: skills, items: items
   };
 }
 
@@ -187,7 +211,8 @@ function characterToRow(character) {
     String(character.subclass || ""), String(character.background || ""), Number(character.experiencePoints) || 0,
     JSON.stringify(character.appearance || {}), JSON.stringify(character.combat || {}),
     JSON.stringify(character.proficiencies || {}), JSON.stringify(character.weapons || []),
-    JSON.stringify(character.features || {}), JSON.stringify(character.skills || [])
+    JSON.stringify(character.features || {}), JSON.stringify(character.skills || []),
+    JSON.stringify(character.items || [])
   ];
 }
 
@@ -201,7 +226,7 @@ function handleGetCharacter(id) {
   if (!sheet) return { success: false, error: "Not found" };
   var values = sheet.getDataRange().getValues();
   if (values.length < 2) return { success: false, error: "Empty" };
-  var character = rowToCharacter(values[1]);
+  var character = rowToCharacter(values[1].concat([JSON.stringify([])])); // items read from rows
   var items = [];
   if (values.length > 4) {
     for (var i = 4; i < values.length; i++) {

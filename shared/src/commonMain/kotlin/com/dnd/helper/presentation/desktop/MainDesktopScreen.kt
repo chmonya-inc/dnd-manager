@@ -8,10 +8,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
+import com.dnd.helper.presentation.diceroll.DiceRollDialog
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -34,6 +34,11 @@ fun MainDesktopScreen() {
     var selectedTab by remember { mutableStateOf<DesktopTab>(DesktopTab.Characters) }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
     var initialCreatorType by remember { mutableStateOf<CreatorType?>(null) }
+    var showDiceDialog by remember { mutableStateOf(false) }
+
+    if (showDiceDialog) {
+        DiceRollDialog(onDismiss = { showDiceDialog = false })
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -44,20 +49,46 @@ fun MainDesktopScreen() {
             NavigationRail(
                 modifier = Modifier.fillMaxHeight(),
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            ) {
-                Spacer(Modifier.weight(1f))
-                tabs.forEach { tab ->
-                    NavigationRailItem(
-                        selected = selectedTab == tab,
-                        onClick = { 
-                            selectedTab = tab
-                            if (tab != DesktopTab.Creator) initialCreatorType = null 
-                        },
-                        icon = { Icon(tab.icon, contentDescription = tab.title) },
-                        label = { Text(tab.title) }
+                header = {
+                    Spacer(Modifier.height(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.AutoFixHigh,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
-                Spacer(Modifier.weight(1f))
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxHeight().padding(bottom = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(Modifier.weight(1f))
+                    
+                    tabs.forEach { tab ->
+                        NavigationRailItem(
+                            selected = selectedTab == tab,
+                            onClick = { 
+                                selectedTab = tab
+                                if (tab != DesktopTab.Creator) initialCreatorType = null 
+                            },
+                            icon = { Icon(tab.icon, contentDescription = tab.title) },
+                            label = { Text(tab.title) }
+                        )
+                    }
+                    
+                    Spacer(Modifier.weight(1f))
+
+                    // Global Dice Button on the left side
+                    FloatingActionButton(
+                        onClick = { showDiceDialog = true },
+                        modifier = Modifier.size(48.dp),
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
+                    ) {
+                        Text(text = "🎲", style = MaterialTheme.typography.titleLarge)
+                    }
+                }
             }
 
             // Content Area
@@ -79,7 +110,25 @@ fun MainDesktopScreen() {
                             selectedTab = DesktopTab.Creator
                         }
                     )
-                    DesktopTab.Creator -> CreatorScreen(initialType = initialCreatorType)
+                    DesktopTab.Creator -> CreatorScreen(
+                        initialType = initialCreatorType,
+                        onCreated = {
+                            if (initialCreatorType != null) {
+                                selectedTab = DesktopTab.Library
+                            } else {
+                                selectedTab = DesktopTab.Characters
+                            }
+                            initialCreatorType = null
+                        },
+                        onBack = {
+                            if (initialCreatorType != null) {
+                                selectedTab = DesktopTab.Library
+                            } else {
+                                selectedTab = DesktopTab.Characters
+                            }
+                            initialCreatorType = null
+                        }
+                    )
                     DesktopTab.Presenter -> PresentationScreen()
                 }
             }

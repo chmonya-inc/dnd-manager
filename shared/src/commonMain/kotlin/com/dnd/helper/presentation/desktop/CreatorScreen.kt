@@ -21,53 +21,105 @@ import kotlin.random.Random
 
 sealed class CreatorType(val title: String, val icon: ImageVector) {
     data object Character : CreatorType("Character", Icons.Default.PersonAdd)
-    data object Item : CreatorType("Item", Icons.Default.AddBox)
-    data object Monster : CreatorType("Monster", Icons.Default.BugReport)
-    data object Npc : CreatorType("NPC", Icons.Default.EmojiPeople)
-    data object Location : CreatorType("Location", Icons.Default.AddLocation)
+    data class Item(val existingItem: com.dnd.helper.domain.model.Item? = null, val ownerId: String? = null) : CreatorType("Item", Icons.Default.AddBox)
+    data class Monster(val existingMonster: com.dnd.helper.domain.model.Monster? = null) : CreatorType("Monster", Icons.Default.BugReport)
+    data class Npc(val existingNpc: com.dnd.helper.domain.model.Npc? = null) : CreatorType("NPC", Icons.Default.EmojiPeople)
+    data class Location(val existingLocation: com.dnd.helper.domain.model.Location? = null) : CreatorType("Location", Icons.Default.AddLocation)
 }
 
 @Composable
-fun CreatorScreen(initialType: CreatorType? = null) {
+fun CreatorScreen(
+    initialType: CreatorType? = null,
+    onCreated: () -> Unit = {},
+    onBack: () -> Unit = {}
+) {
     var selectedType by remember(initialType) { mutableStateOf<CreatorType?>(initialType) }
 
     if (selectedType == null) {
         CreatorSelection(onSelect = { selectedType = it })
     } else {
+        val isEditing = when (val t = selectedType!!) {
+            is CreatorType.Item -> t.existingItem != null
+            is CreatorType.Monster -> t.existingMonster != null
+            is CreatorType.Npc -> t.existingNpc != null
+            is CreatorType.Location -> t.existingLocation != null
+            else -> false
+        }
+
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { selectedType = null }) {
+                IconButton(onClick = { 
+                    selectedType = null
+                    onBack()
+                }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
-                Text("Create New ${selectedType!!.title}", style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    text = if (isEditing) "Edit ${selectedType!!.title}" else "Create New ${selectedType!!.title}", 
+                    style = MaterialTheme.typography.headlineSmall
+                )
             }
             
             Box(modifier = Modifier.fillMaxSize()) {
-                when (selectedType) {
+                when (val type = selectedType!!) {
                     CreatorType.Character -> CharacterCreateScreen(
-                        onBackClick = { selectedType = null },
-                        onCharacterCreated = { selectedType = null }
+                        onBackClick = { 
+                            selectedType = null
+                            onBack()
+                        },
+                        onCharacterCreated = { 
+                            selectedType = null
+                            onCreated()
+                        }
                     )
-                    CreatorType.Location -> LocationCreateForm(
-                        onBackClick = { selectedType = null },
-                        onCreated = { selectedType = null }
+                    is CreatorType.Location -> LocationCreateForm(
+                        existing = type.existingLocation,
+                        onBackClick = { 
+                            selectedType = null
+                            onBack()
+                        },
+                        onCreated = { 
+                            selectedType = null
+                            onCreated()
+                        }
                     )
-                    CreatorType.Monster -> MonsterCreateForm(
-                        onBackClick = { selectedType = null },
-                        onCreated = { selectedType = null }
+                    is CreatorType.Monster -> MonsterCreateForm(
+                        existing = type.existingMonster,
+                        onBackClick = { 
+                            selectedType = null
+                            onBack()
+                        },
+                        onCreated = { 
+                            selectedType = null
+                            onCreated()
+                        }
                     )
-                    CreatorType.Item -> ItemCreateForm(
-                        onBackClick = { selectedType = null },
-                        onCreated = { selectedType = null }
+                    is CreatorType.Item -> ItemCreateForm(
+                        existing = type.existingItem,
+                        initialOwnerId = type.ownerId,
+                        onBackClick = { 
+                            selectedType = null
+                            onBack()
+                        },
+                        onCreated = { 
+                            selectedType = null
+                            onCreated()
+                        }
                     )
-                    CreatorType.Npc -> NpcCreateForm(
-                        onBackClick = { selectedType = null },
-                        onCreated = { selectedType = null }
+                    is CreatorType.Npc -> NpcCreateForm(
+                        existing = type.existingNpc,
+                        onBackClick = { 
+                            selectedType = null
+                            onBack()
+                        },
+                        onCreated = { 
+                            selectedType = null
+                            onCreated()
+                        }
                     )
-                    else -> {}
                 }
             }
         }
@@ -76,16 +128,17 @@ fun CreatorScreen(initialType: CreatorType? = null) {
 
 @Composable
 private fun NpcCreateForm(
+    existing: Npc? = null,
     onBackClick: () -> Unit,
     onCreated: () -> Unit
 ) {
     val repository: CharacterRepository = koinInject()
     val scope = rememberCoroutineScope()
     
-    var name by remember { mutableStateOf("") }
-    var background by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var imageUrl by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(existing?.name ?: "") }
+    var background by remember { mutableStateOf(existing?.background ?: "") }
+    var description by remember { mutableStateOf(existing?.description ?: "") }
+    var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
     var isSaving by remember { mutableStateOf(false) }
 
     Column(
@@ -129,7 +182,7 @@ private fun NpcCreateForm(
                 isSaving = true
                 scope.launch {
                     val npc = Npc(
-                        id = "npc-${Random.nextLong()}",
+                        id = existing?.id ?: "npc-${Random.nextLong()}",
                         name = name,
                         background = background,
                         description = description,
@@ -146,7 +199,7 @@ private fun NpcCreateForm(
             if (isSaving) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
             } else {
-                Text("Create NPC")
+                Text(if (existing != null) "Update NPC" else "Create NPC")
             }
         }
     }
@@ -154,29 +207,30 @@ private fun NpcCreateForm(
 
 @Composable
 private fun MonsterCreateForm(
+    existing: Monster? = null,
     onBackClick: () -> Unit,
     onCreated: () -> Unit
 ) {
     val repository: CharacterRepository = koinInject()
     val scope = rememberCoroutineScope()
     
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var imageUrl by remember { mutableStateOf("") }
-    var cr by remember { mutableStateOf("1") }
-    var type by remember { mutableStateOf("Humanoid") }
-    var alignment by remember { mutableStateOf("Neutral") }
-    var size by remember { mutableStateOf("Medium") }
-    var hp by remember { mutableStateOf("10") }
-    var ac by remember { mutableStateOf("10") }
-    var speed by remember { mutableStateOf("30") }
+    var name by remember { mutableStateOf(existing?.name ?: "") }
+    var description by remember { mutableStateOf(existing?.description ?: "") }
+    var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
+    var cr by remember { mutableStateOf(existing?.challengeRating ?: "1") }
+    var type by remember { mutableStateOf(existing?.type ?: "Humanoid") }
+    var alignment by remember { mutableStateOf(existing?.alignment ?: "Neutral") }
+    var size by remember { mutableStateOf(existing?.size ?: "Medium") }
+    var hp by remember { mutableStateOf(existing?.maxHp?.toString() ?: "10") }
+    var ac by remember { mutableStateOf(existing?.armorClass?.toString() ?: "10") }
+    var speed by remember { mutableStateOf(existing?.speed?.toString() ?: "30") }
     
-    var str by remember { mutableStateOf("10") }
-    var dex by remember { mutableStateOf("10") }
-    var con by remember { mutableStateOf("10") }
-    var int by remember { mutableStateOf("10") }
-    var wis by remember { mutableStateOf("10") }
-    var cha by remember { mutableStateOf("10") }
+    var str by remember { mutableStateOf(existing?.stats?.strength?.toString() ?: "10") }
+    var dex by remember { mutableStateOf(existing?.stats?.dexterity?.toString() ?: "10") }
+    var con by remember { mutableStateOf(existing?.stats?.constitution?.toString() ?: "10") }
+    var int by remember { mutableStateOf(existing?.stats?.intelligence?.toString() ?: "10") }
+    var wis by remember { mutableStateOf(existing?.stats?.wisdom?.toString() ?: "10") }
+    var cha by remember { mutableStateOf(existing?.stats?.charisma?.toString() ?: "10") }
     
     var isSaving by remember { mutableStateOf(false) }
 
@@ -228,7 +282,7 @@ private fun MonsterCreateForm(
                 isSaving = true
                 scope.launch {
                     val monster = Monster(
-                        id = "monster-${Random.nextLong()}",
+                        id = existing?.id ?: "monster-${Random.nextLong()}",
                         name = name,
                         description = description,
                         imageUrl = imageUrl.ifBlank { null },
@@ -260,7 +314,7 @@ private fun MonsterCreateForm(
             if (isSaving) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
             } else {
-                Text("Create Monster")
+                Text(if (existing != null) "Update Monster" else "Create Monster")
             }
         }
     }
@@ -268,6 +322,8 @@ private fun MonsterCreateForm(
 
 @Composable
 private fun ItemCreateForm(
+    existing: Item? = null,
+    initialOwnerId: String? = null,
     onBackClick: () -> Unit,
     onCreated: () -> Unit
 ) {
@@ -275,19 +331,18 @@ private fun ItemCreateForm(
     val scope = rememberCoroutineScope()
     
     var characters by remember { mutableStateOf<List<com.dnd.helper.domain.model.Character>>(emptyList()) }
-    var selectedCharId by remember { mutableStateOf("") }
+    var selectedCharId by remember { mutableStateOf(initialOwnerId ?: "") }
     
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var imageUrl by remember { mutableStateOf("") }
-    var rarity by remember { mutableStateOf(ItemRarity.COMMON) }
-    var slot by remember { mutableStateOf<EquipmentSlot?>(EquipmentSlot.MAIN_HAND) }
+    var name by remember { mutableStateOf(existing?.name ?: "") }
+    var description by remember { mutableStateOf(existing?.description ?: "") }
+    var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
+    var rarity by remember { mutableStateOf(existing?.rarity ?: ItemRarity.COMMON) }
+    var slot by remember { mutableStateOf<EquipmentSlot?>(existing?.slot ?: EquipmentSlot.MAIN_HAND) }
     var isSaving by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val result = repository.getCharacters()
         if (result is com.dnd.helper.domain.common.Result.Success) {
-            // Fix: Trim and filter IDs to prevent duplicates in the selection list
             characters = result.data.filter { it.id.isNotBlank() }.distinctBy { it.id.trim() }
             if (selectedCharId.isEmpty()) selectedCharId = characters.firstOrNull()?.id ?: ""
         }
@@ -300,22 +355,28 @@ private fun ItemCreateForm(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Assign to Character:", style = MaterialTheme.typography.titleMedium)
-        if (characters.isEmpty()) {
-            CircularProgressIndicator()
-        } else {
-            characters.forEach { char ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = selectedCharId == char.id, onClick = { selectedCharId = char.id })
-                    Text(char.name, modifier = Modifier.padding(start = 8.dp))
+        if (existing == null) {
+            Text("Assign to Character:", style = MaterialTheme.typography.titleMedium)
+            if (characters.isEmpty()) {
+                CircularProgressIndicator()
+            } else {
+                Column(modifier = Modifier.heightIn(max = 200.dp).verticalScroll(rememberScrollState())) {
+                    characters.forEach { char ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = selectedCharId == char.id, onClick = { selectedCharId = char.id })
+                            Text(char.name, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
                 }
             }
+        } else {
+            Text("Editing item for character: ${characters.find { it.id == selectedCharId }?.name ?: selectedCharId}", 
+                 style = MaterialTheme.typography.titleMedium)
         }
 
         OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Item Name") }, modifier = Modifier.fillMaxWidth())
         
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            // Simple Rarity Picker
             var rarityExpanded by remember { mutableStateOf(false) }
             Box(modifier = Modifier.weight(1f)) {
                 OutlinedButton(onClick = { rarityExpanded = true }, modifier = Modifier.fillMaxWidth()) {
@@ -328,7 +389,6 @@ private fun ItemCreateForm(
                 }
             }
             
-            // Simple Slot Picker
             var slotExpanded by remember { mutableStateOf(false) }
             Box(modifier = Modifier.weight(1f)) {
                 OutlinedButton(onClick = { slotExpanded = true }, modifier = Modifier.fillMaxWidth()) {
@@ -351,17 +411,26 @@ private fun ItemCreateForm(
                 isSaving = true
                 scope.launch {
                     val item = Item(
-                        id = "item-${Random.nextLong()}",
+                        id = existing?.id ?: "item-${Random.nextLong()}",
                         name = name,
                         description = description,
                         imageUrl = imageUrl.ifBlank { null },
                         rarity = rarity,
-                        slot = slot
+                        slot = slot,
+                        equipped = existing?.equipped ?: false,
+                        stats = existing?.stats ?: emptyMap()
                     )
+                    
                     val char = characters.find { it.id == selectedCharId }
                     if (char != null) {
-                        repository.saveCharacter(char.copy(items = char.items + item))
+                        val newItems = if (existing != null) {
+                            char.items.map { if (it.id == existing.id) item else it }
+                        } else {
+                            char.items + item
+                        }
+                        repository.saveCharacter(char.copy(items = newItems))
                     }
+                    
                     isSaving = false
                     onCreated()
                 }
@@ -372,7 +441,7 @@ private fun ItemCreateForm(
             if (isSaving) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
             } else {
-                Text("Create and Assign Item")
+                Text(if (existing != null) "Update Item" else "Create and Assign Item")
             }
         }
     }
@@ -380,15 +449,16 @@ private fun ItemCreateForm(
 
 @Composable
 private fun LocationCreateForm(
+    existing: Location? = null,
     onBackClick: () -> Unit,
     onCreated: () -> Unit
 ) {
     val repository: CharacterRepository = koinInject()
     val scope = rememberCoroutineScope()
     
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var imageUrl by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(existing?.name ?: "") }
+    var description by remember { mutableStateOf(existing?.description ?: "") }
+    var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
     var isSaving by remember { mutableStateOf(false) }
 
     Column(
@@ -425,7 +495,7 @@ private fun LocationCreateForm(
                 isSaving = true
                 scope.launch {
                     val location = Location(
-                        id = Random.nextLong().toString(),
+                        id = existing?.id ?: Random.nextLong().toString(),
                         name = name,
                         description = description,
                         imageUrl = imageUrl
@@ -441,7 +511,7 @@ private fun LocationCreateForm(
             if (isSaving) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
             } else {
-                Text("Create Location")
+                Text(if (existing != null) "Update Location" else "Create Location")
             }
         }
     }
@@ -451,9 +521,10 @@ private fun LocationCreateForm(
 private fun CreatorSelection(onSelect: (CreatorType) -> Unit) {
     val types = listOf(
         CreatorType.Character,
-        CreatorType.Item,
-        CreatorType.Monster,
-        CreatorType.Location
+        CreatorType.Item(),
+        CreatorType.Monster(),
+        CreatorType.Npc(),
+        CreatorType.Location()
     )
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

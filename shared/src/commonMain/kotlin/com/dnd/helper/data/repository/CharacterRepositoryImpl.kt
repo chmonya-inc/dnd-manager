@@ -14,33 +14,66 @@ class CharacterRepositoryImpl(
 
     // Simple in-memory caches to make UI instant
     private var charactersCache: List<Character>? = null
+    private val heavyCharacterCache = mutableMapOf<String, Character>()
     private var locationsCache: List<Location>? = null
     private var monstersCache: List<Monster>? = null
     private var npcsCache: List<Npc>? = null
 
-    override suspend fun getCharacters(): Result<List<Character>> {
-        // Return cached data immediately if available
-        charactersCache?.let { return Result.Success(it) }
+    override suspend fun getCharacters(forceRefresh: Boolean): Result<List<Character>> {
+        // Return cached data immediately if available and not forcing refresh
+        if (!forceRefresh) {
+            charactersCache?.let { return Result.Success(it) }
+        }
         
         val result = dataSource.getCharacters()
         if (result is Result.Success) {
             val filtered = result.data.filter { it.id != "ID" }
-            charactersCache = filtered
-            return Result.Success(filtered)
+            
+            // Merge logic: preserve items/skills/weapons from heavy cache 
+            // if the new data is 'light' (e.g. empty items list)
+            val merged = filtered.map { newChar ->
+                val heavy = heavyCharacterCache[newChar.id]
+                if (heavy != null && newChar.items.isEmpty() && heavy.items.isNotEmpty()) {
+                    newChar.copy(
+                        items = heavy.items,
+                        weapons = heavy.weapons,
+                        skills = heavy.skills,
+                        features = heavy.features,
+                        proficiencies = heavy.proficiencies
+                    )
+                } else {
+                    // If the new data actually has items, update the heavy cache
+                    if (newChar.items.isNotEmpty()) {
+                        heavyCharacterCache[newChar.id] = newChar
+                    }
+                    newChar
+                }
+            }
+            
+            charactersCache = merged
+            return Result.Success(merged)
         }
         return result
     }
 
     override suspend fun getCharacter(id: String): Result<Character> {
-        // We always fetch the full detail from network to be safe, 
-        // but could cache this too if needed.
-        return dataSource.getCharacter(id)
+        val result = dataSource.getCharacter(id)
+        if (result is Result.Success) {
+            val character = result.data
+            // Update heavy cache with the fresh full detail
+            heavyCharacterCache[character.id] = character
+            // Also update list cache if it exists
+            charactersCache = charactersCache?.map { if (it.id == character.id) character else it }
+        }
+        return result
     }
 
     override suspend fun saveCharacter(character: Character): Result<Unit> {
         val result = dataSource.saveCharacter(character)
         if (result is Result.Success) {
-            // Optimistically update cache
+            // Update heavy cache
+            heavyCharacterCache[character.id] = character
+            // Optimistically update list cache
             charactersCache = charactersCache?.map { if (it.id == character.id) character else it }
         }
         return result
@@ -54,8 +87,10 @@ class CharacterRepositoryImpl(
         return result
     }
 
-    override suspend fun getLocations(): Result<List<Location>> {
-        locationsCache?.let { return Result.Success(it) }
+    override suspend fun getLocations(forceRefresh: Boolean): Result<List<Location>> {
+        if (!forceRefresh) {
+            locationsCache?.let { return Result.Success(it) }
+        }
         val result = dataSource.getLocations()
         if (result is Result.Success) locationsCache = result.data
         return result
@@ -73,8 +108,10 @@ class CharacterRepositoryImpl(
         return result
     }
 
-    override suspend fun getMonsters(): Result<List<Monster>> {
-        monstersCache?.let { return Result.Success(it) }
+    override suspend fun getMonsters(forceRefresh: Boolean): Result<List<Monster>> {
+        if (!forceRefresh) {
+            monstersCache?.let { return Result.Success(it) }
+        }
         val result = dataSource.getMonsters()
         if (result is Result.Success) monstersCache = result.data
         return result
@@ -92,8 +129,10 @@ class CharacterRepositoryImpl(
         return result
     }
 
-    override suspend fun getNpcs(): Result<List<Npc>> {
-        npcsCache?.let { return Result.Success(it) }
+    override suspend fun getNpcs(forceRefresh: Boolean): Result<List<Npc>> {
+        if (!forceRefresh) {
+            npcsCache?.let { return Result.Success(it) }
+        }
         val result = dataSource.getNpcs()
         if (result is Result.Success) npcsCache = result.data
         return result

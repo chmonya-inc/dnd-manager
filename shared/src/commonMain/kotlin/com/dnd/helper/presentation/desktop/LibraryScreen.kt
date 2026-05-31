@@ -52,30 +52,24 @@ fun LibraryScreen(
     var characters by remember { mutableStateOf<List<com.dnd.helper.domain.model.Character>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
 
-    fun refreshData() {
+    fun refreshData(force: Boolean = false) {
         scope.launch {
             isLoading = true
-            // Clear caches to force network fetch
-            (repository as? com.dnd.helper.data.repository.CharacterRepositoryImpl)?.let {
-                // We'll need a better way if we want to be strictly decoupled, 
-                // but for performance optimization we added cache, now we need to clear it.
-            }
-            
             when (selectedType) {
                 LibraryType.Locations -> {
-                    val result = repository.getLocations()
+                    val result = repository.getLocations(forceRefresh = force)
                     if (result is com.dnd.helper.domain.common.Result.Success) locations = result.data
                 }
                 LibraryType.Mobs -> {
-                    val result = repository.getMonsters()
+                    val result = repository.getMonsters(forceRefresh = force)
                     if (result is com.dnd.helper.domain.common.Result.Success) monsters = result.data
                 }
                 LibraryType.Npcs -> {
-                    val result = repository.getNpcs()
+                    val result = repository.getNpcs(forceRefresh = force)
                     if (result is com.dnd.helper.domain.common.Result.Success) npcs = result.data
                 }
                 LibraryType.Items -> {
-                    val result = repository.getCharacters()
+                    val result = repository.getCharacters(forceRefresh = force)
                     if (result is com.dnd.helper.domain.common.Result.Success) characters = result.data
                 }
             }
@@ -97,7 +91,7 @@ fun LibraryScreen(
                     LibraryType.Locations -> 3
                 },
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.padding(end = 48.dp) // Leave space for refresh button
+                modifier = Modifier.padding(end = 48.dp)
             ) {
                 Tab(
                     selected = selectedType == LibraryType.Items,
@@ -126,7 +120,7 @@ fun LibraryScreen(
             }
             
             IconButton(
-                onClick = { refreshData() },
+                onClick = { refreshData(force = true) },
                 modifier = Modifier.align(Alignment.CenterEnd).padding(end = 8.dp)
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = "Refresh")
@@ -138,40 +132,47 @@ fun LibraryScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 when (selectedType) {
-                    LibraryType.Items -> ItemLibraryGrid(characters, presentationViewModel, onUpdate = {
-                        scope.launch {
-                            val result = repository.getCharacters()
-                            if (result is com.dnd.helper.domain.common.Result.Success) {
-                                characters = result.data
-                            }
-                        }
-                    })
-                    LibraryType.Mobs -> MonsterGrid(monsters, presentationViewModel, 
+                    LibraryType.Items -> ItemLibraryGrid(
+                        characters = characters, 
+                        presentationViewModel = presentationViewModel, 
+                        onUpdate = { refreshData(force = true) },
+                        onEdit = { item, ownerId -> onNavigateToCreator(CreatorType.Item(item, ownerId)) }
+                    )
+                    LibraryType.Mobs -> MonsterGrid(
+                        monsters = monsters, 
+                        presentationViewModel = presentationViewModel, 
                         onDelete = { id ->
                             scope.launch {
                                 repository.deleteMonster(id)
                                 monsters = monsters.filter { it.id != id }
                             }
                         },
-                        onCreateNew = { onNavigateToCreator(CreatorType.Monster) }
+                        onCreateNew = { onNavigateToCreator(CreatorType.Monster()) },
+                        onEdit = { monster -> onNavigateToCreator(CreatorType.Monster(monster)) }
                     )
-                    LibraryType.Npcs -> NpcGrid(npcs, presentationViewModel, 
+                    LibraryType.Npcs -> NpcGrid(
+                        npcs = npcs, 
+                        presentationViewModel = presentationViewModel, 
                         onDelete = { id ->
                             scope.launch {
                                 repository.deleteNpc(id)
                                 npcs = npcs.filter { it.id != id }
                             }
                         },
-                        onCreateNew = { onNavigateToCreator(CreatorType.Npc) }
+                        onCreateNew = { onNavigateToCreator(CreatorType.Npc()) },
+                        onEdit = { npc -> onNavigateToCreator(CreatorType.Npc(npc)) }
                     )
-                    LibraryType.Locations -> LocationGrid(locations, presentationViewModel, 
+                    LibraryType.Locations -> LocationGrid(
+                        locations = locations, 
+                        presentationViewModel = presentationViewModel, 
                         onDelete = { id ->
                             scope.launch {
                                 repository.deleteLocation(id)
                                 locations = locations.filter { it.id != id }
                             }
                         },
-                        onCreateNew = { onNavigateToCreator(CreatorType.Location) }
+                        onCreateNew = { onNavigateToCreator(CreatorType.Location()) },
+                        onEdit = { location -> onNavigateToCreator(CreatorType.Location(location)) }
                     )
                 }
             }
@@ -184,7 +185,8 @@ private fun NpcGrid(
     npcs: List<Npc>,
     presentationViewModel: PresentationViewModel,
     onDelete: (String) -> Unit,
-    onCreateNew: () -> Unit
+    onCreateNew: () -> Unit,
+    onEdit: (Npc) -> Unit
 ) {
     Column {
         Row(
@@ -216,7 +218,8 @@ private fun NpcGrid(
                     NpcLibraryCard(
                         npc = npc,
                         onPresent = { presentationViewModel.addItem(npc.name, type = "NPC", imageUrl = npc.displayImageUrl) },
-                        onDelete = { onDelete(npc.id) }
+                        onDelete = { onDelete(npc.id) },
+                        onEdit = { onEdit(npc) }
                     )
                 }
             }
@@ -228,7 +231,8 @@ private fun NpcGrid(
 private fun NpcLibraryCard(
     npc: Npc,
     onPresent: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -263,7 +267,7 @@ private fun NpcLibraryCard(
                 
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    IconButton(onClick = { /* TODO: Edit */ }) {
+                    IconButton(onClick = onEdit) {
                         Icon(Icons.Default.Edit, null, modifier = Modifier.size(20.dp))
                     }
                     IconButton(onClick = onDelete) {
@@ -283,7 +287,8 @@ private fun MonsterGrid(
     monsters: List<Monster>,
     presentationViewModel: PresentationViewModel,
     onDelete: (String) -> Unit,
-    onCreateNew: () -> Unit
+    onCreateNew: () -> Unit,
+    onEdit: (Monster) -> Unit
 ) {
     Column {
         Row(
@@ -315,7 +320,8 @@ private fun MonsterGrid(
                     MonsterLibraryCard(
                         monster = monster,
                         onPresent = { presentationViewModel.addItem(monster.name, type = "Monster", imageUrl = monster.displayImageUrl) },
-                        onDelete = { onDelete(monster.id) }
+                        onDelete = { onDelete(monster.id) },
+                        onEdit = { onEdit(monster) }
                     )
                 }
             }
@@ -327,7 +333,8 @@ private fun MonsterGrid(
 private fun MonsterLibraryCard(
     monster: Monster,
     onPresent: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -373,7 +380,7 @@ private fun MonsterLibraryCard(
                 
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    IconButton(onClick = { /* TODO: Edit */ }) {
+                    IconButton(onClick = onEdit) {
                         Icon(Icons.Default.Edit, null, modifier = Modifier.size(20.dp))
                     }
                     IconButton(onClick = onDelete) {
@@ -393,7 +400,8 @@ private fun MonsterLibraryCard(
 private fun ItemLibraryGrid(
     characters: List<com.dnd.helper.domain.model.Character>,
     presentationViewModel: PresentationViewModel,
-    onUpdate: () -> Unit
+    onUpdate: () -> Unit,
+    onEdit: (Item, String) -> Unit
 ) {
     val repository: CharacterRepository = koinInject()
     val scope = rememberCoroutineScope()
@@ -480,7 +488,6 @@ private fun ItemLibraryGrid(
                                     Box(modifier = Modifier.width(220.dp)) {
                                         ItemLibraryCard(
                                             item = item,
-                                            ownerName = character.name,
                                             onPresent = { presentationViewModel.addItem(item.name, type = "Item", imageUrl = item.imageUrl) },
                                             onDelete = {
                                                 scope.launch {
@@ -488,7 +495,8 @@ private fun ItemLibraryGrid(
                                                     repository.saveCharacter(updatedChar)
                                                     onUpdate()
                                                 }
-                                            }
+                                            },
+                                            onEdit = { onEdit(item, character.id) }
                                         )
                                     }
                                 }
@@ -564,9 +572,9 @@ fun AddItemToCharacterDialog(
 @Composable
 private fun ItemLibraryCard(
     item: Item,
-    ownerName: String,
     onPresent: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -588,6 +596,9 @@ private fun ItemLibraryCard(
 
             Spacer(Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
+                    Icon(Icons.Default.Edit, null, modifier = Modifier.size(16.dp))
+                }
                 IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
                     Icon(Icons.Default.Delete, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
                 }
@@ -604,7 +615,8 @@ private fun LocationGrid(
     locations: List<Location>,
     presentationViewModel: PresentationViewModel,
     onDelete: (String) -> Unit,
-    onCreateNew: () -> Unit
+    onCreateNew: () -> Unit,
+    onEdit: (Location) -> Unit
 ) {
     Column {
         Row(
@@ -636,7 +648,8 @@ private fun LocationGrid(
                     LocationLibraryCard(
                         location = location,
                         onPresent = { presentationViewModel.addItem(location.name, type = "Location", imageUrl = location.displayImageUrl, isBackground = true) },
-                        onDelete = { onDelete(location.id) }
+                        onDelete = { onDelete(location.id) },
+                        onEdit = { onEdit(location) }
                     )
                 }
             }
@@ -648,7 +661,8 @@ private fun LocationGrid(
 private fun LocationLibraryCard(
     location: Location,
     onPresent: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -687,7 +701,7 @@ private fun LocationLibraryCard(
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    IconButton(onClick = { /* TODO: Edit */ }) {
+                    IconButton(onClick = onEdit) {
                         Icon(Icons.Default.Edit, null, modifier = Modifier.size(20.dp))
                     }
                     IconButton(onClick = onDelete) {
