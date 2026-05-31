@@ -1,5 +1,6 @@
 package com.dnd.helper.domain.model
 
+import com.dnd.helper.domain.utils.ImageUrlHelper
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -22,4 +23,6 @@ data class Item(
     val description: String = "",
     val equipped: Boolean = false,
     val imageUrl: String? = null,
-)
+) {
+    val displayImageUrl: String? get() = ImageUrlHelper.process(imageUrl)
+}

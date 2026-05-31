@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -43,7 +44,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +58,7 @@ import com.dnd.helper.presentation.characterdetail.CharacterDetailEvent
 fun InventoryTab(
     items: List<Item>,
     onEvent: (CharacterDetailEvent) -> Unit,
+    isMasterMode: Boolean = false,
 ) {
     val equippedItems = remember(items) {
         items.filter { it.equipped }.associateBy { it.slot }
@@ -76,6 +77,11 @@ fun InventoryTab(
                 onEvent(CharacterDetailEvent.ToggleItemEquipped(item.id))
                 selectedItem = null
             },
+            isMasterMode = isMasterMode,
+            onDelete = {
+                // TODO: onEvent(CharacterDetailEvent.DeleteItem(item.id))
+                selectedItem = null
+            }
         )
     }
 
@@ -100,7 +106,11 @@ fun InventoryTab(
         ItemGrid(
             items = inventoryItems,
             onItemClick = { selectedItem = it },
-            modifier = Modifier.fillMaxHeight(0.5f)
+            modifier = Modifier.fillMaxHeight(1f),
+            isMasterMode = isMasterMode,
+            onAddItem = {
+                // TODO: onEvent(CharacterDetailEvent.ShowAddItemDialog)
+            }
         )
     }
 }
@@ -239,9 +249,9 @@ private fun EquipmentSlotBox(
             contentAlignment = Alignment.Center
         ) {
             if (item != null) {
-                if (!item.imageUrl.isNullOrBlank()) {
+                if (!item.displayImageUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = item.imageUrl,
+                        model = item.displayImageUrl,
                         contentDescription = item.name,
                         modifier = Modifier
                             .fillMaxSize()
@@ -287,19 +297,33 @@ private fun EquipmentSlotBox(
 private fun ItemGrid(
     items: List<Item>,
     onItemClick: (Item) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isMasterMode: Boolean = false,
+    onAddItem: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
-        Text(
-            text = "Inventory (${items.size})",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Inventory (${items.size})",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            if (isMasterMode) {
+                IconButton(onClick = onAddItem) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Item")
+                }
+            }
+        }
+
         if (items.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -345,9 +369,9 @@ private fun ItemCell(item: Item, onClick: () -> Unit) {
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            if (!item.imageUrl.isNullOrBlank()) {
+            if (!item.displayImageUrl.isNullOrBlank()) {
                 AsyncImage(
-                    model = item.imageUrl,
+                    model = item.displayImageUrl,
                     contentDescription = item.name,
                     modifier = Modifier
                         .fillMaxSize()
@@ -391,6 +415,8 @@ private fun ItemDetailDialog(
     item: Item,
     onDismiss: () -> Unit,
     onToggleEquip: () -> Unit,
+    isMasterMode: Boolean = false,
+    onDelete: () -> Unit = {}
 ) {
     val rarityColor = item.rarity.toColor()
 
@@ -407,7 +433,7 @@ private fun ItemDetailDialog(
                     .padding(20.dp),
             ) {
                 // Item Image
-                if (!item.imageUrl.isNullOrBlank()) {
+                if (!item.displayImageUrl.isNullOrBlank()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -417,7 +443,7 @@ private fun ItemDetailDialog(
                         contentAlignment = Alignment.Center,
                     ) {
                         AsyncImage(
-                            model = item.imageUrl,
+                            model = item.displayImageUrl,
                             contentDescription = item.name,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
@@ -500,11 +526,28 @@ private fun ItemDetailDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                Button(
-                    onClick = onToggleEquip,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(if (item.equipped) "Unequip" else "Equip")
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = onToggleEquip,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(if (item.equipped) "Unequip" else "Equip")
+                    }
+                    
+                    if (isMasterMode) {
+                        Button(
+                            onClick = onDelete,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Delete Item")
+                        }
+                    }
                 }
             }
         }

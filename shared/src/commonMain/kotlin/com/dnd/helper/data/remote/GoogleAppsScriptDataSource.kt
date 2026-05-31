@@ -4,6 +4,7 @@ import com.dnd.helper.data.config.GoogleAppsScriptConfig
 import com.dnd.helper.domain.common.AppError
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.model.Character
+import com.dnd.helper.domain.model.Location
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -11,7 +12,6 @@ import io.ktor.http.encodeURLQueryComponent
 import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 
 class GoogleAppsScriptDataSource(
     private val httpClient: HttpClient,
@@ -34,6 +34,15 @@ class GoogleAppsScriptDataSource(
 
     suspend fun deleteCharacter(id: String): Result<Unit> =
         executeUnit(request = AppsScriptRequest(action = "deleteCharacter", id = id))
+
+    suspend fun getLocations(): Result<List<Location>> =
+        execute(request = AppsScriptRequest(action = "getLocations"))
+
+    suspend fun saveLocation(location: Location): Result<Unit> =
+        executeUnit(request = AppsScriptRequest(action = "saveLocation", location = location))
+
+    suspend fun deleteLocation(id: String): Result<Unit> =
+        executeUnit(request = AppsScriptRequest(action = "deleteLocation", id = id))
 
     /**
      * Returns the last-modified timestamp from the server.
@@ -89,8 +98,7 @@ class GoogleAppsScriptDataSource(
                             // This only works if T is what's inside the list. 
                             // Since we can't easily check T at runtime here, we just return Success(first)
                             // and let the caller handle type mismatches if any.
-                            @Suppress("UNCHECKED_CAST")
-                            return Result.Success(first as T)
+                            return Result.Success(first)
                         }
                     } catch (e2: Exception) {
                         println("[AppsScript] Fallback parse failed: $e2")

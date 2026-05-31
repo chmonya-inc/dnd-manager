@@ -13,12 +13,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -43,7 +46,10 @@ import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.Skill
 
 @Composable
-fun SkillsTab(character: Character) {
+fun SkillsTab(
+    character: Character,
+    isMasterMode: Boolean = false,
+) {
     val skills = character.skills
     var selectedSkill by remember { mutableStateOf<Skill?>(null) }
 
@@ -51,35 +57,54 @@ fun SkillsTab(character: Character) {
         SkillDetailDialog(
             skill = skill,
             onDismiss = { selectedSkill = null },
+            isMasterMode = isMasterMode,
+            onDelete = {
+                // TODO: onEvent(CharacterDetailEvent.DeleteSkill(skill.id))
+                selectedSkill = null
+            }
         )
     }
 
-    if (skills.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "No skills or spells",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (isMasterMode) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Button(onClick = { /* TODO: onEvent(CharacterDetailEvent.ShowAddSkillDialog) */ }) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Add Skill/Spell")
+                }
+            }
         }
-        return
-    }
 
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 100.dp),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items(skills, key = { it.id }) { skill ->
-            SkillCard(
-                skill = skill,
-                onClick = { selectedSkill = skill },
-            )
+        if (skills.isEmpty()) {
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "No skills or spells",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 100.dp),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(skills, key = { it.id }) { skill ->
+                    SkillCard(
+                        skill = skill,
+                        onClick = { selectedSkill = skill },
+                    )
+                }
+            }
         }
     }
 }
@@ -89,7 +114,7 @@ private fun SkillCard(
     skill: Skill,
     onClick: () -> Unit,
 ) {
-    val dmgColor = damageTypeColor(skill.damageType)
+    val dmgColor = getSkillDamageColor(skill.damageType)
     val fallbackBg = dmgColor.copy(alpha = 0.22f)
     val fallbackTint = dmgColor.copy(alpha = 0.95f)
 
@@ -106,9 +131,9 @@ private fun SkillCard(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Background image / icon
-            if (!skill.iconUrl.isNullOrBlank()) {
+            if (!skill.displayIconUrl.isNullOrBlank()) {
                 AsyncImage(
-                    model = skill.iconUrl,
+                    model = skill.displayIconUrl,
                     contentDescription = skill.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,

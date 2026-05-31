@@ -72,6 +72,9 @@ class CharacterDetailViewModel(
                 _state.value = _state.value.copy(editedCharacter = event.character)
             }
             CharacterDetailEvent.SaveChanges -> saveChanges()
+            CharacterDetailEvent.ToggleMasterMode -> {
+                _state.value = _state.value.copy(isMasterMode = !_state.value.isMasterMode)
+            }
         }
     }
 

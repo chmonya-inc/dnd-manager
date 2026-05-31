@@ -148,15 +148,18 @@ User defined full project scope:
 
 ## What's In Progress
 - [ ] Gradle sync / build verification (not yet tested)
+- [ ] **Desktop UI Overhaul** — transitioning to sidebar-based split-pane layout for DMs
+- [ ] **Master Mode Implementation** — unified library management and enhanced character editing
 
 ## Not Yet Implemented
-- [ ] Admin mode UI (Desktop DM mode)
 - [ ] Game mode UI (Desktop live session)
 - [ ] Location management
 - [ ] Equipment/monster creation
 - [ ] DM screen with combat tools
+- [ ] Presentation Mode — secondary window for player-facing content
 
 ## Recently Implemented
+- [x] **New Desktop UI Plan** — documented sidebar + split-pane navigation in `PLAN.md` and `ARCHITECTURE.md`
 - [x] **Navigation** — `NavHost` with type-safe `@Serializable` routes
 - [x] **Start Screen** — character ID input with platform storage persistence
 - [x] **Character Detail Screen** — full character sheet with view/edit modes, stat/HP/level controls, Coil 3 image loading

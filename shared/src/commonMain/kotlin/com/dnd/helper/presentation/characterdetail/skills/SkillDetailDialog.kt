@@ -1,40 +1,15 @@
 package com.dnd.helper.presentation.characterdetail.skills
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Dangerous
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.SportsMartialArts
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,6 +26,8 @@ import com.dnd.helper.domain.model.Skill
 fun SkillDetailDialog(
     skill: Skill,
     onDismiss: () -> Unit,
+    isMasterMode: Boolean = false,
+    onDelete: () -> Unit = {}
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -74,11 +51,10 @@ fun SkillDetailDialog(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SkillIconBox(
-                            iconUrl = skill.iconUrl,
-                            tint = damageTypeColor(skill.damageType),
-                            bgTint = damageTypeColor(skill.damageType).copy(alpha = 0.15f),
-                            size = 44.dp,
-                            iconSize = 28.dp,
+                            iconUrl = skill.displayIconUrl,
+                            tint = getSkillDamageColor(skill.damageType),
+                            bgTint = getSkillDamageColor(skill.damageType).copy(alpha = 0.15f),
+                            size = 78.dp,
                         )
                         Spacer(Modifier.width(12.dp))
                         Column {
@@ -116,7 +92,7 @@ fun SkillDetailDialog(
                         SkillTag("Cantrip", MaterialTheme.colorScheme.secondaryContainer)
                     }
                     if (skill.damageType.isNotBlank()) {
-                        SkillTag(skill.damageType, damageTypeColor(skill.damageType).copy(alpha = 0.15f))
+                        SkillTag(skill.damageType, getSkillDamageColor(skill.damageType).copy(alpha = 0.15f))
                     }
                 }
 
@@ -139,7 +115,7 @@ fun SkillDetailDialog(
                     DetailRow(
                         label = "Damage",
                         value = skill.damage,
-                        valueColor = damageTypeColor(skill.damageType),
+                        valueColor = getSkillDamageColor(skill.damageType),
                     )
                 }
 
@@ -158,6 +134,22 @@ fun SkillDetailDialog(
                         text = skill.description,
                         style = MaterialTheme.typography.bodyMedium,
                     )
+                }
+
+                if (isMasterMode) {
+                    Spacer(Modifier.height(24.dp))
+                    Button(
+                        onClick = onDelete,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Delete Skill")
+                    }
                 }
             }
         }
@@ -205,7 +197,7 @@ private fun DetailRow(
 }
 
 @Composable
-fun damageTypeColor(type: String): Color = when (type.lowercase()) {
+fun getSkillDamageColor(type: String): Color = when (type.lowercase()) {
     "fire" -> Color(0xFFFF5722)
     "cold", "ice", "frost" -> Color(0xFF03A9F4)
     "lightning", "thunder", "shock" -> Color(0xFFFFC107)
@@ -224,28 +216,25 @@ fun SkillIconBox(
     tint: Color,
     bgTint: Color,
     size: androidx.compose.ui.unit.Dp,
-    iconSize: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    Card(
         modifier = modifier
-            .size(size)
-            .clip(RoundedCornerShape(12.dp))
-            .background(bgTint),
-        contentAlignment = Alignment.Center,
+            .size(size),
+        shape = RoundedCornerShape(6.dp)
     ) {
         if (!iconUrl.isNullOrBlank()) {
             AsyncImage(
                 model = iconUrl,
                 contentDescription = null,
-                modifier = Modifier.size(iconSize),
-                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(size),
+                contentScale = ContentScale.Fit,
             )
         } else {
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
-                modifier = Modifier.size(iconSize),
+                modifier = Modifier.size(size),
                 tint = tint,
             )
         }

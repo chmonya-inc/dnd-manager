@@ -78,18 +78,28 @@ Type-safe navigation using `@Serializable` route objects (Navigation Compose 2.8
 
 ### Navigation Graph
 
+**Mobile & Web (Linear)**
 ```
 Start (mobile/web) ──Load Character──→ CharacterDetail(id)
                                          ↑
-CharacterList (desktop default) ──Click──┘
+CharacterList ────────Click──────────────┘
     │
     └──Click (+)──→ CharacterCreate
 ```
 
-- **Android & Web**: Start at `Start` screen (character ID input)
-- **Desktop**: Start at `CharacterList` (skips ID input screen)
-- `CharacterDetail` supports viewing, inline stat/HP/level editing, and full character edit mode
-- `CharacterCreate` is a full creation form with stats, description, and item editor; available on all platforms via the "+" button in Character List
+**Desktop (Sidebar + Split-Pane)**
+```
+MainDesktopScreen (Sidebar)
+├── Characters ──→ [List | Detail/Editor] (Split-Pane)
+├── Library    ──→ [Items | Mobs | Locations]
+├── Creator    ──→ [New Entity Hub]
+└── Presenter  ──→ [Manage Secondary Window]
+```
+
+- **Android & Web**: Start at `Start` screen (character ID input).
+- **Desktop**: Starts at `MainDesktopScreen` with Sidebar navigation.
+- `CharacterDetail` supports viewing, inline stat/HP/level editing, and full character edit mode.
+- **DM Mode (Desktop)**: Extended capabilities for full entity management and player presentation.
 
 ## Data Flow
 

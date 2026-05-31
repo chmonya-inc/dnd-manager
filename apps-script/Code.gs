@@ -15,6 +15,7 @@
 
 const SPREADSHEET_ID = ""; // <-- Paste your Spreadsheet ID here, or leave empty
 const METADATA_SHEET_NAME = "Metadata";
+const LOCATION_SHEET_NAME = "Locations";
 
 const CHARACTER_HEADERS = [
   "ID", "Name", "PlayerName", "Race", "Class", "Level",
@@ -29,11 +30,15 @@ const ITEM_HEADERS = [
   "ItemID", "ItemName", "Slot", "Rarity", "StatsJSON", "Description", "Equipped", "ImageUrl"
 ];
 
+const LOCATION_HEADERS = [
+  "ID", "Name", "Description", "ImageUrl"
+];
+
 /** Actions that modify data and require a lock. */
-const WRITE_ACTIONS = ["saveCharacter", "deleteCharacter"];
+const WRITE_ACTIONS = ["saveCharacter", "deleteCharacter", "saveLocation", "deleteLocation"];
 
 /** Actions that only read data — no lock needed. */
-const READ_ACTIONS = ["getCharacters", "getCharacter", "getLastModified"];
+const READ_ACTIONS = ["getCharacters", "getCharacter", "getLastModified", "getLocations"];
 
 function doGet(e) {
   console.log("=== doGet START ===");
@@ -117,6 +122,15 @@ function handleRequest(request) {
     case "getLastModified":
       console.log("Routing to handleGetLastModified");
       return handleGetLastModified();
+    case "getLocations":
+      console.log("Routing to handleGetLocations");
+      return handleGetLocations();
+    case "saveLocation":
+      console.log("Routing to handleSaveLocation");
+      return handleSaveLocation(request.location);
+    case "deleteLocation":
+      console.log("Routing to handleDeleteLocation, id:", request.id);
+      return handleDeleteLocation(request.id);
     default:
       console.warn("Unknown action received:", action);
       return { success: false, error: "Unknown action: " + action };
@@ -346,6 +360,97 @@ function handleDeleteCharacter(id) {
 
   console.warn("Character sheet not found for deletion:", id);
   return { success: false, error: "Character not found: " + id };
+}
+
+// ============================================================================
+// Location Operations
+// ============================================================================
+
+function getLocationsSheet() {
+  var spreadsheet = getSpreadsheet();
+  var sheet = spreadsheet.getSheetByName(LOCATION_SHEET_NAME);
+  if (!sheet) {
+    console.log("Creating Locations sheet");
+    sheet = spreadsheet.insertSheet(LOCATION_SHEET_NAME);
+    sheet.getRange(1, 1, 1, LOCATION_HEADERS.length).setValues([LOCATION_HEADERS]);
+    sheet.getRange(1, 1, 1, LOCATION_HEADERS.length)
+      .setFontWeight("bold")
+      .setBackground("#f4b400")
+      .setFontColor("#ffffff");
+  }
+  return sheet;
+}
+
+function handleGetLocations() {
+  console.log("handleGetLocations() called");
+  var sheet = getLocationsSheet();
+  var values = sheet.getDataRange().getValues();
+  var locations = [];
+
+  if (values.length > 1) {
+    for (var i = 1; i < values.length; i++) {
+      var row = values[i];
+      if (!row[0]) continue;
+      locations.push({
+        id: String(row[0]),
+        name: String(row[1] ?? ""),
+        description: String(row[2] ?? ""),
+        imageUrl: String(row[3] ?? "")
+      });
+    }
+  }
+
+  console.log("Returning", locations.length, "locations");
+  return { success: true, data: locations };
+}
+
+function handleSaveLocation(location) {
+  console.log("handleSaveLocation() called, id:", location ? location.id : "null");
+  if (!location || !location.id) {
+    return { success: false, error: "Invalid location: missing id" };
+  }
+
+  var sheet = getLocationsSheet();
+  var values = sheet.getDataRange().getValues();
+  var id = String(location.id).trim();
+  var rowIndex = -1;
+
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === id) {
+      rowIndex = i + 1;
+      break;
+    }
+  }
+
+  var row = [location.id, location.name, location.description, location.imageUrl];
+  if (rowIndex > 0) {
+    sheet.getRange(rowIndex, 1, 1, LOCATION_HEADERS.length).setValues([row]);
+  } else {
+    sheet.appendRow(row);
+  }
+
+  updateLastModified();
+  console.log("Save complete for location:", id);
+  return { success: true };
+}
+
+function handleDeleteLocation(id) {
+  console.log("handleDeleteLocation() called, id:", id);
+  var sheet = getLocationsSheet();
+  var values = sheet.getDataRange().getValues();
+  var idStr = String(id);
+
+  for (var i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === idStr) {
+      sheet.deleteRow(i + 1);
+      updateLastModified();
+      console.log("Deleted location:", id);
+      return { success: true };
+    }
+  }
+
+  console.warn("Location not found for deletion:", id);
+  return { success: false, error: "Location not found" };
 }
 
 // ============================================================================

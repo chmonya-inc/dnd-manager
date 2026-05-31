@@ -2,12 +2,17 @@ package com.dnd.helper.domain.repository
 
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.model.Character
+import com.dnd.helper.domain.model.Location
 
 interface CharacterRepository {
     suspend fun getCharacters(): Result<List<Character>>
     suspend fun getCharacter(id: String): Result<Character>
     suspend fun saveCharacter(character: Character): Result<Unit>
     suspend fun deleteCharacter(id: String): Result<Unit>
+
+    suspend fun getLocations(): Result<List<Location>>
+    suspend fun saveLocation(location: Location): Result<Unit>
+    suspend fun deleteLocation(id: String): Result<Unit>
 
     /**
      * Returns the server's last-modified timestamp (ISO-8601 string).

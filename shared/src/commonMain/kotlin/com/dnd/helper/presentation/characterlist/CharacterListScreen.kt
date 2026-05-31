@@ -52,6 +52,7 @@ fun CharacterListScreen(
     onCharacterClick: (String) -> Unit,
     onCreateCharacter: () -> Unit,
     modifier: Modifier = Modifier,
+    showTopBar: Boolean = true,
     viewModel: CharacterListViewModel = org.koin.compose.viewmodel.koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -69,6 +70,7 @@ fun CharacterListScreen(
         onCharacterClick = onCharacterClick,
         onCreateCharacter = onCreateCharacter,
         modifier = modifier,
+        showTopBar = showTopBar,
     )
 }
 
@@ -80,32 +82,35 @@ private fun CharacterListContent(
     onCharacterClick: (String) -> Unit,
     onCreateCharacter: () -> Unit,
     modifier: Modifier = Modifier,
+    showTopBar: Boolean = true,
 ) {
     val pullRefreshState = rememberPullToRefreshState()
     val isRefreshing = state.isLoading && state.characters.isNotEmpty()
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Characters") },
-                actions = {
-                    IconButton(onClick = onCreateCharacter) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Create Character",
-                        )
-                    }
-                    IconButton(
-                        onClick = { onEvent(CharacterListEvent.Refresh) },
-                        enabled = !state.isLoading,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                        )
-                    }
-                },
-            )
+            if (showTopBar) {
+                TopAppBar(
+                    title = { Text("Characters") },
+                    actions = {
+                        IconButton(onClick = onCreateCharacter) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Create Character",
+                            )
+                        }
+                        IconButton(
+                            onClick = { onEvent(CharacterListEvent.Refresh) },
+                            enabled = !state.isLoading,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                            )
+                        }
+                    },
+                )
+            }
         },
         modifier = modifier
             .onPreviewKeyEvent { event ->
@@ -212,9 +217,9 @@ private fun CharacterCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (!character.imageUrl.isNullOrBlank()) {
+            if (!character.displayImageUrl.isNullOrBlank()) {
                 AsyncImage(
-                    model = character.imageUrl,
+                    model = character.displayImageUrl,
                     contentDescription = character.name,
                     modifier = Modifier
                         .size(48.dp)

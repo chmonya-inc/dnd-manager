@@ -57,7 +57,10 @@ import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.SportsMartialArts
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material3.Card
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -68,6 +71,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
@@ -99,18 +103,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.dnd.helper.presentation.characterdetail.combat.CombatTab
+import com.dnd.helper.di.isDesktop
 import com.dnd.helper.presentation.characterdetail.features.FeaturesTab
 import com.dnd.helper.presentation.characterdetail.inventory.InventoryTab
 import com.dnd.helper.presentation.characterdetail.overview.OverviewTab
 import com.dnd.helper.presentation.characterdetail.skills.SkillsTab
 import com.dnd.helper.presentation.characterdetail.stats.StatsTab
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CharacterDetailScreen(
     viewModel: CharacterDetailViewModel,
     onBackClick: () -> Unit,
+    showBackButton: Boolean = !isDesktop,
 ) {
     val state by viewModel.state.collectAsState()
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -152,14 +159,31 @@ fun CharacterDetailScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                    if (showBackButton) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
                     }
                 },
                 actions = {
+                    if (isDesktop) {
+                        val presentationViewModel: com.dnd.helper.presentation.desktop.PresentationViewModel = koinViewModel()
+                        IconButton(onClick = { 
+                            state.character?.let { presentationViewModel.addItem(it.name, type = "Character", imageUrl = it.displayImageUrl) }
+                        }) {
+                            Icon(imageVector = Icons.Default.Tv, contentDescription = "Present")
+                        }
+                        IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.ToggleMasterMode) }) {
+                            Icon(
+                                imageVector = if (state.isMasterMode) Icons.Default.LockOpen else Icons.Default.Lock,
+                                contentDescription = "Master Mode",
+                                tint = if (state.isMasterMode) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                            )
+                        }
+                    }
                     if (state.isEditing) {
                         IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.SaveChanges) }) {
                             Icon(imageVector = Icons.Default.Check, contentDescription = "Save")
@@ -245,10 +269,10 @@ fun CharacterDetailScreen(
                     when (selectedTab) {
                         0 -> OverviewTab(character, viewModel::onEvent)
                         1 -> StatsTab(character)
-                        2 -> InventoryTab(items = character.items, onEvent = viewModel::onEvent)
-                        3 -> CombatTab(character)
-                        4 -> FeaturesTab(character)
-                        5 -> SkillsTab(character)
+                        2 -> InventoryTab(items = character.items, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
+                        3 -> CombatTab(character, isMasterMode = state.isMasterMode)
+                        4 -> FeaturesTab(character, isMasterMode = state.isMasterMode)
+                        5 -> SkillsTab(character, isMasterMode = state.isMasterMode)
                     }
                 }
             }
@@ -390,7 +414,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
     Spacer(modifier = Modifier.height(8.dp))
     OutlinedTextField(
         value = edited.imageUrl ?: "",
-        onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(_imageUrl = it.ifBlank { null }))) },
+        onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(imageUrl = it.ifBlank { null }))) },
         label = { Text("Image URL") },
         modifier = Modifier.fillMaxWidth()
     )

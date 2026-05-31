@@ -1,5 +1,6 @@
 package com.dnd.helper.domain.model
 
+import com.dnd.helper.domain.utils.ImageUrlHelper
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -13,8 +14,10 @@ data class Skill(
     val resourceCost: String = "",       // e.g. "1 Action", "Bonus Action", "Reaction", "10 Mana"
     val range: String = "",              // e.g. "60 ft", "Touch", "Self", "120 ft"
     val castingTime: String = "",        // e.g. "1 Action", "1 Bonus Action"
-    val duration: String = "",           // e.g. "Instantaneous", "1 minute", "Concentration, up to 10 min"
+    val duration: String = "",           // e.g. "Instantaneous", \"1 minute\", \"Concentration, up to 10 min\"
     val level: Int = 0,                  // Spell level or feature level (0 = cantrip / at-will)
-    val school: String = "",             // e.g. "Evocation", "Abjuration", "Transmutation"
+    val school: String = "",             // e.g. \"Evocation\", \"Abjuration\", \"Transmutation\"
     val isPassive: Boolean = false,
-)
+) {
+    val displayIconUrl: String? get() = ImageUrlHelper.process(iconUrl)
+}

@@ -4,15 +4,22 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dnd.helper.domain.model.Character
 
 @Composable
-fun FeaturesTab(character: Character) {
+fun FeaturesTab(
+    character: Character,
+    isMasterMode: Boolean = false,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -57,51 +64,57 @@ fun FeaturesTab(character: Character) {
 
         // Proficiencies
         val profs = character.proficiencies
-        if (profs.armor.isNotEmpty() || profs.weapons.isNotEmpty() || profs.tools.isNotEmpty() || profs.languages.isNotEmpty()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
                 text = "Proficiencies",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
+            if (isMasterMode) {
+                IconButton(onClick = { /* TODO: onEvent(CharacterDetailEvent.ShowAddProficiencyDialog) */ }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Proficiency")
+                }
+            }
+        }
 
-            if (profs.armor.isNotEmpty()) {
-                ProficiencySection("Armor", profs.armor)
-            }
-            if (profs.weapons.isNotEmpty()) {
-                ProficiencySection("Weapons", profs.weapons)
-            }
-            if (profs.tools.isNotEmpty()) {
-                ProficiencySection("Tools", profs.tools)
-            }
-            if (profs.languages.isNotEmpty()) {
-                ProficiencySection("Languages", profs.languages)
-            }
+        if (profs.armor.isNotEmpty()) {
+            ProficiencySection("Armor", profs.armor, isMasterMode)
+        }
+        if (profs.weapons.isNotEmpty()) {
+            ProficiencySection("Weapons", profs.weapons, isMasterMode)
+        }
+        if (profs.tools.isNotEmpty()) {
+            ProficiencySection("Tools", profs.tools, isMasterMode)
+        }
+        if (profs.languages.isNotEmpty()) {
+            ProficiencySection("Languages", profs.languages, isMasterMode)
         }
 
         // Class Features
-        if (character.features.classFeatures.isNotEmpty()) {
-            FeatureSection(
-                title = "Class Features",
-                items = character.features.classFeatures
-            )
-        }
+        FeatureSection(
+            title = "Class Features",
+            items = character.features.classFeatures,
+            isMasterMode = isMasterMode
+        )
 
         // Racial Traits
-        if (character.features.racialTraits.isNotEmpty()) {
-            FeatureSection(
-                title = "Racial Traits",
-                items = character.features.racialTraits
-            )
-        }
+        FeatureSection(
+            title = "Racial Traits",
+            items = character.features.racialTraits,
+            isMasterMode = isMasterMode
+        )
 
         // Feats
-        if (character.features.feats.isNotEmpty()) {
-            FeatureSection(
-                title = "Feats",
-                items = character.features.feats
-            )
-        }
+        FeatureSection(
+            title = "Feats",
+            items = character.features.feats,
+            isMasterMode = isMasterMode
+        )
 
         // Biography
         if (character.description.isNotBlank()) {
@@ -124,7 +137,11 @@ fun FeaturesTab(character: Character) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ProficiencySection(title: String, items: List<String>) {
+private fun ProficiencySection(
+    title: String,
+    items: List<String>,
+    isMasterMode: Boolean = false
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -145,14 +162,29 @@ private fun ProficiencySection(title: String, items: List<String>) {
                 items.forEach { item ->
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        onClick = { if (isMasterMode) { /* TODO: Delete proficiency */ } },
+                        enabled = isMasterMode
                     ) {
-                        Text(
-                            text = item,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = item,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            if (isMasterMode) {
+                                Spacer(Modifier.width(4.dp))
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -161,27 +193,76 @@ private fun ProficiencySection(title: String, items: List<String>) {
 }
 
 @Composable
-private fun FeatureSection(title: String, items: List<String>) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
-    )
+private fun FeatureSection(
+    title: String,
+    items: List<String>,
+    isMasterMode: Boolean = false
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        if (isMasterMode) {
+            IconButton(onClick = { /* TODO: onEvent(CharacterDetailEvent.ShowAddFeatureDialog(title)) */ }) {
+                Icon(Icons.Default.Add, contentDescription = "Add $title")
+            }
+        }
+    }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            items.forEachIndexed { index, item ->
+    if (items.isEmpty()) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
-                    text = "• $item",
+                    "No items added",
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(vertical = 2.dp)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
-                if (index < items.lastIndex) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 4.dp),
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                    )
+            }
+        }
+    } else {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                items.forEachIndexed { index, item ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "• $item",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(vertical = 2.dp).weight(1f)
+                        )
+                        if (isMasterMode) {
+                            IconButton(
+                                onClick = { /* TODO: Delete feature */ },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                    }
+                    if (index < items.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        )
+                    }
                 }
             }
         }

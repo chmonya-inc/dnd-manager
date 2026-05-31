@@ -3,6 +3,9 @@ package com.dnd.helper.presentation.characterdetail.combat
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,7 +16,10 @@ import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.Weapon
 
 @Composable
-fun CombatTab(character: Character) {
+fun CombatTab(
+    character: Character,
+    isMasterMode: Boolean = false,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -21,12 +27,24 @@ fun CombatTab(character: Character) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = "Weapons & Attacks",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Weapons & Attacks",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            if (isMasterMode) {
+                IconButton(onClick = { /* TODO: onEvent(CharacterDetailEvent.ShowAddWeaponDialog) */ }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Weapon")
+                }
+            }
+        }
 
         if (character.weapons.isEmpty()) {
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -45,7 +63,7 @@ fun CombatTab(character: Character) {
             }
         } else {
             character.weapons.forEach { weapon ->
-                WeaponCard(weapon)
+                WeaponCard(weapon, isMasterMode)
             }
         }
 
@@ -71,7 +89,10 @@ fun CombatTab(character: Character) {
 }
 
 @Composable
-private fun WeaponCard(weapon: Weapon) {
+private fun WeaponCard(
+    weapon: Weapon,
+    isMasterMode: Boolean = false
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -79,11 +100,27 @@ private fun WeaponCard(weapon: Weapon) {
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = weapon.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = weapon.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                if (isMasterMode) {
+                    IconButton(onClick = { /* TODO: onEvent(CharacterDetailEvent.DeleteWeapon(weapon.id)) */ }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Weapon",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 

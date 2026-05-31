@@ -16,4 +16,5 @@ sealed interface CharacterDetailEvent {
     data object ToggleEdit : CharacterDetailEvent
     data class EditCharacter(val character: Character) : CharacterDetailEvent
     data object SaveChanges : CharacterDetailEvent
+    data object ToggleMasterMode : CharacterDetailEvent
 }

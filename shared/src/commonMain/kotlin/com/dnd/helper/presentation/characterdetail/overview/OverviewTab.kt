@@ -137,9 +137,9 @@ private fun HeaderCard(
                     .background(MaterialTheme.colorScheme.surface),
                 contentAlignment = Alignment.Center,
             ) {
-                if (!character.imageUrl.isNullOrBlank()) {
+                if (!character.displayImageUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = character.imageUrl,
+                        model = character.displayImageUrl,
                         contentDescription = character.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
@@ -444,6 +444,8 @@ private fun CombatSummaryCard(
                         textStyle = MaterialTheme.typography.titleMedium.copy(
                             textAlign = TextAlign.Center,
                             fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+
                         ),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

@@ -1,6 +1,6 @@
 package com.dnd.helper.domain.model
 
-import kotlinx.serialization.SerialName
+import com.dnd.helper.domain.utils.ImageUrlHelper
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,8 +15,7 @@ data class Character(
     val level: Int,
     val experiencePoints: Int = 0,
     val description: String,
-    @SerialName("imageUrl")
-    private val _imageUrl: String? = null,
+    val imageUrl: String? = null,
     val appearance: CharacterAppearance = CharacterAppearance(),
     val stats: CharacterStats = CharacterStats(),
     val maxHp: Int,
@@ -28,11 +27,5 @@ data class Character(
     val skills: List<Skill> = emptyList(),
     val items: List<Item> = emptyList(),
 ) {
-    val imageUrl: String?
-        get() {
-            if (_imageUrl?.contains("googleusercontent") ?: true) return _imageUrl
-            val split =  _imageUrl.split("/")
-            val id = split.getOrNull(split.size - 2) ?: return null
-            return "https://lh3.googleusercontent.com/d/$id"
-        }
+    val displayImageUrl: String? get() = ImageUrlHelper.process(imageUrl)
 }

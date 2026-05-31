@@ -3,6 +3,7 @@ package com.dnd.helper.data.repository
 import com.dnd.helper.data.remote.GoogleAppsScriptDataSource
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.model.Character
+import com.dnd.helper.domain.model.Location
 import com.dnd.helper.domain.repository.CharacterRepository
 
 class CharacterRepositoryImpl(
@@ -23,6 +24,18 @@ class CharacterRepositoryImpl(
 
     override suspend fun deleteCharacter(id: String): Result<Unit> {
         return dataSource.deleteCharacter(id)
+    }
+
+    override suspend fun getLocations(): Result<List<Location>> {
+        return dataSource.getLocations()
+    }
+
+    override suspend fun saveLocation(location: Location): Result<Unit> {
+        return dataSource.saveLocation(location)
+    }
+
+    override suspend fun deleteLocation(id: String): Result<Unit> {
+        return dataSource.deleteLocation(id)
     }
 
     override suspend fun getLastModified(): Result<String> {

@@ -21,6 +21,7 @@ import com.dnd.helper.presentation.characterdetail.CharacterDetailScreen
 import com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.characterlist.CharacterListViewModel
+import com.dnd.helper.presentation.desktop.MainDesktopScreen
 import com.dnd.helper.presentation.start.StartScreen
 import com.dnd.helper.presentation.start.StartViewModel
 import com.dnd.helper.theme.DndHelperTheme
@@ -45,6 +46,18 @@ object CharacterCreate
 @Serializable
 data class CharacterDetail(val id: String)
 
+@Serializable
+object MainDesktop
+
+@Serializable
+object Library
+
+@Serializable
+object Creator
+
+@Serializable
+object Presenter
+
 val appModule = module {
     // Plain HttpClient — no ContentNegotiation.
     // GoogleAppsScriptDataSource reads raw response body as String and parses
@@ -61,6 +74,7 @@ val appModule = module {
     factory { (characterId: String) ->
         CharacterDetailViewModel(get(), characterId)
     }
+    single { com.dnd.helper.presentation.desktop.PresentationViewModel() }
 }
 
 @Composable
@@ -87,12 +101,15 @@ fun App(koinConfiguration: KoinAppDeclaration = {}) {
 
         DndHelperTheme {
             val navController = rememberNavController()
-            val startDestination = if (isDesktop) CharacterList else Start
+            val startDestination = if (isDesktop) MainDesktop else Start
 
             NavHost(
                 navController = navController,
                 startDestination = startDestination
             ) {
+                composable<MainDesktop> {
+                    MainDesktopScreen()
+                }
                 composable<Start> {
                     StartScreen(
                         onLoadCharacter = { characterId ->
