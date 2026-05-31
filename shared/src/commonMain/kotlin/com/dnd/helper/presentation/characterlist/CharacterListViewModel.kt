@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.common.toUserMessage
 import com.dnd.helper.domain.repository.CharacterRepository
+import com.dnd.helper.domain.storage.CharacterStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 
 class CharacterListViewModel(
     private val repository: CharacterRepository,
+    private val storage: CharacterStorage
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CharacterListState())
@@ -25,7 +27,7 @@ class CharacterListViewModel(
         when (event) {
             CharacterListEvent.Refresh -> loadCharacters()
             is CharacterListEvent.CharacterClicked -> {
-                // TODO: Navigation will be added later
+                storage.saveCharacterId(event.characterId)
             }
         }
     }

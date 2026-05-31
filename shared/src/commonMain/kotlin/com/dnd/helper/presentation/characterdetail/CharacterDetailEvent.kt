@@ -6,6 +6,7 @@ sealed interface CharacterDetailEvent {
     data object Refresh : CharacterDetailEvent
     data class UpdateStat(val statName: String, val delta: Int) : CharacterDetailEvent
     data class UpdateHp(val delta: Int) : CharacterDetailEvent
+    data class UpdateMaxHp(val delta: Int) : CharacterDetailEvent
     data class UpdateLevel(val delta: Int) : CharacterDetailEvent
     
     // New string editing events

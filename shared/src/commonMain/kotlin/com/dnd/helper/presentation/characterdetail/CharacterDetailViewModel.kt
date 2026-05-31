@@ -26,6 +26,7 @@ class CharacterDetailViewModel(
             CharacterDetailEvent.Refresh -> loadCharacter()
             is CharacterDetailEvent.UpdateStat -> updateStat(event.statName, event.delta)
             is CharacterDetailEvent.UpdateHp -> updateHp(event.delta)
+            is CharacterDetailEvent.UpdateMaxHp -> updateMaxHp(event.delta)
             is CharacterDetailEvent.UpdateLevel -> updateLevel(event.delta)
             CharacterDetailEvent.ToggleEdit -> {
                 val state = _state.value
@@ -78,12 +79,12 @@ class CharacterDetailViewModel(
         val currentCharacter = _state.value.character ?: return
         val stats = currentCharacter.stats
         val newStats = when (statName.lowercase()) {
-            "strength" -> stats.copy(strength = stats.strength + delta)
-            "dexterity" -> stats.copy(dexterity = stats.dexterity + delta)
-            "constitution" -> stats.copy(constitution = stats.constitution + delta)
-            "intelligence" -> stats.copy(intelligence = stats.intelligence + delta)
-            "wisdom" -> stats.copy(wisdom = stats.wisdom + delta)
-            "charisma" -> stats.copy(charisma = stats.charisma + delta)
+            "strength" -> stats.copy(strength = (stats.strength + delta).coerceAtLeast(1))
+            "dexterity" -> stats.copy(dexterity = (stats.dexterity + delta).coerceAtLeast(1))
+            "constitution" -> stats.copy(constitution = (stats.constitution + delta).coerceAtLeast(1))
+            "intelligence" -> stats.copy(intelligence = (stats.intelligence + delta).coerceAtLeast(1))
+            "wisdom" -> stats.copy(wisdom = (stats.wisdom + delta).coerceAtLeast(1))
+            "charisma" -> stats.copy(charisma = (stats.charisma + delta).coerceAtLeast(1))
             else -> stats
         }
         val updatedCharacter = currentCharacter.copy(stats = newStats)
@@ -94,6 +95,16 @@ class CharacterDetailViewModel(
         val currentCharacter = _state.value.character ?: return
         val updatedCharacter = currentCharacter.copy(
             currentHp = (currentCharacter.currentHp + delta).coerceIn(0, currentCharacter.maxHp)
+        )
+        saveCharacter(updatedCharacter)
+    }
+
+    private fun updateMaxHp(delta: Int) {
+        val currentCharacter = _state.value.character ?: return
+        val newMaxHp = (currentCharacter.maxHp + delta).coerceAtLeast(1)
+        val updatedCharacter = currentCharacter.copy(
+            maxHp = newMaxHp,
+            currentHp = currentCharacter.currentHp.coerceAtMost(newMaxHp)
         )
         saveCharacter(updatedCharacter)
     }

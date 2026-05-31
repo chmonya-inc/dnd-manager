@@ -164,7 +164,10 @@ private fun CharacterListContent(
                         ) { character ->
                             CharacterCard(
                                 character = character,
-                                onClick = { onCharacterClick(character.id) },
+                                onClick = { 
+                                    onEvent(CharacterListEvent.CharacterClicked(character.id))
+                                    onCharacterClick(character.id)
+                                },
                             )
                         }
                     }
