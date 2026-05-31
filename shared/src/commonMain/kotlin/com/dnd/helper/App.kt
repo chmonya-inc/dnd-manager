@@ -22,7 +22,7 @@ import com.dnd.helper.presentation.characterdetail.CharacterDetailScreen
 import com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.characterlist.CharacterListViewModel
-import com.dnd.helper.presentation.desktop.MainDesktopScreen
+import com.dnd.helper.presentation.desktop.*
 import com.dnd.helper.presentation.start.StartScreen
 import com.dnd.helper.presentation.start.StartViewModel
 import com.dnd.helper.theme.DndHelperTheme
@@ -79,6 +79,8 @@ val appModule = module {
     factory { (characterId: String) ->
         CharacterDetailViewModel(get(), characterId)
     }
+    factory { LibraryViewModel(get()) }
+    factory { LogViewModel(get()) }
     single { com.dnd.helper.presentation.desktop.PresentationViewModel() }
 }
 

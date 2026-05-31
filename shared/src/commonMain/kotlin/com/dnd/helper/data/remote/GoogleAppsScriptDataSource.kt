@@ -23,6 +23,9 @@ class GoogleAppsScriptDataSource(
         encodeDefaults = true
     }
 
+    suspend fun getInitialData(): Result<com.dnd.helper.domain.model.InitialData> =
+        execute(request = AppsScriptRequest(action = "getInitialData"))
+
     suspend fun getCharacters(): Result<List<Character>> =
         execute(request = AppsScriptRequest(action = "getCharacters"))
 
@@ -61,6 +64,12 @@ class GoogleAppsScriptDataSource(
 
     suspend fun deleteNpc(id: String): Result<Unit> =
         executeUnit(request = AppsScriptRequest(action = "deleteNpc", id = id))
+
+    suspend fun getLogs(): Result<List<com.dnd.helper.domain.model.LogEntry>> =
+        execute(request = AppsScriptRequest(action = "getLogs"))
+
+    suspend fun saveLog(log: com.dnd.helper.domain.model.LogEntry): Result<Unit> =
+        executeUnit(request = AppsScriptRequest(action = "saveLog", log = log))
 
     /**
      * Returns the last-modified timestamp from the server.

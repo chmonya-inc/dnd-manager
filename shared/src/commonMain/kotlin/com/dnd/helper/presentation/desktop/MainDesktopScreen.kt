@@ -19,6 +19,7 @@ sealed class DesktopTab(val title: String, val icon: ImageVector) {
     data object Characters : DesktopTab("Characters", Icons.Default.People)
     data object Library : DesktopTab("Library", Icons.AutoMirrored.Filled.LibraryBooks)
     data object Creator : DesktopTab("Creator", Icons.Default.AddCircle)
+    data object Logs : DesktopTab("Logs", Icons.Default.History)
     data object Presenter : DesktopTab("Presenter", Icons.Default.Tv)
 }
 
@@ -26,6 +27,7 @@ private val tabs = listOf(
     DesktopTab.Characters,
     DesktopTab.Library,
     DesktopTab.Creator,
+    DesktopTab.Logs,
     DesktopTab.Presenter
 )
 
@@ -129,6 +131,7 @@ fun MainDesktopScreen() {
                             initialCreatorType = null
                         }
                     )
+                    DesktopTab.Logs -> LogScreen()
                     DesktopTab.Presenter -> PresentationScreen()
                 }
             }

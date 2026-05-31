@@ -19,6 +19,28 @@ class CharacterRepositoryImpl(
     private var monstersCache: List<Monster>? = null
     private var npcsCache: List<Npc>? = null
 
+    override suspend fun getInitialData(): Result<com.dnd.helper.domain.model.InitialData> {
+        val result = dataSource.getInitialData()
+        if (result is Result.Success) {
+            val data = result.data
+            
+            // Populate all caches
+            val filteredChars = data.characters.filter { it.id != "ID" }
+            charactersCache = filteredChars
+            locationsCache = data.locations
+            monstersCache = data.monsters
+            npcsCache = data.npcs
+            
+            // Update heavy character cache for any characters that have items
+            filteredChars.forEach { char ->
+                if (char.items.isNotEmpty()) {
+                    heavyCharacterCache[char.id] = char
+                }
+            }
+        }
+        return result
+    }
+
     override suspend fun getCharacters(forceRefresh: Boolean): Result<List<Character>> {
         // Return cached data immediately if available and not forcing refresh
         if (!forceRefresh) {
@@ -148,6 +170,14 @@ class CharacterRepositoryImpl(
         val result = dataSource.deleteNpc(id)
         if (result is Result.Success) npcsCache = null
         return result
+    }
+
+    override suspend fun getLogs(): Result<List<com.dnd.helper.domain.model.LogEntry>> {
+        return dataSource.getLogs()
+    }
+
+    override suspend fun saveLog(log: com.dnd.helper.domain.model.LogEntry): Result<Unit> {
+        return dataSource.saveLog(log)
     }
 
     override suspend fun getLastModified(): Result<String> {

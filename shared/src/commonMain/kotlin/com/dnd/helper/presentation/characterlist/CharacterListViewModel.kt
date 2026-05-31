@@ -29,7 +29,26 @@ class CharacterListViewModel(
     private var pollingJob: Job? = null
 
     init {
-        loadCharacters()
+        loadInitialData()
+    }
+
+    private fun loadInitialData() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            when (val result = repository.getInitialData()) {
+                is Result.Success -> {
+                    _state.value = _state.value.copy(
+                        characters = result.data.characters,
+                        isLoading = false,
+                    )
+                    lastKnownTimestamp = result.data.lastModified
+                }
+                is Result.Error -> {
+                    // Fallback to separate loading if bulk loading fails
+                    loadCharacters()
+                }
+            }
+        }
     }
 
     fun onEvent(event: CharacterListEvent) {

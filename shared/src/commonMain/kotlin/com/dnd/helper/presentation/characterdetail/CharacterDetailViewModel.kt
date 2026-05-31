@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
 
 class CharacterDetailViewModel(
     private val repository: CharacterRepository,
@@ -39,6 +41,12 @@ class CharacterDetailViewModel(
      * Only when the timer fires is the data pushed to the server.
      */
     private var debouncedSaveJob: Job? = null
+
+    /**
+     * The character state as it exists on the server.
+     * Updated only after a successful save or a full load/reload.
+     */
+    private var originalCharacter: com.dnd.helper.domain.model.Character? = null
 
     /**
      * The character state that needs to be synced to the server.
@@ -201,6 +209,12 @@ class CharacterDetailViewModel(
 
     private fun saveChanges() {
         val edited = _state.value.editedCharacter ?: return
+        
+        // Use originalCharacter from before the edit started
+        if (originalCharacter == null) {
+            originalCharacter = _state.value.character
+        }
+
         // Edit-mode "Save" is an explicit user action — save immediately.
         performSave(edited)
         _state.value = _state.value.copy(isSaving = true)
@@ -305,8 +319,12 @@ class CharacterDetailViewModel(
      * The UI is updated optimistically immediately.
      */
     private fun scheduleDebouncedSave(character: com.dnd.helper.domain.model.Character) {
+        // Capture original state before the first edit in a sequence
+        if (originalCharacter == null) {
+            originalCharacter = _state.value.character
+        }
+
         // Optimistic update — reflect change in UI immediately
-        val previousCharacter = _state.value.character
         _state.value = _state.value.copy(
             character = character,
             hasUnsavedChanges = true,
@@ -319,8 +337,9 @@ class CharacterDetailViewModel(
         debouncedSaveJob = viewModelScope.launch {
             delay(5_000L)
             // Timer fired — user hasn't made another change in 5s
+            val characterToSave = pendingSaveCharacter ?: character
             pendingSaveCharacter = null
-            performSave(character)
+            performSave(characterToSave)
         }
     }
 
@@ -329,8 +348,17 @@ class CharacterDetailViewModel(
      * and debounced saves (stat/HP/level clicks).
      */
     private fun performSave(character: com.dnd.helper.domain.model.Character) {
-        val previousCharacter = _state.value.character
+        val previousUICharacter = _state.value.character
         hasPendingLocalChange = true
+
+        // For logs, use the state BEFORE any edits in this cycle
+        val initialJson = originalCharacter?.let { Json.encodeToString(it) }
+        val endJson = Json.encodeToString(character)
+        
+        // Calculate diff for human readable logs using original state
+        val diffDetails = if (originalCharacter != null) {
+            calculateCharacterDiff(originalCharacter!!, character)
+        } else "Initial create"
 
         viewModelScope.launch {
             when (val result = repository.saveCharacter(character)) {
@@ -339,19 +367,84 @@ class CharacterDetailViewModel(
                         isSaving = false,
                         hasUnsavedChanges = false,
                     )
+                    
+                    // Log the change
+                    repository.saveLog(com.dnd.helper.domain.model.LogEntry(
+                        action = "Update Character: ${character.name}",
+                        details = diffDetails,
+                        initialState = initialJson,
+                        endState = endJson,
+                        success = true
+                    ))
+                    
+                    // On success, this new state becomes the original state for future edits
+                    originalCharacter = character
                 }
                 is Result.Error -> {
                     hasPendingLocalChange = false
-                    // Rollback on error
+                    // Rollback UI on error
                     _state.value = _state.value.copy(
-                        character = previousCharacter,
+                        character = previousUICharacter,
                         error = "Failed to update: ${result.error}",
                         isSaving = false,
                         hasUnsavedChanges = false,
                     )
+
+                    repository.saveLog(com.dnd.helper.domain.model.LogEntry(
+                        action = "Update Character Failed: ${character.name}",
+                        details = diffDetails,
+                        initialState = initialJson,
+                        endState = endJson,
+                        success = false
+                    ))
+                    
+                    // Keep originalCharacter as is, so if user retries they have the right base
                 }
             }
         }
+    }
+
+    private fun calculateCharacterDiff(old: com.dnd.helper.domain.model.Character, new: com.dnd.helper.domain.model.Character): String {
+        val changes = mutableListOf<String>()
+        
+        // Stats
+        if (old.stats.strength != new.stats.strength) changes.add("STR: ${old.stats.strength} -> ${new.stats.strength}")
+        if (old.stats.dexterity != new.stats.dexterity) changes.add("DEX: ${old.stats.dexterity} -> ${new.stats.dexterity}")
+        if (old.stats.constitution != new.stats.constitution) changes.add("CON: ${old.stats.constitution} -> ${new.stats.constitution}")
+        if (old.stats.intelligence != new.stats.intelligence) changes.add("INT: ${old.stats.intelligence} -> ${new.stats.intelligence}")
+        if (old.stats.wisdom != new.stats.wisdom) changes.add("WIS: ${old.stats.wisdom} -> ${new.stats.wisdom}")
+        if (old.stats.charisma != new.stats.charisma) changes.add("CHA: ${old.stats.charisma} -> ${new.stats.charisma}")
+        
+        // Basic Info
+        if (old.currentHp != new.currentHp) changes.add("HP: ${old.currentHp} -> ${new.currentHp}")
+        if (old.maxHp != new.maxHp) changes.add("MaxHP: ${old.maxHp} -> ${new.maxHp}")
+        if (old.level != new.level) changes.add("Level: ${old.level} -> ${new.level}")
+        
+        // Inventory
+        if (old.items.size != new.items.size) {
+            changes.add("Items: ${old.items.size} -> ${new.items.size}")
+        } else {
+            // Check for name changes or other property changes in existing items
+            old.items.forEach { oldItem ->
+                new.items.find { it.id == oldItem.id }?.let { newItem ->
+                    if (oldItem.name != newItem.name) changes.add("Item Name: ${oldItem.name} -> ${newItem.name}")
+                    if (oldItem.equipped != newItem.equipped) changes.add("${newItem.name}: ${if (newItem.equipped) "Equipped" else "Unequipped"}")
+                }
+            }
+        }
+
+        // Skills
+        if (old.skills.size != new.skills.size) {
+            changes.add("Skills: ${old.skills.size} -> ${new.skills.size}")
+        } else {
+            old.skills.forEach { oldSkill ->
+                new.skills.find { it.id == oldSkill.id }?.let { newSkill ->
+                    if (oldSkill.level != newSkill.level) changes.add("${newSkill.name} LVL: ${oldSkill.level} -> ${newSkill.level}")
+                }
+            }
+        }
+        
+        return if (changes.isEmpty()) "No significant changes" else changes.joinToString(", ")
     }
 
     private fun loadCharacter(fromAutoRefresh: Boolean = false) {
@@ -365,6 +458,7 @@ class CharacterDetailViewModel(
                         character = result.data,
                         isLoading = false,
                     )
+                    originalCharacter = result.data
                 }
                 is Result.Error -> {
                     _state.value = _state.value.copy(

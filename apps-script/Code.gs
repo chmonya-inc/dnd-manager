@@ -8,6 +8,7 @@ const LOCATION_SHEET_NAME = "Locations";
 const MONSTER_SHEET_NAME = "Monsters";
 const NPC_SHEET_NAME = "Npcs";
 const SUMMARY_SHEET_NAME = "CharactersSummary";
+const LOG_SHEET_NAME = "Logs";
 
 const CHARACTER_HEADERS = [
   "ID", "Name", "PlayerName", "Race", "Class", "Level",
@@ -22,9 +23,10 @@ const ITEM_HEADERS = ["ItemID", "ItemName", "Slot", "Rarity", "StatsJSON", "Desc
 const LOCATION_HEADERS = ["ID", "Name", "Description", "ImageUrl"];
 const MONSTER_HEADERS = ["ID", "Name", "Description", "ImageUrl", "StatsJSON", "MaxHP", "CurrentHP", "ArmorClass", "Speed", "CR", "Type", "Alignment", "Size"];
 const NPC_HEADERS = ["ID", "Name", "Description", "ImageUrl", "Background"];
+const LOG_HEADERS = ["Timestamp", "Action", "Details", "InitialState", "EndState", "Success"];
 
-const WRITE_ACTIONS = ["saveCharacter", "deleteCharacter", "saveLocation", "deleteLocation", "saveMonster", "deleteMonster", "saveNpc", "deleteNpc"];
-const READ_ACTIONS = ["getCharacters", "getCharacter", "getLastModified", "getLocations", "getMonsters", "getNpcs"];
+const WRITE_ACTIONS = ["saveCharacter", "deleteCharacter", "saveLocation", "deleteLocation", "saveMonster", "deleteMonster", "saveNpc", "deleteNpc", "saveLog"];
+const READ_ACTIONS = ["getCharacters", "getCharacter", "getLastModified", "getLocations", "getMonsters", "getNpcs", "getInitialData", "getLogs"];
 
 function doGet(e) {
   var requestJson = e.parameter.request;
@@ -54,6 +56,7 @@ function doGet(e) {
 
 function handleRequest(request) {
   switch (request.action) {
+    case "getInitialData": return handleGetInitialData();
     case "getCharacters": return handleGetCharacters();
     case "getCharacter": return handleGetCharacter(request.id);
     case "saveCharacter": return handleSaveCharacter(request.character);
@@ -68,6 +71,8 @@ function handleRequest(request) {
     case "getNpcs": return handleGetNpcs();
     case "saveNpc": return handleSaveNpc(request.npc);
     case "deleteNpc": return handleDeleteNpc(request.id);
+    case "saveLog": return handleSaveLog(request.log);
+    case "getLogs": return handleGetLogs();
     default: return { success: false, error: "Unknown action" };
   }
 }
@@ -89,6 +94,19 @@ function getSummarySheet() {
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+function handleGetInitialData() {
+  return {
+    success: true,
+    data: {
+      characters: handleGetCharacters().data,
+      locations: handleGetLocations().data,
+      monsters: handleGetMonsters().data,
+      npcs: handleGetNpcs().data,
+      lastModified: handleGetLastModified().data
+    }
+  };
 }
 
 function handleGetCharacters() {
@@ -369,4 +387,48 @@ function handleDeleteNpc(id) {
   for (var i = 1; i < data.length; i++) if (data[i][0] == id) { sheet.deleteRow(i + 1); break; }
   updateLastModified();
   return { success: true };
+}
+
+function getLogsSheet() {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(LOG_SHEET_NAME) || ss.insertSheet(LOG_SHEET_NAME);
+  if (sheet.getLastRow() === 0) sheet.appendRow(LOG_HEADERS);
+  return sheet;
+}
+
+function handleSaveLog(log) {
+  var sheet = getLogsSheet();
+  // Use server time if timestamp is missing or mocked
+  var timestamp = log.timestamp;
+  if (!timestamp || timestamp.indexOf("2024-05-20") === 0) {
+    timestamp = new Date().toISOString();
+  }
+  var row = [
+    timestamp,
+    log.action,
+    log.details || "",
+    log.initialState || "",
+    log.endState || "",
+    log.success !== false
+  ];
+  sheet.appendRow(row);
+  return { success: true };
+}
+
+function handleGetLogs() {
+  var values = getLogsSheet().getDataRange().getValues();
+  var data = [];
+  // Return last 100 logs
+  var start = Math.max(1, values.length - 100);
+  for (var i = values.length - 1; i >= start; i--) {
+    if (values[i][0]) data.push({
+      timestamp: values[i][0],
+      action: values[i][1],
+      details: values[i][2],
+      initialState: values[i][3],
+      endState: values[i][4],
+      success: values[i][5]
+    });
+  }
+  return { success: true, data: data };
 }

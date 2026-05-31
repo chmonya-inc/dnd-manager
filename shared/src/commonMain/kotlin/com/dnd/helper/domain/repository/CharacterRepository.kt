@@ -5,6 +5,7 @@ import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.Location
 
 interface CharacterRepository {
+    suspend fun getInitialData(): Result<com.dnd.helper.domain.model.InitialData>
     suspend fun getCharacters(forceRefresh: Boolean = false): Result<List<Character>>
     suspend fun getCharacter(id: String): Result<Character>
     suspend fun saveCharacter(character: Character): Result<Unit>
@@ -21,6 +22,9 @@ interface CharacterRepository {
     suspend fun getNpcs(forceRefresh: Boolean = false): Result<List<com.dnd.helper.domain.model.Npc>>
     suspend fun saveNpc(npc: com.dnd.helper.domain.model.Npc): Result<Unit>
     suspend fun deleteNpc(id: String): Result<Unit>
+
+    suspend fun getLogs(): Result<List<com.dnd.helper.domain.model.LogEntry>>
+    suspend fun saveLog(log: com.dnd.helper.domain.model.LogEntry): Result<Unit>
 
     /**
      * Returns the server's last-modified timestamp (ISO-8601 string).
