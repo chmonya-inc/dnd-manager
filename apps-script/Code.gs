@@ -253,7 +253,7 @@ function handleGetCharacters() {
   for (var i = 0; i < sheets.length; i++) {
     var sheet = sheets[i];
     var name = sheet.getName();
-    if (name === METADATA_SHEET_NAME) continue;
+    if (name === METADATA_SHEET_NAME || name === LOCATION_SHEET_NAME) continue;
 
     var values = sheet.getDataRange().getValues();
     if (values.length < 2) {

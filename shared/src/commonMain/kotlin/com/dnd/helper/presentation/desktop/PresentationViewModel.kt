@@ -12,12 +12,11 @@ data class PresentedItem(
     val title: String,
     val type: String,
     val imageUrl: String? = null,
-    // x and y are proportional coordinates (0.0 to 1.0)
-    val x: Float = 0.1f,
-    val y: Float = 0.1f,
-    // width and height are in Dp
+    // x, y, width, height are all in logical units (0 to 1000)
+    val x: Float = 0f,
+    val y: Float = 0f,
     val width: Float = 200f,
-    val height: Float = 150f,
+    val height: Float = 200f,
     val isBackground: Boolean = false
 )
 
@@ -41,8 +40,9 @@ class PresentationViewModel : ViewModel() {
             activeItems.removeAll { it.isBackground }
         }
         
-        val width = if (isBackground) 800f else 200f
-        val height = if (isBackground) 600f else 240f
+        // Backgrounds default to filling the 1000x1000 logical canvas
+        val width = if (isBackground) 1000f else 150f
+        val height = if (isBackground) 1000f else 180f
         
         activeItems.add(PresentedItem(
             id = id, 
@@ -52,8 +52,8 @@ class PresentationViewModel : ViewModel() {
             isBackground = isBackground, 
             width = width, 
             height = height,
-            x = 0f,
-            y = 0f
+            x = if (isBackground) 0f else 100f,
+            y = if (isBackground) 0f else 100f
         ))
     }
 
@@ -62,8 +62,8 @@ class PresentationViewModel : ViewModel() {
         if (index != -1) {
             val item = activeItems[index]
             activeItems[index] = item.copy(
-                x = x.coerceIn(0f, 1f), 
-                y = y.coerceIn(0f, 1f)
+                x = x.coerceIn(0f, 1000f), 
+                y = y.coerceIn(0f, 1000f)
             )
         }
     }
@@ -73,8 +73,8 @@ class PresentationViewModel : ViewModel() {
         if (index != -1) {
             val item = activeItems[index]
             activeItems[index] = item.copy(
-                width = width.coerceAtLeast(50f),
-                height = height.coerceAtLeast(50f)
+                width = width.coerceIn(10f, 1000f),
+                height = height.coerceIn(10f, 1000f)
             )
         }
     }

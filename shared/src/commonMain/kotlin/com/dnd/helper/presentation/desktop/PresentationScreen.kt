@@ -14,16 +14,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.dnd.helper.domain.model.Character
 import com.dnd.helper.presentation.characterlist.CharacterListViewModel
 import org.koin.compose.viewmodel.koinViewModel
-import kotlin.math.roundToInt
+
+private const val LOGICAL_CANVAS_SIZE = 1000f
 
 @Composable
 fun PresentationScreen(
@@ -83,32 +85,18 @@ fun PresentationScreen(
                 Text("Presentation Workspace (Drag items here)", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(12.dp))
                 
-                BoxWithConstraints(
+                // Shared workspace container
+                WorkspaceContainer(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black)
-                        .border(1.dp, MaterialTheme.colorScheme.outline)
-                ) {
-                    val containerWidthPx = constraints.maxWidth.toFloat()
-                    val containerHeightPx = constraints.maxHeight.toFloat()
-
-                    // Sorting: Backgrounds at back, Tokens on top
-                    val sortedItems = activeItems.sortedByDescending { it.isBackground }
-                    
-                    sortedItems.forEach { item ->
-                        key(item.id) {
-                            PresentationItem(
-                                item = item,
-                                containerWidthPx = containerWidthPx,
-                                containerHeightPx = containerHeightPx,
-                                onPositionChange = { x, y -> viewModel.updatePosition(item.id, x, y) },
-                                onSizeChange = { w, h -> viewModel.updateSize(item.id, w, h) },
-                                onRemove = { viewModel.removeItem(item.id) },
-                                isDM = true
-                            )
-                        }
-                    }
-                }
+                        .border(1.dp, MaterialTheme.colorScheme.outline),
+                    activeItems = activeItems,
+                    onItemPositionChange = viewModel::updatePosition,
+                    onItemSizeChange = viewModel::updateSize,
+                    onItemRemove = viewModel::removeItem,
+                    isDM = true
+                )
             }
             
             // Sidebar
@@ -273,19 +261,51 @@ fun PlayerViewContent(activeItems: List<PresentedItem>) {
         modifier = Modifier.fillMaxSize(),
         color = Color.Black
     ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val containerWidthPx = constraints.maxWidth.toFloat()
-            val containerHeightPx = constraints.maxHeight.toFloat()
+        WorkspaceContainer(
+            modifier = Modifier.fillMaxSize(),
+            activeItems = activeItems,
+            isDM = false
+        )
+    }
+}
 
+@Composable
+fun WorkspaceContainer(
+    modifier: Modifier = Modifier,
+    activeItems: List<PresentedItem>,
+    onItemPositionChange: (String, Float, Float) -> Unit = { _, _, _ -> },
+    onItemSizeChange: (String, Float, Float) -> Unit = { _, _, _ -> },
+    onItemRemove: (String) -> Unit = {},
+    isDM: Boolean = false
+) {
+    BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
+        val containerWidth = constraints.maxWidth.toFloat()
+        val containerHeight = constraints.maxHeight.toFloat()
+        
+        // Calculate scale to fit the 1000x1000 logical canvas into the actual window
+        // while preserving aspect ratio (letterboxing)
+        val scale = minOf(containerWidth / LOGICAL_CANVAS_SIZE, containerHeight / LOGICAL_CANVAS_SIZE)
+        val canvasWidthPx = LOGICAL_CANVAS_SIZE * scale
+        val canvasHeightPx = LOGICAL_CANVAS_SIZE * scale
+
+        // This box is our fixed-aspect-ratio logical workspace
+        Box(
+            modifier = Modifier.size(
+                width = (canvasWidthPx / androidx.compose.ui.platform.LocalDensity.current.density).dp,
+                height = (canvasHeightPx / androidx.compose.ui.platform.LocalDensity.current.density).dp
+            )
+        ) {
             val sortedItems = activeItems.sortedByDescending { it.isBackground }
             
             sortedItems.forEach { item ->
                 key(item.id) {
                     PresentationItem(
                         item = item,
-                        containerWidthPx = containerWidthPx,
-                        containerHeightPx = containerHeightPx,
-                        isDM = false
+                        canvasSizePx = canvasWidthPx, // Both W and H are scaled by the same factor
+                        onPositionChange = { x, y -> onItemPositionChange(item.id, x, y) },
+                        onSizeChange = { w, h -> onItemSizeChange(item.id, w, h) },
+                        onRemove = { onItemRemove(item.id) },
+                        isDM = isDM
                     )
                 }
             }
@@ -296,8 +316,7 @@ fun PlayerViewContent(activeItems: List<PresentedItem>) {
 @Composable
 fun PresentationItem(
     item: PresentedItem,
-    containerWidthPx: Float,
-    containerHeightPx: Float,
+    canvasSizePx: Float,
     onPositionChange: (Float, Float) -> Unit = { _, _ -> },
     onSizeChange: (Float, Float) -> Unit = { _, _ -> },
     onRemove: () -> Unit = {},
@@ -305,80 +324,77 @@ fun PresentationItem(
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     
-    // Crucial: Use rememberUpdatedState to avoid capturing stale values in the gesture listener
-    val currentItem by rememberUpdatedState(item)
-    val currentW by rememberUpdatedState(containerWidthPx)
-    val currentH by rememberUpdatedState(containerHeightPx)
+    // Convert logical units (0..1000) to actual pixels for the current scale
+    val pixelScale = if (canvasSizePx > 0) canvasSizePx / LOGICAL_CANVAS_SIZE else 1f
     
-    // Offset lambda ensures the move doesn't trigger a full recomposition of the item's content
+    var localX by remember { mutableStateOf(item.x) }
+    var localY by remember { mutableStateOf(item.y) }
+    var localW by remember { mutableStateOf(item.width) }
+    var localH by remember { mutableStateOf(item.height) }
+
+    LaunchedEffect(item.x, item.y) {
+        localX = item.x
+        localY = item.y
+    }
+    
+    LaunchedEffect(item.width, item.height) {
+        localW = item.width
+        localH = item.height
+    }
+
+    val currentOnPositionChange by rememberUpdatedState(onPositionChange)
+    val currentOnSizeChange by rememberUpdatedState(onSizeChange)
+
     Box(
         modifier = Modifier
-            .offset {
-                IntOffset(
-                    (currentItem.x * currentW).roundToInt(),
-                    (currentItem.y * currentH).roundToInt()
-                )
+            .graphicsLayer {
+                translationX = localX * pixelScale
+                translationY = localY * pixelScale
             }
-            .size(currentItem.width.dp, currentItem.height.dp)
+            .size(
+                width = (localW * pixelScale / density.density).dp,
+                height = (localH * pixelScale / density.density).dp
+            )
             .then(
                 if (isDM) {
-                    Modifier.pointerInput(currentItem.id) {
+                    Modifier.pointerInput(item.id) {
                         detectDragGestures { change, dragAmount ->
                             change.consume()
                             
-                            // 1. Convert pixel drag to proportional delta
-                            val deltaX = dragAmount.x / currentW
-                            val deltaY = dragAmount.y / currentH
+                            val logicalDeltaX = dragAmount.x / pixelScale
+                            val logicalDeltaY = dragAmount.y / pixelScale
                             
-                            // 2. Calculate item's current proportional size
-                            val itemWidthPx = with(density) { currentItem.width.dp.toPx() }
-                            val itemHeightPx = with(density) { currentItem.height.dp.toPx() }
-                            val propW = if (currentW > 0) itemWidthPx / currentW else 0f
-                            val propH = if (currentH > 0) itemHeightPx / currentH else 0f
+                            localX = (localX + logicalDeltaX).coerceIn(0f, LOGICAL_CANVAS_SIZE - localW)
+                            localY = (localY + logicalDeltaY).coerceIn(0f, LOGICAL_CANVAS_SIZE - localH)
                             
-                            // 3. Apply strict boundaries on all 4 sides
-                            val newX = (currentItem.x + deltaX).coerceIn(0f, (1f - propW).coerceAtLeast(0f))
-                            val newY = (currentItem.y + deltaY).coerceIn(0f, (1f - propH).coerceAtLeast(0f))
-                            
-                            onPositionChange(newX, newY)
+                            currentOnPositionChange(localX, localY)
                         }
                     }
                 } else Modifier
             )
     ) {
-        if (currentItem.isBackground) {
-            LocationCard(currentItem.title, currentItem.imageUrl, isDM, onRemove)
+        if (item.isBackground) {
+            LocationCard(item.title, item.imageUrl, isDM, onRemove)
         } else {
-            PlayerCard(currentItem.title, currentItem.imageUrl, isDM, onRemove)
+            PlayerCard(item.title, item.imageUrl, isDM, onRemove)
         }
 
-        // Resize handle for DM
         if (isDM) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .size(32.dp) // Larger hit area
-                    .pointerInput(currentItem.id) {
+                    .size(32.dp)
+                    .pointerInput(item.id) {
                         detectDragGestures { change, dragAmount ->
                             change.consume()
                             
-                            // 1:1 Resize in Dp
-                            val deltaWDp = dragAmount.x / density.density
-                            val deltaHDp = dragAmount.y / density.density
+                            val logicalDeltaW = dragAmount.x / pixelScale
+                            val logicalDeltaH = dragAmount.y / pixelScale
                             
-                            val nextWDp = currentItem.width + deltaWDp
-                            val nextHDp = currentItem.height + deltaHDp
+                            localW = (localW + logicalDeltaW).coerceIn(50f, LOGICAL_CANVAS_SIZE - localX)
+                            localH = (localH + logicalDeltaH).coerceIn(50f, LOGICAL_CANVAS_SIZE - localY)
                             
-                            // Boundary: don't let it grow past the workspace edge
-                            val maxWPx = currentW * (1f - currentItem.x)
-                            val maxHPx = currentH * (1f - currentItem.y)
-                            val maxWDp = with(density) { maxWPx.toDp().value }
-                            val maxHDp = with(density) { maxHPx.toDp().value }
-                            
-                            onSizeChange(
-                                nextWDp.coerceIn(60f, maxWDp),
-                                nextHDp.coerceIn(60f, maxHDp)
-                            )
+                            currentOnSizeChange(localW, localH)
                         }
                     }
             ) {

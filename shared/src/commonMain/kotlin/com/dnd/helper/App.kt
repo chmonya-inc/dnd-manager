@@ -10,6 +10,7 @@ import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
+import coil3.util.DebugLogger
 import com.dnd.helper.data.remote.GoogleAppsScriptDataSource
 import com.dnd.helper.data.repository.CharacterRepositoryImpl
 import com.dnd.helper.domain.repository.CharacterRepository
@@ -26,6 +27,7 @@ import com.dnd.helper.presentation.start.StartScreen
 import com.dnd.helper.presentation.start.StartViewModel
 import com.dnd.helper.theme.DndHelperTheme
 import io.ktor.client.HttpClient
+import io.ktor.client.request.header
 import kotlinx.serialization.Serializable
 import org.koin.compose.KoinApplication
 import org.koin.compose.getKoin
@@ -59,12 +61,15 @@ object Creator
 object Presenter
 
 val appModule = module {
-    // Plain HttpClient — no ContentNegotiation.
-    // GoogleAppsScriptDataSource reads raw response body as String and parses
-    // JSON manually with kotlinx.serialization, so ContentNegotiation is unnecessary.
-    // Keeping it clean also means we can safely re-use this client for Coil image
-    // fetching without JSON Accept headers breaking image requests.
-    single { HttpClient() }
+    // No ContentNegotiation — GoogleAppsScriptDataSource reads raw response.
+    // We add a User-Agent to avoid being blocked by Google Drive.
+    single {
+        HttpClient {
+            install(io.ktor.client.plugins.DefaultRequest) {
+                header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            }
+        }
+    }
 
     single { GoogleAppsScriptDataSource(get()) }
     single<CharacterRepository> { CharacterRepositoryImpl(get()) }
@@ -92,9 +97,13 @@ fun App(koinConfiguration: KoinAppDeclaration = {}) {
             SingletonImageLoader.setSafe { context ->
                 ImageLoader.Builder(context)
                     .components {
-                        add(KtorNetworkFetcherFactory ({ httpClient }))
+                        // Use the shared HttpClient for all network requests.
+                        // KtorNetworkFetcher handles images correctly even for JPGs,
+                        // provided the server returns appropriate headers.
+                        add(KtorNetworkFetcherFactory(httpClient))
                     }
                     .crossfade(true)
+                    .logger(DebugLogger()) // Logs detailed info about why JPGs might fail
                     .build()
             }
         }
