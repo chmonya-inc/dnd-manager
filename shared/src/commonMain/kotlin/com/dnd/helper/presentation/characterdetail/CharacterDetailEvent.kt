@@ -17,4 +17,10 @@ sealed interface CharacterDetailEvent {
     data class EditCharacter(val character: Character) : CharacterDetailEvent
     data object SaveChanges : CharacterDetailEvent
     data object ToggleMasterMode : CharacterDetailEvent
+    data object AddSkill : CharacterDetailEvent
+    data class RemoveSkill(val skillId: String) : CharacterDetailEvent
+    data class UpdateSkill(val skill: com.dnd.helper.domain.model.Skill) : CharacterDetailEvent
+    data object AddItem : CharacterDetailEvent
+    data class RemoveItem(val itemId: String) : CharacterDetailEvent
+    data class UpdateItem(val item: com.dnd.helper.domain.model.Item) : CharacterDetailEvent
 }

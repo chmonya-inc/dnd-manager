@@ -8,10 +8,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.dnd.helper.presentation.characterdetail.CharacterDetailScreen
-import com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -34,38 +33,55 @@ private val tabs = listOf(
 fun MainDesktopScreen() {
     var selectedTab by remember { mutableStateOf<DesktopTab>(DesktopTab.Characters) }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
+    var initialCreatorType by remember { mutableStateOf<CreatorType?>(null) }
 
-    Row(modifier = Modifier.fillMaxSize()) {
-        // Navigation Rail
-        NavigationRail(
-            modifier = Modifier.fillMaxHeight(),
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ) {
-            Spacer(Modifier.weight(1f))
-            tabs.forEach { tab ->
-                NavigationRailItem(
-                    selected = selectedTab == tab,
-                    onClick = { selectedTab = tab },
-                    icon = { Icon(tab.icon, contentDescription = tab.title) },
-                    label = { Text(tab.title) }
-                )
-            }
-            Spacer(Modifier.weight(1f))
-        }
-
-        // Content Area
-        Box(modifier = Modifier.fillMaxSize()) {
-            when (selectedTab) {
-                DesktopTab.Characters -> {
-                    CharactersSplitPane(
-                        selectedCharacterId = selectedCharacterId,
-                        onCharacterSelected = { selectedCharacterId = it },
-                        onCreateCharacter = { selectedTab = DesktopTab.Creator }
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            // Navigation Rail
+            NavigationRail(
+                modifier = Modifier.fillMaxHeight(),
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            ) {
+                Spacer(Modifier.weight(1f))
+                tabs.forEach { tab ->
+                    NavigationRailItem(
+                        selected = selectedTab == tab,
+                        onClick = { 
+                            selectedTab = tab
+                            if (tab != DesktopTab.Creator) initialCreatorType = null 
+                        },
+                        icon = { Icon(tab.icon, contentDescription = tab.title) },
+                        label = { Text(tab.title) }
                     )
                 }
-                DesktopTab.Library -> LibraryScreen()
-                DesktopTab.Creator -> CreatorScreen()
-                DesktopTab.Presenter -> PresentationScreen()
+                Spacer(Modifier.weight(1f))
+            }
+
+            // Content Area
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (selectedTab) {
+                    DesktopTab.Characters -> {
+                        CharactersSplitPane(
+                            selectedCharacterId = selectedCharacterId,
+                            onCharacterSelected = { selectedCharacterId = it },
+                            onCreateCharacter = { 
+                                initialCreatorType = CreatorType.Character
+                                selectedTab = DesktopTab.Creator 
+                            }
+                        )
+                    }
+                    DesktopTab.Library -> LibraryScreen(
+                        onNavigateToCreator = { type ->
+                            initialCreatorType = type
+                            selectedTab = DesktopTab.Creator
+                        }
+                    )
+                    DesktopTab.Creator -> CreatorScreen(initialType = initialCreatorType)
+                    DesktopTab.Presenter -> PresentationScreen()
+                }
             }
         }
     }
@@ -83,7 +99,7 @@ fun CharactersSplitPane(
             CharacterListScreen(
                 onCharacterClick = onCharacterSelected,
                 onCreateCharacter = onCreateCharacter,
-                showTopBar = false
+                showTopBar = true
             )
         }
 
@@ -93,28 +109,17 @@ fun CharactersSplitPane(
         // Right Panel: Character Detail (70%)
         Box(modifier = Modifier.fillMaxSize()) {
             if (selectedCharacterId != null) {
-                val viewModel: CharacterDetailViewModel = koinViewModel(key = selectedCharacterId) {
+                val viewModel: com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel = koinViewModel(key = selectedCharacterId) {
                     parametersOf(selectedCharacterId)
                 }
-                CharacterDetailScreen(
-                    viewModel = viewModel,
-                    onBackClick = { /* No-op in desktop split pane */ }
+                MasterCharacterDetailScreen(
+                    viewModel = viewModel
                 )
             } else {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Select a character to view details", style = MaterialTheme.typography.bodyLarge)
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun PlaceholderScreen(title: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(title, style = MaterialTheme.typography.headlineMedium)
-            Text("Coming Soon", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.secondary)
         }
     }
 }

@@ -75,7 +75,63 @@ class CharacterDetailViewModel(
             CharacterDetailEvent.ToggleMasterMode -> {
                 _state.value = _state.value.copy(isMasterMode = !_state.value.isMasterMode)
             }
+            CharacterDetailEvent.AddSkill -> addSkill()
+            is CharacterDetailEvent.RemoveSkill -> removeSkill(event.skillId)
+            is CharacterDetailEvent.UpdateSkill -> updateSkill(event.skill)
+            CharacterDetailEvent.AddItem -> addItem()
+            is CharacterDetailEvent.RemoveItem -> removeItem(event.itemId)
+            is CharacterDetailEvent.UpdateItem -> updateItem(event.item)
         }
+    }
+
+    private fun addItem() {
+        val current = _state.value.character ?: return
+        val newItem = com.dnd.helper.domain.model.Item(
+            id = "item-${kotlin.random.Random.nextInt()}",
+            name = "New Item",
+            slot = null,
+            rarity = com.dnd.helper.domain.model.ItemRarity.COMMON
+        )
+        val updatedCharacter = current.copy(items = current.items + newItem)
+        scheduleDebouncedSave(updatedCharacter)
+    }
+
+    private fun removeItem(itemId: String) {
+        val current = _state.value.character ?: return
+        val updatedCharacter = current.copy(items = current.items.filter { it.id != itemId })
+        scheduleDebouncedSave(updatedCharacter)
+    }
+
+    private fun addSkill() {
+        val current = _state.value.character ?: return
+        val newSkill = com.dnd.helper.domain.model.Skill(
+            id = "skill-${kotlin.random.Random.nextInt()}",
+            name = "New Skill",
+            description = "Click edit to change details",
+            level = 0
+        )
+        val updatedCharacter = current.copy(skills = current.skills + newSkill)
+        scheduleDebouncedSave(updatedCharacter)
+    }
+
+    private fun removeSkill(skillId: String) {
+        val current = _state.value.character ?: return
+        val updatedCharacter = current.copy(skills = current.skills.filter { it.id != skillId })
+        scheduleDebouncedSave(updatedCharacter)
+    }
+
+    private fun updateSkill(skill: com.dnd.helper.domain.model.Skill) {
+        val current = _state.value.character ?: return
+        val updatedSkills = current.skills.map { if (it.id == skill.id) skill else it }
+        val updatedCharacter = current.copy(skills = updatedSkills)
+        scheduleDebouncedSave(updatedCharacter)
+    }
+
+    private fun updateItem(item: com.dnd.helper.domain.model.Item) {
+        val current = _state.value.character ?: return
+        val updatedItems = current.items.map { if (it.id == item.id) item else it }
+        val updatedCharacter = current.copy(items = updatedItems)
+        scheduleDebouncedSave(updatedCharacter)
     }
 
     /** Starts auto-refresh polling. Call from DisposableEffect/onResume. */

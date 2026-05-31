@@ -48,6 +48,7 @@ import com.dnd.helper.domain.model.Skill
 @Composable
 fun SkillsTab(
     character: Character,
+    onEvent: (com.dnd.helper.presentation.characterdetail.CharacterDetailEvent) -> Unit = {},
     isMasterMode: Boolean = false,
 ) {
     val skills = character.skills
@@ -59,8 +60,11 @@ fun SkillsTab(
             onDismiss = { selectedSkill = null },
             isMasterMode = isMasterMode,
             onDelete = {
-                // TODO: onEvent(CharacterDetailEvent.DeleteSkill(skill.id))
+                onEvent(com.dnd.helper.presentation.characterdetail.CharacterDetailEvent.RemoveSkill(skill.id))
                 selectedSkill = null
+            },
+            onUpdate = { updatedSkill ->
+                onEvent(com.dnd.helper.presentation.characterdetail.CharacterDetailEvent.UpdateSkill(updatedSkill))
             }
         )
     }
@@ -71,7 +75,7 @@ fun SkillsTab(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.End
             ) {
-                Button(onClick = { /* TODO: onEvent(CharacterDetailEvent.ShowAddSkillDialog) */ }) {
+                Button(onClick = { onEvent(com.dnd.helper.presentation.characterdetail.CharacterDetailEvent.AddSkill) }) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text("Add Skill/Spell")

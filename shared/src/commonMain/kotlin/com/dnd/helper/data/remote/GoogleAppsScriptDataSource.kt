@@ -44,6 +44,24 @@ class GoogleAppsScriptDataSource(
     suspend fun deleteLocation(id: String): Result<Unit> =
         executeUnit(request = AppsScriptRequest(action = "deleteLocation", id = id))
 
+    suspend fun getMonsters(): Result<List<com.dnd.helper.domain.model.Monster>> =
+        execute(request = AppsScriptRequest(action = "getMonsters"))
+
+    suspend fun saveMonster(monster: com.dnd.helper.domain.model.Monster): Result<Unit> =
+        executeUnit(request = AppsScriptRequest(action = "saveMonster", monster = monster))
+
+    suspend fun deleteMonster(id: String): Result<Unit> =
+        executeUnit(request = AppsScriptRequest(action = "deleteMonster", id = id))
+
+    suspend fun getNpcs(): Result<List<com.dnd.helper.domain.model.Npc>> =
+        execute(request = AppsScriptRequest(action = "getNpcs"))
+
+    suspend fun saveNpc(npc: com.dnd.helper.domain.model.Npc): Result<Unit> =
+        executeUnit(request = AppsScriptRequest(action = "saveNpc", npc = npc))
+
+    suspend fun deleteNpc(id: String): Result<Unit> =
+        executeUnit(request = AppsScriptRequest(action = "deleteNpc", id = id))
+
     /**
      * Returns the last-modified timestamp from the server.
      * This is a lightweight poll endpoint — clients call it frequently

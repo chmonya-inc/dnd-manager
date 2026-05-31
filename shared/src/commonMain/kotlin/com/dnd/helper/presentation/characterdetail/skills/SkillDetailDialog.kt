@@ -4,19 +4,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil3.compose.AsyncImage
@@ -27,13 +29,16 @@ fun SkillDetailDialog(
     skill: Skill,
     onDismiss: () -> Unit,
     isMasterMode: Boolean = false,
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    onUpdate: (Skill) -> Unit = {}
 ) {
+    var editedSkill by remember { mutableStateOf(skill) }
+    
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
-                .heightIn(max = 600.dp),
+                .heightIn(max = 700.dp),
             shape = RoundedCornerShape(20.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
@@ -51,24 +56,35 @@ fun SkillDetailDialog(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SkillIconBox(
-                            iconUrl = skill.displayIconUrl,
-                            tint = getSkillDamageColor(skill.damageType),
-                            bgTint = getSkillDamageColor(skill.damageType).copy(alpha = 0.15f),
+                            iconUrl = editedSkill.displayIconUrl,
+                            tint = getSkillDamageColor(editedSkill.damageType),
+                            bgTint = getSkillDamageColor(editedSkill.damageType).copy(alpha = 0.15f),
                             size = 78.dp,
                         )
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text(
-                                text = skill.name,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            if (skill.school.isNotBlank()) {
-                                Text(
-                                    text = skill.school,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            if (isMasterMode) {
+                                OutlinedTextField(
+                                    value = editedSkill.name,
+                                    onValueChange = { 
+                                        editedSkill = editedSkill.copy(name = it)
+                                        onUpdate(editedSkill)
+                                    },
+                                    label = { Text("Name") }
                                 )
+                            } else {
+                                Text(
+                                    text = editedSkill.name,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                if (editedSkill.school.isNotBlank()) {
+                                    Text(
+                                        text = editedSkill.school,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }
@@ -79,61 +95,76 @@ fun SkillDetailDialog(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                // Tags row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (skill.level > 0) {
-                        SkillTag("Level ${skill.level}", MaterialTheme.colorScheme.primaryContainer)
-                    } else if (skill.isPassive) {
-                        SkillTag("Passive", MaterialTheme.colorScheme.tertiaryContainer)
-                    } else {
-                        SkillTag("Cantrip", MaterialTheme.colorScheme.secondaryContainer)
+                if (isMasterMode) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(value = editedSkill.name, onValueChange = { editedSkill = editedSkill.copy(name = it); onUpdate(editedSkill) }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSkill.iconUrl ?: "", onValueChange = { editedSkill = editedSkill.copy(iconUrl = it.ifBlank { null }); onUpdate(editedSkill) }, label = { Text("Icon URL") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSkill.level.toString(), onValueChange = { editedSkill = editedSkill.copy(level = it.toIntOrNull() ?: 0); onUpdate(editedSkill) }, label = { Text("Level") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        OutlinedTextField(value = editedSkill.damageType, onValueChange = { editedSkill = editedSkill.copy(damageType = it); onUpdate(editedSkill) }, label = { Text("Damage Type") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSkill.damage, onValueChange = { editedSkill = editedSkill.copy(damage = it); onUpdate(editedSkill) }, label = { Text("Damage") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSkill.resourceCost, onValueChange = { editedSkill = editedSkill.copy(resourceCost = it); onUpdate(editedSkill) }, label = { Text("Cost") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSkill.castingTime, onValueChange = { editedSkill = editedSkill.copy(castingTime = it); onUpdate(editedSkill) }, label = { Text("Casting") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSkill.range, onValueChange = { editedSkill = editedSkill.copy(range = it); onUpdate(editedSkill) }, label = { Text("Range") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSkill.duration, onValueChange = { editedSkill = editedSkill.copy(duration = it); onUpdate(editedSkill) }, label = { Text("Duration") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSkill.description, onValueChange = { editedSkill = editedSkill.copy(description = it); onUpdate(editedSkill) }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
                     }
-                    if (skill.damageType.isNotBlank()) {
-                        SkillTag(skill.damageType, getSkillDamageColor(skill.damageType).copy(alpha = 0.15f))
+                } else {
+                    // Tags row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (editedSkill.level > 0) {
+                            SkillTag("Level ${editedSkill.level}", MaterialTheme.colorScheme.primaryContainer)
+                        } else if (editedSkill.isPassive) {
+                            SkillTag("Passive", MaterialTheme.colorScheme.tertiaryContainer)
+                        } else {
+                            SkillTag("Cantrip", MaterialTheme.colorScheme.secondaryContainer)
+                        }
+                        if (editedSkill.damageType.isNotBlank()) {
+                            SkillTag(editedSkill.damageType, getSkillDamageColor(editedSkill.damageType).copy(alpha = 0.15f))
+                        }
                     }
-                }
 
-                Spacer(Modifier.height(12.dp))
-
-                // Detail fields
-                if (skill.resourceCost.isNotBlank()) {
-                    DetailRow(label = "Cost", value = skill.resourceCost)
-                }
-                if (skill.castingTime.isNotBlank()) {
-                    DetailRow(label = "Casting", value = skill.castingTime)
-                }
-                if (skill.range.isNotBlank()) {
-                    DetailRow(label = "Range", value = skill.range)
-                }
-                if (skill.duration.isNotBlank()) {
-                    DetailRow(label = "Duration", value = skill.duration)
-                }
-                if (skill.damage.isNotBlank()) {
-                    DetailRow(
-                        label = "Damage",
-                        value = skill.damage,
-                        valueColor = getSkillDamageColor(skill.damageType),
-                    )
-                }
-
-                if (skill.description.isNotBlank()) {
                     Spacer(Modifier.height(12.dp))
-                    HorizontalDivider()
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = "Description",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = skill.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+
+                    // Detail fields
+                    if (editedSkill.resourceCost.isNotBlank()) {
+                        DetailRow(label = "Cost", value = editedSkill.resourceCost)
+                    }
+                    if (editedSkill.castingTime.isNotBlank()) {
+                        DetailRow(label = "Casting", value = editedSkill.castingTime)
+                    }
+                    if (editedSkill.range.isNotBlank()) {
+                        DetailRow(label = "Range", value = editedSkill.range)
+                    }
+                    if (editedSkill.duration.isNotBlank()) {
+                        DetailRow(label = "Duration", value = editedSkill.duration)
+                    }
+                    if (editedSkill.damage.isNotBlank()) {
+                        DetailRow(
+                            label = "Damage",
+                            value = editedSkill.damage,
+                            valueColor = getSkillDamageColor(editedSkill.damageType),
+                        )
+                    }
+
+                    if (editedSkill.description.isNotBlank()) {
+                        Spacer(Modifier.height(12.dp))
+                        HorizontalDivider()
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = "Description",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = editedSkill.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
 
                 if (isMasterMode) {
@@ -234,7 +265,7 @@ fun SkillIconBox(
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
-                modifier = Modifier.size(size),
+                modifier = Modifier.size(size).align(Alignment.CenterHorizontally),
                 tint = tint,
             )
         }

@@ -171,7 +171,7 @@ fun CharacterDetailScreen(
                 actions = {
                     if (isDesktop) {
                         val presentationViewModel: com.dnd.helper.presentation.desktop.PresentationViewModel = koinViewModel()
-                        IconButton(onClick = { 
+                        IconButton(onClick = {
                             state.character?.let { presentationViewModel.addItem(it.name, type = "Character", imageUrl = it.displayImageUrl) }
                         }) {
                             Icon(imageVector = Icons.Default.Tv, contentDescription = "Present")
@@ -304,9 +304,9 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
         )
         OutlinedTextField(
             value = edited.level.toString(),
-            onValueChange = { 
+            onValueChange = {
                 val value = it.toIntOrNull() ?: 0
-                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = value))) 
+                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = value)))
             },
             label = { Text("Lvl") },
             modifier = Modifier.fillMaxWidth(0.33f),
@@ -317,9 +317,9 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = edited.currentHp.toString(),
-            onValueChange = { 
+            onValueChange = {
                 val value = it.toIntOrNull() ?: 0
-                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(currentHp = value))) 
+                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(currentHp = value)))
             },
             label = { Text("Cur HP") },
             modifier = Modifier.fillMaxWidth(0.5f),
@@ -327,9 +327,9 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
         )
         OutlinedTextField(
             value = edited.maxHp.toString(),
-            onValueChange = { 
+            onValueChange = {
                 val value = it.toIntOrNull() ?: 0
-                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(maxHp = value))) 
+                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(maxHp = value)))
             },
             label = { Text("Max HP") },
             modifier = Modifier.fillMaxWidth(0.5f),
@@ -342,9 +342,9 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = edited.stats.strength.toString(),
-            onValueChange = { 
+            onValueChange = {
                 val value = it.toIntOrNull() ?: 0
-                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(strength = value)))) 
+                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(strength = value))))
             },
             label = { Text("STR") },
             modifier = Modifier.fillMaxWidth(0.33f),
@@ -352,9 +352,9 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
         )
         OutlinedTextField(
             value = edited.stats.dexterity.toString(),
-            onValueChange = { 
+            onValueChange = {
                 val value = it.toIntOrNull() ?: 0
-                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(dexterity = value)))) 
+                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(dexterity = value))))
             },
             label = { Text("DEX") },
             modifier = Modifier.fillMaxWidth(0.33f),
@@ -362,9 +362,9 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
         )
         OutlinedTextField(
             value = edited.stats.constitution.toString(),
-            onValueChange = { 
+            onValueChange = {
                 val value = it.toIntOrNull() ?: 0
-                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(constitution = value)))) 
+                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(constitution = value))))
             },
             label = { Text("CON") },
             modifier = Modifier.fillMaxWidth(0.33f),
@@ -375,9 +375,9 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = edited.stats.intelligence.toString(),
-            onValueChange = { 
+            onValueChange = {
                 val value = it.toIntOrNull() ?: 0
-                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(intelligence = value)))) 
+                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(intelligence = value))))
             },
             label = { Text("INT") },
             modifier = Modifier.fillMaxWidth(0.33f),
@@ -385,9 +385,9 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
         )
         OutlinedTextField(
             value = edited.stats.wisdom.toString(),
-            onValueChange = { 
+            onValueChange = {
                 val value = it.toIntOrNull() ?: 0
-                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(wisdom = value)))) 
+                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(wisdom = value))))
             },
             label = { Text("WIS") },
             modifier = Modifier.fillMaxWidth(0.33f),
@@ -395,9 +395,9 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
         )
         OutlinedTextField(
             value = edited.stats.charisma.toString(),
-            onValueChange = { 
+            onValueChange = {
                 val value = it.toIntOrNull() ?: 0
-                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(charisma = value)))) 
+                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(stats = edited.stats.copy(charisma = value))))
             },
             label = { Text("CHA") },
             modifier = Modifier.fillMaxWidth(0.33f),
@@ -511,13 +511,13 @@ private fun HealthSection(character: com.dnd.helper.domain.model.Character, view
     val amount = amountText.toIntOrNull() ?: 1
 
     val hpRatio = (character.currentHp.toFloat() / character.maxHp).coerceIn(0f, 1f)
-    
+
     val hpColor = when {
         character.currentHp <= 0 -> MaterialTheme.colorScheme.onSurface
         hpRatio <= 0.4f -> Color(0xFFD32F2F)
         else -> Color(0xFFE53935)
     }
-    
+
     val hpIcon = when {
         character.currentHp <= 0 -> Icons.Default.Dangerous
         hpRatio <= 0.4f -> Icons.Default.HeartBroken
@@ -605,9 +605,9 @@ private fun HealthSection(character: com.dnd.helper.domain.model.Character, view
                 ) {
                     Icon(Icons.Default.Remove, null)
                 }
-                
+
                 Spacer(modifier = Modifier.width(12.dp))
-                
+
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { if (it.all { it.isDigit() } && it.length < 4) amountText = it },
@@ -644,123 +644,123 @@ private fun HealthSection(character: com.dnd.helper.domain.model.Character, view
 
 @Composable
 private fun StatsGrid(character: com.dnd.helper.domain.model.Character, viewModel: CharacterDetailViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        val stats = listOf(
-            StatData(
-                label = "STR",
-                value = character.stats.strength,
-                key = "strength",
-                tag = when {
-                    character.stats.strength < 8 -> "Хилый"
-                    character.stats.strength < 15 -> "Жилистый"
-                    character.stats.strength < 20 -> "Атлет"
-                    else -> "Геракл"
-                },
-                icon = when {
-                    character.stats.strength < 8 -> Icons.Default.Accessibility
-                    character.stats.strength < 15 -> Icons.Default.FitnessCenter
-                    character.stats.strength < 20 -> Icons.Default.SportsMartialArts
-                    else -> Icons.Default.Bolt
-                },
-                color = Color(0xFFE53935)
-            ),
-            StatData(
-                label = "DEX",
-                value = character.stats.dexterity,
-                key = "dexterity",
-                tag = when {
-                    character.stats.dexterity < 8 -> "Неуклюжий"
-                    character.stats.dexterity < 15 -> "Расторопный"
-                    character.stats.dexterity < 20 -> "Ловкач"
-                    else -> "Акробат"
-                },
-                icon = when {
-                    character.stats.dexterity < 8 -> Icons.AutoMirrored.Filled.DirectionsWalk
-                    character.stats.dexterity < 15 -> Icons.AutoMirrored.Filled.DirectionsRun
-                    character.stats.dexterity < 20 -> Icons.AutoMirrored.Filled.DirectionsBike
-                    else -> Icons.Default.AutoAwesome
-                },
-                color = Color(0xFF43A047)
-            ),
-            StatData(
-                label = "CON",
-                value = character.stats.constitution,
-                key = "constitution",
-                tag = when {
-                    character.stats.constitution < 8 -> "Слабый"
-                    character.stats.constitution < 15 -> "Выносливый"
-                    character.stats.constitution < 20 -> "Живучий"
-                    else -> "Несокрушимый"
-                },
-                icon = when {
-                    character.stats.constitution < 8 -> Icons.Default.HeartBroken
-                    character.stats.constitution < 15 -> Icons.Default.Favorite
-                    character.stats.constitution < 20 -> Icons.Default.HealthAndSafety
-                    else -> Icons.Default.Shield
-                },
-                color = Color(0xFFFB8C00)
-            ),
-            StatData(
-                label = "INT",
-                value = character.stats.intelligence,
-                key = "intelligence",
-                tag = when {
-                    character.stats.intelligence < 8 -> "Туповатый"
-                    character.stats.intelligence < 15 -> "Смышленый"
-                    character.stats.intelligence < 20 -> "Эрудит"
-                    else -> "Гений"
-                },
-                icon = when {
-                    character.stats.intelligence < 8 -> Icons.AutoMirrored.Filled.MenuBook
-                    character.stats.intelligence < 15 -> Icons.Default.Lightbulb
-                    character.stats.intelligence < 20 -> Icons.Default.School
-                    else -> Icons.Default.Psychology
-                },
-                color = Color(0xFF1E88E5)
-            ),
-            StatData(
-                label = "WIS",
-                value = character.stats.wisdom,
-                key = "wisdom",
-                tag = when {
-                    character.stats.wisdom < 8 -> "Рассеянный"
-                    character.stats.wisdom < 15 -> "Проницательный"
-                    character.stats.wisdom < 20 -> "Мудрец"
-                    else -> "Провидец"
-                },
-                icon = when {
-                    character.stats.wisdom < 8 -> Icons.Default.Visibility
-                    character.stats.wisdom < 15 -> Icons.Default.Explore
-                    character.stats.wisdom < 20 -> Icons.Default.SelfImprovement
-                    else -> Icons.Default.AutoFixHigh
-                },
-                color = Color(0xFF8E24AA)
-            ),
-            StatData(
-                label = "CHA",
-                value = character.stats.charisma,
-                key = "charisma",
-                tag = when {
-                    character.stats.charisma < 8 -> "Угрюмый"
-                    character.stats.charisma < 15 -> "Притягательный"
-                    character.stats.charisma < 20 -> "Лидер"
-                    else -> "Избранник"
-                },
-                icon = when {
-                    character.stats.charisma < 8 -> Icons.Default.Face
-                    character.stats.charisma < 15 -> Icons.Default.Mood
-                    character.stats.charisma < 20 -> Icons.Default.Groups
-                    else -> Icons.Default.Star
-                },
-                color = Color(0xFFFDD835)
-            )
+    val stats = listOf(
+        StatData(
+            label = "STR",
+            value = character.stats.strength,
+            key = "strength",
+            tag = when {
+                character.stats.strength < 8 -> "Хилый"
+                character.stats.strength < 15 -> "Жилистый"
+                character.stats.strength < 20 -> "Атлет"
+                else -> "Геракл"
+            },
+            icon = when {
+                character.stats.strength < 8 -> Icons.Default.Accessibility
+                character.stats.strength < 15 -> Icons.Default.FitnessCenter
+                character.stats.strength < 20 -> Icons.Default.SportsMartialArts
+                else -> Icons.Default.Bolt
+            },
+            color = Color(0xFFE53935)
+        ),
+        StatData(
+            label = "DEX",
+            value = character.stats.dexterity,
+            key = "dexterity",
+            tag = when {
+                character.stats.dexterity < 8 -> "Неуклюжий"
+                character.stats.dexterity < 15 -> "Расторопный"
+                character.stats.dexterity < 20 -> "Ловкач"
+                else -> "Акробат"
+            },
+            icon = when {
+                character.stats.dexterity < 8 -> Icons.AutoMirrored.Filled.DirectionsWalk
+                character.stats.dexterity < 15 -> Icons.AutoMirrored.Filled.DirectionsRun
+                character.stats.dexterity < 20 -> Icons.AutoMirrored.Filled.DirectionsBike
+                else -> Icons.Default.AutoAwesome
+            },
+            color = Color(0xFF43A047)
+        ),
+        StatData(
+            label = "CON",
+            value = character.stats.constitution,
+            key = "constitution",
+            tag = when {
+                character.stats.constitution < 8 -> "Слабый"
+                character.stats.constitution < 15 -> "Выносливый"
+                character.stats.constitution < 20 -> "Живучий"
+                else -> "Несокрушимый"
+            },
+            icon = when {
+                character.stats.constitution < 8 -> Icons.Default.HeartBroken
+                character.stats.constitution < 15 -> Icons.Default.Favorite
+                character.stats.constitution < 20 -> Icons.Default.HealthAndSafety
+                else -> Icons.Default.Shield
+            },
+            color = Color(0xFFFB8C00)
+        ),
+        StatData(
+            label = "INT",
+            value = character.stats.intelligence,
+            key = "intelligence",
+            tag = when {
+                character.stats.intelligence < 8 -> "Туповатый"
+                character.stats.intelligence < 15 -> "Смышленый"
+                character.stats.intelligence < 20 -> "Эрудит"
+                else -> "Гений"
+            },
+            icon = when {
+                character.stats.intelligence < 8 -> Icons.AutoMirrored.Filled.MenuBook
+                character.stats.intelligence < 15 -> Icons.Default.Lightbulb
+                character.stats.intelligence < 20 -> Icons.Default.School
+                else -> Icons.Default.Psychology
+            },
+            color = Color(0xFF1E88E5)
+        ),
+        StatData(
+            label = "WIS",
+            value = character.stats.wisdom,
+            key = "wisdom",
+            tag = when {
+                character.stats.wisdom < 8 -> "Рассеянный"
+                character.stats.wisdom < 15 -> "Проницательный"
+                character.stats.wisdom < 20 -> "Мудрец"
+                else -> "Провидец"
+            },
+            icon = when {
+                character.stats.wisdom < 8 -> Icons.Default.Visibility
+                character.stats.wisdom < 15 -> Icons.Default.Explore
+                character.stats.wisdom < 20 -> Icons.Default.SelfImprovement
+                else -> Icons.Default.AutoFixHigh
+            },
+            color = Color(0xFF8E24AA)
+        ),
+        StatData(
+            label = "CHA",
+            value = character.stats.charisma,
+            key = "charisma",
+            tag = when {
+                character.stats.charisma < 8 -> "Угрюмый"
+                character.stats.charisma < 15 -> "Притягательный"
+                character.stats.charisma < 20 -> "Лидер"
+                else -> "Избранник"
+            },
+            icon = when {
+                character.stats.charisma < 8 -> Icons.Default.Face
+                character.stats.charisma < 15 -> Icons.Default.Mood
+                character.stats.charisma < 20 -> Icons.Default.Groups
+                else -> Icons.Default.Star
+            },
+            color = Color(0xFFFDD835)
         )
+    )
 
-        // Display in 2x3 grid using Rows
+    // Display in 2x3 grid using Rows to avoid nested scrolling errors
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         for (i in 0 until 3) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard(stats[i * 2], viewModel, Modifier.fillMaxWidth(0.5f))
-                StatCard(stats[i * 2 + 1], viewModel, Modifier.fillMaxWidth(0.5f))
+                StatCard(stats[i * 2], viewModel, Modifier.weight(1f))
+                StatCard(stats[i * 2 + 1], viewModel, Modifier.weight(1f))
             }
         }
     }
@@ -836,7 +836,7 @@ private fun StatCard(
                 ) {
                     Icon(Icons.Default.Remove, null, modifier = Modifier.size(18.dp))
                 }
-                
+
                 Box(
                     modifier = Modifier
                         .width(44.dp)

@@ -3,40 +3,17 @@ package com.dnd.helper.presentation.characterdetail.inventory
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,8 +56,11 @@ fun InventoryTab(
             },
             isMasterMode = isMasterMode,
             onDelete = {
-                // TODO: onEvent(CharacterDetailEvent.DeleteItem(item.id))
+                onEvent(CharacterDetailEvent.RemoveItem(item.id))
                 selectedItem = null
+            },
+            onUpdate = { updatedItem ->
+                onEvent(CharacterDetailEvent.UpdateItem(updatedItem))
             }
         )
     }
@@ -88,7 +68,6 @@ fun InventoryTab(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Top half — Equipment Panel
         EquipmentPanel(
             equippedItems = equippedItems,
             onSlotClick = { slot ->
@@ -102,14 +81,13 @@ fun InventoryTab(
             color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
         )
 
-        // Bottom half — Item Grid
         ItemGrid(
             items = inventoryItems,
             onItemClick = { selectedItem = it },
             modifier = Modifier.fillMaxHeight(1f),
             isMasterMode = isMasterMode,
             onAddItem = {
-                // TODO: onEvent(CharacterDetailEvent.ShowAddItemDialog)
+                onEvent(CharacterDetailEvent.AddItem)
             }
         )
     }
@@ -126,7 +104,6 @@ private fun EquipmentPanel(
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        // Character silhouette in center
         Box(
             modifier = Modifier
                 .size(120.dp)
@@ -143,7 +120,6 @@ private fun EquipmentPanel(
             )
         }
 
-        // Head — top center
         EquipmentSlotBox(
             slot = EquipmentSlot.HEAD,
             item = equippedItems[EquipmentSlot.HEAD],
@@ -152,7 +128,6 @@ private fun EquipmentPanel(
             size = 64.dp
         )
 
-        // Main Hand — center left
         EquipmentSlotBox(
             slot = EquipmentSlot.MAIN_HAND,
             item = equippedItems[EquipmentSlot.MAIN_HAND],
@@ -161,7 +136,6 @@ private fun EquipmentPanel(
             size = 72.dp
         )
 
-        // Off Hand — center right
         EquipmentSlotBox(
             slot = EquipmentSlot.OFF_HAND,
             item = equippedItems[EquipmentSlot.OFF_HAND],
@@ -170,7 +144,6 @@ private fun EquipmentPanel(
             size = 72.dp
         )
 
-        // Body — slightly below center
         EquipmentSlotBox(
             slot = EquipmentSlot.BODY,
             item = equippedItems[EquipmentSlot.BODY],
@@ -179,7 +152,6 @@ private fun EquipmentPanel(
             size = 64.dp
         )
 
-        // Hands — bottom left
         EquipmentSlotBox(
             slot = EquipmentSlot.HANDS,
             item = equippedItems[EquipmentSlot.HANDS],
@@ -188,7 +160,6 @@ private fun EquipmentPanel(
             size = 56.dp
         )
 
-        // Feet — bottom center
         EquipmentSlotBox(
             slot = EquipmentSlot.FEET,
             item = equippedItems[EquipmentSlot.FEET],
@@ -197,7 +168,6 @@ private fun EquipmentPanel(
             size = 56.dp
         )
 
-        // Ring — bottom right
         EquipmentSlotBox(
             slot = EquipmentSlot.RING,
             item = equippedItems[EquipmentSlot.RING],
@@ -206,7 +176,6 @@ private fun EquipmentPanel(
             size = 56.dp
         )
 
-        // Amulet — top right
         EquipmentSlotBox(
             slot = EquipmentSlot.AMULET,
             item = equippedItems[EquipmentSlot.AMULET],
@@ -416,24 +385,27 @@ private fun ItemDetailDialog(
     onDismiss: () -> Unit,
     onToggleEquip: () -> Unit,
     isMasterMode: Boolean = false,
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    onUpdate: (Item) -> Unit = {}
 ) {
-    val rarityColor = item.rarity.toColor()
+    var editedItem by remember { mutableStateOf(item) }
+    val rarityColor = editedItem.rarity.toColor()
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(0.85f),
+                .fillMaxWidth(0.85f)
+                .heightIn(max = 700.dp),
             shape = RoundedCornerShape(20.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState()),
             ) {
-                // Item Image
-                if (!item.displayImageUrl.isNullOrBlank()) {
+                if (!editedItem.displayImageUrl.isNullOrBlank()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -443,8 +415,8 @@ private fun ItemDetailDialog(
                         contentAlignment = Alignment.Center,
                     ) {
                         AsyncImage(
-                            model = item.displayImageUrl,
-                            contentDescription = item.name,
+                            model = editedItem.displayImageUrl,
+                            contentDescription = editedItem.name,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                         )
@@ -452,7 +424,6 @@ private fun ItemDetailDialog(
                     Spacer(Modifier.height(12.dp))
                 }
 
-                // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -460,24 +431,35 @@ private fun ItemDetailDialog(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = itemToIcon(item),
+                            imageVector = itemToIcon(editedItem),
                             contentDescription = null,
                             modifier = Modifier.size(36.dp),
                             tint = rarityColor,
                         )
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text(
-                                text = item.name,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                text = item.rarity.name.lowercase().replaceFirstChar { it.uppercase() },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = rarityColor,
-                                fontWeight = FontWeight.Bold,
-                            )
+                            if (isMasterMode) {
+                                OutlinedTextField(
+                                    value = editedItem.name,
+                                    onValueChange = { 
+                                        editedItem = editedItem.copy(name = it)
+                                        onUpdate(editedItem)
+                                    },
+                                    label = { Text("Name") }
+                                )
+                            } else {
+                                Text(
+                                    text = editedItem.name,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Text(
+                                    text = editedItem.rarity.name.lowercase().replaceFirstChar { it.uppercase() },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = rarityColor,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
                         }
                     }
                     IconButton(onClick = onDismiss) {
@@ -487,41 +469,45 @@ private fun ItemDetailDialog(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-                // Slot
-                if (item.slot != null) {
-                    DetailRow("Slot", item.slot.name.replace("_", " "))
-                }
+                if (isMasterMode) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(value = editedItem.description, onValueChange = { editedItem = editedItem.copy(description = it); onUpdate(editedItem) }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+                        OutlinedTextField(value = editedItem.imageUrl ?: "", onValueChange = { editedItem = editedItem.copy(imageUrl = it.ifBlank { null }); onUpdate(editedItem) }, label = { Text("Image URL") }, modifier = Modifier.fillMaxWidth())
+                    }
+                } else {
+                    if (editedItem.slot != null) {
+                        DetailRow("Slot", editedItem.slot!!.name.replace("_", " "))
+                    }
 
-                // Equipped status
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "Equipped",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Checkbox(
-                        checked = item.equipped,
-                        onCheckedChange = { onToggleEquip() },
-                    )
-                }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Equipped",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Checkbox(
+                            checked = editedItem.equipped,
+                            onCheckedChange = { onToggleEquip() },
+                        )
+                    }
 
-                // Description
-                if (item.description.isNotBlank()) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = "Description",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = item.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                    if (editedItem.description.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Description",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = editedItem.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(12.dp))
@@ -531,7 +517,7 @@ private fun ItemDetailDialog(
                         onClick = onToggleEquip,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(if (item.equipped) "Unequip" else "Equip")
+                        Text(if (editedItem.equipped) "Unequip" else "Equip")
                     }
                     
                     if (isMasterMode) {

@@ -11,5 +11,7 @@ data class AppsScriptRequest(
     val id: String? = null,
     val character: Character? = null,
     val location: Location? = null,
+    val monster: com.dnd.helper.domain.model.Monster? = null,
+    val npc: com.dnd.helper.domain.model.Npc? = null,
     val payload: JsonObject? = null,
 )

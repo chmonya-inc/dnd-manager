@@ -14,6 +14,14 @@ interface CharacterRepository {
     suspend fun saveLocation(location: Location): Result<Unit>
     suspend fun deleteLocation(id: String): Result<Unit>
 
+    suspend fun getMonsters(): Result<List<com.dnd.helper.domain.model.Monster>>
+    suspend fun saveMonster(monster: com.dnd.helper.domain.model.Monster): Result<Unit>
+    suspend fun deleteMonster(id: String): Result<Unit>
+
+    suspend fun getNpcs(): Result<List<com.dnd.helper.domain.model.Npc>>
+    suspend fun saveNpc(npc: com.dnd.helper.domain.model.Npc): Result<Unit>
+    suspend fun deleteNpc(id: String): Result<Unit>
+
     /**
      * Returns the server's last-modified timestamp (ISO-8601 string).
      * Lightweight — used for auto-refresh polling.
