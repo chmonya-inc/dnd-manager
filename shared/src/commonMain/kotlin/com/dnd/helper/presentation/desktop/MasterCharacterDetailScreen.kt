@@ -210,7 +210,7 @@ private fun MasterContent(
                     MasterHealthSection(character, viewModel)
                     if (character.currentHp <= 0) {
                         Spacer(Modifier.height(12.dp))
-                        MasterDeathSaves(character, viewModel)
+                        MasterDeathSaves(character, viewModel, state.lastDeathSaveRoll)
                     }
                 }
 
@@ -629,6 +629,7 @@ private fun MasterNoteCard(
 private fun MasterDeathSaves(
     character: com.dnd.helper.domain.model.Character,
     viewModel: CharacterDetailViewModel,
+    lastDeathSaveRoll: Int? = null,
 ) {
     val combat = character.combat
     val isStable = combat.deathSaveSuccesses >= 3
@@ -717,11 +718,22 @@ private fun MasterDeathSaves(
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFD32F2F),
                 )
-                else -> Button(
-                    onClick = { viewModel.onEvent(CharacterDetailEvent.RollDeathSave) },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                ) {
-                    Text("Roll Death Save (d20)")
+                else -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Button(
+                        onClick = { viewModel.onEvent(CharacterDetailEvent.RollDeathSave) },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    ) {
+                        Text("Roll Death Save (d20)")
+                    }
+                    if (lastDeathSaveRoll != null) {
+                        val rollColor = if (lastDeathSaveRoll >= 10) Color(0xFF43A047) else Color(0xFFD32F2F)
+                        Text(
+                            text = "Rolled: $lastDeathSaveRoll",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = rollColor,
+                        )
+                    }
                 }
             }
         }

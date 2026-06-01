@@ -8,11 +8,17 @@ import com.dnd.helper.domain.model.Monster
 import com.dnd.helper.domain.model.Npc
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 class CharacterRepositoryImpl(
     private val dataSource: GoogleAppsScriptDataSource,
     private val storage: CharacterStorage,
 ) : CharacterRepository {
+
+    private val _characterUpdates = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    override val characterUpdates: SharedFlow<String> = _characterUpdates.asSharedFlow()
 
     // Simple in-memory caches to make UI instant
     private var charactersCache: List<Character>? = null
@@ -121,8 +127,16 @@ class CharacterRepositoryImpl(
             heavyCharacterCache[character.id] = character
             // Optimistically update list cache
             charactersCache = charactersCache?.map { if (it.id == character.id) character else it }
+            // Notify observers so other screens can refresh immediately
+            _characterUpdates.tryEmit(character.id)
         }
         return result
+    }
+
+    override fun optimisticUpdate(character: Character) {
+        heavyCharacterCache[character.id] = character
+        charactersCache = charactersCache?.map { if (it.id == character.id) character else it }
+        _characterUpdates.tryEmit(character.id)
     }
 
     override suspend fun deleteCharacter(id: String): Result<Unit> {

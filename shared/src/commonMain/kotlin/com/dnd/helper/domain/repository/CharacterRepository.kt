@@ -3,8 +3,15 @@ package com.dnd.helper.domain.repository
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.Location
+import kotlinx.coroutines.flow.Flow
 
 interface CharacterRepository {
+    /**
+     * Emits the ID of a character whenever it is successfully saved.
+     * Useful for cross-screen immediate refresh.
+     */
+    val characterUpdates: Flow<String>
+
     suspend fun getInitialData(): Result<com.dnd.helper.domain.model.InitialData>
     suspend fun getCharacters(forceRefresh: Boolean = false): Result<List<Character>>
     suspend fun getCharacter(id: String): Result<Character>
@@ -31,4 +38,11 @@ interface CharacterRepository {
      * Lightweight — used for auto-refresh polling.
      */
     suspend fun getLastModified(): Result<String>
+
+    /**
+     * Updates the in-memory cache with the given character and notifies observers.
+     * Use this for optimistic UI updates that should be visible immediately
+     * across screens before the server save completes.
+     */
+    fun optimisticUpdate(character: Character)
 }

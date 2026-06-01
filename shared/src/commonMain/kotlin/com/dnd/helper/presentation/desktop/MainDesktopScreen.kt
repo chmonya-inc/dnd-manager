@@ -22,7 +22,6 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 sealed class DesktopTab(val title: String, val icon: ImageVector) {
-    data object Summary : DesktopTab("Summary", Icons.Default.Dashboard)
     data object Characters : DesktopTab("Characters", Icons.Default.People)
     data object Library : DesktopTab("Library", Icons.AutoMirrored.Filled.LibraryBooks)
     data object Creator : DesktopTab("Creator", Icons.Default.AddCircle)
@@ -31,7 +30,6 @@ sealed class DesktopTab(val title: String, val icon: ImageVector) {
 }
 
 private val tabs = listOf(
-    DesktopTab.Summary,
     DesktopTab.Characters,
     DesktopTab.Library,
     DesktopTab.Creator,
@@ -142,14 +140,6 @@ fun MainDesktopScreen() {
             // Content Area
             Box(modifier = Modifier.fillMaxSize()) {
                 when (selectedTab) {
-                    DesktopTab.Summary -> {
-                        MasterSummaryScreen(
-                            onCharacterClick = { characterId ->
-                                selectedCharacterId = characterId
-                                selectedTab = DesktopTab.Characters
-                            },
-                        )
-                    }
                     DesktopTab.Characters -> {
                         CharactersSplitPane(
                             selectedCharacterId = selectedCharacterId,
@@ -208,6 +198,7 @@ fun CharactersSplitPane(
                 onCharacterClick = onCharacterSelected,
                 onCreateCharacter = onCreateCharacter,
                 showTopBar = true,
+                showSummary = true,
                 sessionKey = sessionKey,
             )
         }

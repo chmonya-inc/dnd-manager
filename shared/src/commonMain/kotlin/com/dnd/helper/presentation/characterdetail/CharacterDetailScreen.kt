@@ -283,7 +283,7 @@ fun CharacterDetailScreen(
             } else {
                 state.character?.let { character ->
                     when (selectedTab) {
-                        0 -> OverviewTab(character, viewModel::onEvent)
+                        0 -> OverviewTab(character, viewModel::onEvent, state.lastDeathSaveRoll)
                         1 -> StatsTab(character)
                         2 -> InventoryTab(items = character.items, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
                         3 -> CombatTab(character, isMasterMode = state.isMasterMode)

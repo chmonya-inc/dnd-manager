@@ -76,6 +76,7 @@ import com.dnd.helper.presentation.characterdetail.CharacterDetailEvent
 fun OverviewTab(
     character: Character,
     onEvent: (CharacterDetailEvent) -> Unit,
+    lastDeathSaveRoll: Int? = null,
 ) {
     Column(
         modifier = Modifier
@@ -93,7 +94,7 @@ fun OverviewTab(
         }
 
         // Combat Summary
-        CombatSummaryCard(character, onEvent)
+        CombatSummaryCard(character, onEvent, lastDeathSaveRoll)
 
         // Stat Modifiers Row
         StatModifiersRow(character.stats)
@@ -320,6 +321,7 @@ private fun AppearanceRow(character: Character) {
 private fun CombatSummaryCard(
     character: Character,
     onEvent: (CharacterDetailEvent) -> Unit,
+    lastDeathSaveRoll: Int? = null,
 ) {
     val combat = character.combat
     val totalHp = character.currentHp + combat.tempHp
@@ -484,7 +486,7 @@ private fun CombatSummaryCard(
 
             // Death Saves
             if (character.currentHp <= 0) {
-                DeathSaves(combat.deathSaveSuccesses, combat.deathSaveFailures, onEvent)
+                DeathSaves(combat.deathSaveSuccesses, combat.deathSaveFailures, onEvent, lastDeathSaveRoll)
             }
         }
     }
@@ -520,6 +522,7 @@ private fun DeathSaves(
     successes: Int,
     failures: Int,
     onEvent: (CharacterDetailEvent) -> Unit,
+    lastRoll: Int? = null,
 ) {
     val isStable = successes >= 3
     val isDead = failures >= 3
@@ -573,8 +576,19 @@ private fun DeathSaves(
                 color = Color(0xFFD32F2F),
             )
             else -> {
-                Button(onClick = { onEvent(CharacterDetailEvent.RollDeathSave) }) {
-                    Text("Roll Death Save (d20)")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Button(onClick = { onEvent(CharacterDetailEvent.RollDeathSave) }) {
+                        Text("Roll Death Save (d20)")
+                    }
+                    if (lastRoll != null) {
+                        val rollColor = if (lastRoll >= 10) Color(0xFF43A047) else Color(0xFFD32F2F)
+                        Text(
+                            text = "Last roll: $lastRoll",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = rollColor,
+                        )
+                    }
                 }
             }
         }

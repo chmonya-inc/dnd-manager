@@ -212,8 +212,10 @@ class CharacterDetailViewModel(
             is Result.Success -> {
                 val serverTimestamp = result.data
                 if (lastKnownTimestamp != null && lastKnownTimestamp != serverTimestamp) {
-                    if (hasPendingLocalChange) {
-                        println("[AutoRefresh] Timestamp changed but we have a pending local change — skipping reload.")
+                    // Skip reload while the user has pending debounced changes or a save is in flight.
+                    // This prevents the server from overwriting optimistic UI updates.
+                    if (hasPendingLocalChange || _state.value.hasUnsavedChanges) {
+                        println("[AutoRefresh] Timestamp changed but we have unsaved local changes — skipping reload.")
                         hasPendingLocalChange = false
                         // Deliberately do NOT update lastKnownTimestamp here.
                         // If an external change happened at the same time, the next
@@ -343,6 +345,7 @@ class CharacterDetailViewModel(
             deathSaveFailures = newFailures
         )
         val updatedCharacter = currentCharacter.copy(combat = updatedCombat)
+        _state.value = _state.value.copy(lastDeathSaveRoll = roll)
         scheduleDebouncedSave(updatedCharacter)
     }
 
@@ -363,6 +366,10 @@ class CharacterDetailViewModel(
             hasUnsavedChanges = true,
         )
         pendingSaveCharacter = character
+
+        // Push the optimistic change into the shared repository cache
+        // so the character list (and any other observer) refreshes right away.
+        repository.optimisticUpdate(character)
 
         // Cancel any existing debounce timer
         debouncedSaveJob?.cancel()

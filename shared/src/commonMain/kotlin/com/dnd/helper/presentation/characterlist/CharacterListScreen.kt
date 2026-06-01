@@ -1,27 +1,20 @@
 package com.dnd.helper.presentation.characterlist
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -45,6 +38,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.dnd.helper.domain.model.Character
+import com.dnd.helper.domain.model.Skill
+import com.dnd.helper.domain.model.abilityModifier
 
 // Race-based colors for subtle card backgrounds
 private fun getRaceColor(race: String): Color {
@@ -67,6 +62,7 @@ fun CharacterListScreen(
     onCreateCharacter: () -> Unit,
     modifier: Modifier = Modifier,
     showTopBar: Boolean = true,
+    showSummary: Boolean = false,
     sessionKey: String = "",
     viewModel: CharacterListViewModel = org.koin.compose.viewmodel.koinViewModel(key = sessionKey),
 ) {
@@ -86,10 +82,11 @@ fun CharacterListScreen(
         onCreateCharacter = onCreateCharacter,
         modifier = modifier,
         showTopBar = showTopBar,
+        showSummary = showSummary,
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun CharacterListContent(
     state: CharacterListState,
@@ -98,6 +95,7 @@ private fun CharacterListContent(
     onCreateCharacter: () -> Unit,
     modifier: Modifier = Modifier,
     showTopBar: Boolean = true,
+    showSummary: Boolean = false,
 ) {
     val pullRefreshState = rememberPullToRefreshState()
     val isRefreshing = state.isLoading && state.characters.isNotEmpty()
@@ -248,13 +246,23 @@ private fun CharacterListContent(
                             items = uniqueCharacters,
                             key = { it.id },
                         ) { character ->
-                            CharacterCard(
-                                character = character,
-                                onClick = { 
-                                    onEvent(CharacterListEvent.CharacterClicked(character.id))
-                                    onCharacterClick(character.id)
-                                },
-                            )
+                            if (showSummary) {
+                                SummaryCharacterCard(
+                                    character = character,
+                                    onClick = {
+                                        onEvent(CharacterListEvent.CharacterClicked(character.id))
+                                        onCharacterClick(character.id)
+                                    },
+                                )
+                            } else {
+                                SimpleCharacterCard(
+                                    character = character,
+                                    onClick = {
+                                        onEvent(CharacterListEvent.CharacterClicked(character.id))
+                                        onCharacterClick(character.id)
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -265,13 +273,13 @@ private fun CharacterListContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CharacterCard(
+private fun SimpleCharacterCard(
     character: Character,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val raceColor = getRaceColor(character.race)
-    
+
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
@@ -347,23 +355,23 @@ private fun CharacterCard(
                             )
                         }
                     }
-                    
+
                     Spacer(Modifier.height(2.dp))
-                    
+
                     Text(
                         text = "${character.race} · ${character.characterClass}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium
                     )
-                    
+
                     Text(
                         text = "Player: ${character.playerName}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
                 }
-                
+
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = null,
@@ -373,4 +381,294 @@ private fun CharacterCard(
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun SummaryCharacterCard(
+    character: Character,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val hpRatio = if (character.maxHp > 0) {
+        (character.currentHp.toFloat() / character.maxHp).coerceIn(0f, 1f)
+    } else 0f
+    val hpColor = when {
+        character.currentHp <= 0 -> Color(0xFF9E9E9E)
+        hpRatio <= 0.4f -> Color(0xFFD32F2F)
+        else -> Color(0xFF43A047)
+    }
+    val isDying = character.currentHp <= 0 && character.combat.deathSaveFailures < 3
+    val isDead = character.currentHp <= 0 && character.combat.deathSaveFailures >= 3
+    val raceColor = getRaceColor(character.race)
+
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Box {
+            // Subtle race-colored gradient in background
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(raceColor.copy(alpha = 0.3f), Color.Transparent)
+                        )
+                    )
+            )
+
+            Column(modifier = Modifier.padding(12.dp)) {
+                // Header: Avatar + Name + Level + AC
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (!character.displayImageUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = character.displayImageUrl,
+                                contentDescription = character.name,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            )
+                        }
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = character.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "${character.race} ${character.characterClass}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(6.dp),
+                    ) {
+                        Text(
+                            text = "LVL ${character.level}",
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(6.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.secondary,
+                            )
+                            Text(
+                                text = "${character.combat.armorClass}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                // HP bar
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = if (character.currentHp <= 0) Icons.Default.FavoriteBorder else Icons.Default.Favorite,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = hpColor,
+                    )
+                    LinearProgressIndicator(
+                        progress = { hpRatio },
+                        modifier = Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp)),
+                        color = hpColor,
+                        trackColor = hpColor.copy(alpha = 0.2f),
+                    )
+                    Text(
+                        text = "${character.currentHp}/${character.maxHp}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = hpColor,
+                    )
+                }
+
+                // Death saves if dying
+                if (isDying) {
+                    Spacer(Modifier.height(6.dp))
+                    DeathSavesRow(
+                        successes = character.combat.deathSaveSuccesses,
+                        failures = character.combat.deathSaveFailures,
+                    )
+                }
+
+                // Dead indicator
+                if (isDead) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "✗ Dead",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFD32F2F),
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(8.dp))
+
+                // Ability modifiers
+                AbilityModifiersRow(stats = character.stats)
+
+                // Skills
+                if (character.skills.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        character.skills.take(6).forEach { skill ->
+                            SkillChip(skill = skill)
+                        }
+                        if (character.skills.size > 6) {
+                            Text(
+                                text = "+${character.skills.size - 6}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.align(Alignment.CenterVertically),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AbilityModifiersRow(stats: com.dnd.helper.domain.model.CharacterStats) {
+    val abilities = listOf(
+        "STR" to abilityModifier(stats.strength),
+        "DEX" to abilityModifier(stats.dexterity),
+        "CON" to abilityModifier(stats.constitution),
+        "INT" to abilityModifier(stats.intelligence),
+        "WIS" to abilityModifier(stats.wisdom),
+        "CHA" to abilityModifier(stats.charisma),
+    )
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        abilities.forEach { (label, mod) ->
+            val color = when {
+                mod > 0 -> Color(0xFF43A047)
+                mod < 0 -> Color(0xFFD32F2F)
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = if (mod >= 0) "+$mod" else "$mod",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = color,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SkillChip(skill: Skill) {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(4.dp),
+    ) {
+        Text(
+            text = skill.name,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
+        )
+    }
+}
+
+@Composable
+private fun DeathSavesRow(successes: Int, failures: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            repeat(3) { i ->
+                DeathSaveDot(filled = i < successes, color = Color(0xFF43A047))
+            }
+        }
+        Text(
+            text = "Death Saves",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.error,
+            fontWeight = FontWeight.Bold,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            repeat(3) { i ->
+                DeathSaveDot(filled = i < failures, color = Color(0xFFD32F2F))
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeathSaveDot(filled: Boolean, color: Color) {
+    Box(
+        modifier = Modifier
+            .size(12.dp)
+            .clip(RoundedCornerShape(3.dp))
+            .background(
+                if (filled) color else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+            ),
+    )
 }

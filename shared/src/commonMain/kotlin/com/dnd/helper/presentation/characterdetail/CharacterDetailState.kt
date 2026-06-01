@@ -12,4 +12,6 @@ data class CharacterDetailState(
     /** True when stat/HP/level changes are queued for debounced save. */
     val hasUnsavedChanges: Boolean = false,
     val isMasterMode: Boolean = false,
+    /** The result of the most recent death saving throw roll (d20). */
+    val lastDeathSaveRoll: Int? = null,
 )

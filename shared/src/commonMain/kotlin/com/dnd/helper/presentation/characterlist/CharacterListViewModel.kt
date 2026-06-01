@@ -34,6 +34,14 @@ class CharacterListViewModel(
 
     init {
         loadInitialData()
+        // Immediately reload the character list whenever any character is saved
+        // (e.g. from the detail screen) so cross-screen changes are visible right away.
+        viewModelScope.launch {
+            repository.characterUpdates.collect { updatedId ->
+                println("[CharacterList] Received update for $updatedId — reloading list immediately")
+                loadCharacters(fromAutoRefresh = true)
+            }
+        }
     }
 
     private fun loadInitialData() {
