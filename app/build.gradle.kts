@@ -20,7 +20,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // Enables code shrinking, obfuscation, and optimization
+            isMinifyEnabled = true
+
+            // Enables resource shrinking (removes unused drawables, layouts, etc.)
+            isShrinkResources = true
+
+            // Includes the default ProGuard rules file and your custom rules
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
