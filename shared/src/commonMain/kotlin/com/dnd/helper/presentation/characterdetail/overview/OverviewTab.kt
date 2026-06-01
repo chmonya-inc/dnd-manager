@@ -1,6 +1,8 @@
 package com.dnd.helper.presentation.characterdetail.overview
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -94,14 +98,14 @@ fun OverviewTab(
         // Stat Modifiers Row
         StatModifiersRow(character.stats)
 
-        // Stat Controls
-        StatControls(character.stats, onEvent)
-
         // Status Bar
         StatusBar(character)
 
         // Inspiration & Exhaustion
         InspirationExhaustionRow(character, onEvent)
+
+        // Ability Scores (foldable)
+        StatControls(character.stats, onEvent)
 
         // Conditions
         if (character.combat.conditions.isNotEmpty()) {
@@ -675,6 +679,7 @@ private fun StatControls(
 
     var amountText by remember { mutableStateOf("1") }
     val amount = amountText.toIntOrNull() ?: 1
+    var expanded by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -683,15 +688,31 @@ private fun StatControls(
         ),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = "Ability Scores",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "Ability Scores",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
 
-            statConfigs.forEach { config ->
+            AnimatedVisibility(visible = expanded) {
+                Column {
+                    Spacer(Modifier.height(8.dp))
+
+                    statConfigs.forEach { config ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -770,6 +791,8 @@ private fun StatControls(
                 }
                 Spacer(Modifier.height(4.dp))
             }
+                }
+            }
         }
     }
 }
@@ -832,7 +855,7 @@ private fun InspirationExhaustionRow(
 
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Card(
-            modifier = Modifier.fillMaxWidth(0.5f),
+            modifier = Modifier.weight(1f),
             onClick = { onEvent(CharacterDetailEvent.ToggleInspiration) },
         ) {
             Row(
@@ -872,7 +895,7 @@ private fun InspirationExhaustionRow(
             }
         }
 
-        Card(modifier = Modifier.fillMaxWidth(0.5f)) {
+        Card(modifier = Modifier.weight(1f)) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
