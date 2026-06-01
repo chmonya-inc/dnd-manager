@@ -92,4 +92,4 @@ Detailed architectural decisions, tech stack information, and data flow diagrams
 
 ## 📄 License
 
-This project is for personal use and D&D session management.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
