@@ -54,7 +54,11 @@ kotlin {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         }
     }
-    jvm("desktop")
+    jvm("desktop") {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        }
+    }
     wasmJs {
         browser {
             commonWebpackConfig {
@@ -112,6 +116,7 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.java)
                 implementation(libs.kotlinx.coroutines.swing)
+                implementation(libs.jlayer)
             }
         }
 

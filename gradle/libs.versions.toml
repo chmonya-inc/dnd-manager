@@ -17,6 +17,7 @@ coil = "3.1.0"
 lifecycle = "2.8.4"
 navigation = "2.8.0-alpha10"
 coreKtxVersion = "1.18.0"
+jlayer = "1.0.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -58,6 +59,7 @@ coil-network-ktor3 = { group = "io.coil-kt.coil3", name = "coil-network-ktor3", 
 lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "lifecycle" }
 navigation-compose = { group = "org.jetbrains.androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtxVersion" }
+jlayer = { group = "javazoom", name = "jlayer", version.ref = "jlayer" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -121,7 +121,12 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (log.initialState != null && log.action.contains("Character")) {
+                    val isCharacterAction = log.action.contains("Character", ignoreCase = true)
+                    val hasJsonState = remember(log.initialState) {
+                        log.initialState?.trim()?.startsWith("{") == true
+                    }
+
+                    if (hasJsonState && isCharacterAction) {
                         Button(
                             onClick = { 
                                 onUndo()
@@ -201,35 +206,48 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
 }
 
 private fun calculateVisualDiff(initial: String?, end: String?): List<String> {
-    if (initial == null || end == null) return emptyList()
+    if (initial.isNullOrBlank() || end.isNullOrBlank()) return emptyList()
+    if (initial == end) return emptyList()
     
     val lines = mutableListOf<String>()
     
     try {
-        val json = Json { prettyPrint = true }
+        val json = Json { prettyPrint = true; isLenient = true }
         
+        val isInitialJson = initial.trim().let { it.startsWith("{") || it.startsWith("[") }
+        val isEndJson = end.trim().let { it.startsWith("{") || it.startsWith("[") }
+
+        if (!isInitialJson && !isEndJson && initial.length < 100 && end.length < 100) {
+            return listOf("- $initial", "+ $end")
+        }
+
         // Parse and re-format to ensure consistent pretty printing
         val initialPretty = try {
-            val initialObj = Json.parseToJsonElement(initial)
-            json.encodeToString(initialObj).lines()
+            if (isInitialJson) {
+                val initialObj = Json.parseToJsonElement(initial)
+                json.encodeToString(initialObj).lines()
+            } else initial.lines()
         } catch (e: Exception) {
             initial.lines()
         }
         
         val endPretty = try {
-            val endObj = Json.parseToJsonElement(end)
-            json.encodeToString(endObj).lines()
+            if (isEndJson) {
+                val endObj = Json.parseToJsonElement(end)
+                json.encodeToString(endObj).lines()
+            } else end.lines()
         } catch (e: Exception) {
             end.lines()
         }
         
         // Use Sets for O(1) lookups to avoid O(N^2) complexity which hangs the UI
-        val initialSet = initialPretty.toSet()
-        val endSet = endPretty.toSet()
+        val initialSet = initialPretty.map { it.trim() }.toSet()
+        val endSet = endPretty.map { it.trim() }.toSet()
         
         // Find lines removed (in initial but not in end)
         initialPretty.forEach { line ->
-            if (line.isNotBlank() && line.trim() != "{" && line.trim() != "}" && line.trim() != "[" && line.trim() != "]" && line !in endSet) {
+            val trimmed = line.trim()
+            if (trimmed.isNotBlank() && trimmed != "{" && trimmed != "}" && trimmed != "[" && trimmed != "]" && trimmed !in endSet) {
                 lines.add("- $line")
             }
             if (lines.size > 25) return@forEach 
@@ -237,21 +255,19 @@ private fun calculateVisualDiff(initial: String?, end: String?): List<String> {
         
         // Find lines added (in end but not in initial)
         endPretty.forEach { line ->
-            if (line.isNotBlank() && line.trim() != "{" && line.trim() != "}" && line.trim() != "[" && line.trim() != "]" && line !in initialSet) {
+            val trimmed = line.trim()
+            if (trimmed.isNotBlank() && trimmed != "{" && trimmed != "}" && trimmed != "[" && trimmed != "]" && trimmed !in initialSet) {
                 lines.add("+ $line")
             }
             if (lines.size > 50) return@forEach
         }
         
-        if (lines.isEmpty()) {
-            // Check if it's just a reordering issue
-            if (initialPretty != endPretty) {
-                lines.add("Data reordered or non-visible changes")
-            }
+        if (lines.isEmpty() && initialPretty != endPretty) {
+            lines.add("Data changed (non-structural or whitespace)")
         }
         
     } catch (e: Exception) {
-        lines.add("Error comparing states: ${e.message}")
+        lines.add("Error comparing: ${e.message}")
     }
     
     return lines

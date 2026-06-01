@@ -27,7 +27,7 @@ object ImageUrlHelper {
 
             if (id != null) {
                 // The 'uc?export=download' format is the most reliable way to 
-                // get the raw bytes of an image from a public Google Drive file.
+                // get the raw bytes of a file from a public Google Drive.
                 "https://drive.google.com/uc?export=download&id=$id"
             } else {
                 url

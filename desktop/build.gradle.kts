@@ -8,6 +8,12 @@ composeCompiler {
     enableIntrinsicRemember = true
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+    }
+}
+
 group = "com.dnd.helper"
 version = "1.0"
 

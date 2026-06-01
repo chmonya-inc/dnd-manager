@@ -1,8 +1,141 @@
 package com.dnd.helper.di
 
+import com.dnd.helper.domain.music.AudioPlayer
 import com.dnd.helper.domain.storage.CharacterStorage
 import org.koin.dsl.module
 import java.util.prefs.Preferences
+
+class DesktopAudioPlayer : AudioPlayer {
+    private var player: javazoom.jl.player.Player? = null
+    private var currentUrl: String? = null
+    private var isPaused = false
+    private var lastPositionMs: Long = 0
+    private var startTimeMs: Long = 0
+    private var estimatedDurationMs: Long = 0
+    private var bitrate: Int = 0
+
+    override fun play(url: String) {
+        stop()
+        currentUrl = url
+        // Estimate duration in background
+        kotlin.concurrent.thread {
+            estimateDuration(url)
+        }
+        startThread(0)
+    }
+
+    private fun estimateDuration(urlStr: String) {
+        try {
+            val url = java.net.URI(urlStr).toURL()
+            val connection = url.openConnection()
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            
+            val contentLength = connection.contentLengthLong
+            if (contentLength <= 0) return
+
+            val stream = java.io.BufferedInputStream(connection.getInputStream())
+            val bitstream = javazoom.jl.decoder.Bitstream(stream)
+            val header = bitstream.readFrame()
+            bitrate = header.bitrate()
+            bitstream.close()
+
+            if (bitrate > 0) {
+                estimatedDurationMs = (contentLength * 8 * 1000) / bitrate
+            } else {
+                bitrate = 128000
+                estimatedDurationMs = (contentLength / 16000) * 1000 // Fallback 128kbps
+            }
+        } catch (e: Exception) {
+            bitrate = 128000
+            estimatedDurationMs = 0
+        }
+    }
+
+    private fun startThread(skipMs: Long) {
+        kotlin.concurrent.thread {
+            try {
+                val url = java.net.URI(currentUrl!!).toURL()
+                val connection = url.openConnection()
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                
+                val inputStream = java.io.BufferedInputStream(connection.getInputStream())
+                if (skipMs > 0 && bitrate > 0) {
+                    // Skip precise bytes based on detected bitrate
+                    // bytes = (ms * bitrate_bps) / (8 bits * 1000 ms)
+                    val bytesToSkip = (skipMs * bitrate) / 8000
+                    inputStream.skip(bytesToSkip)
+                }
+                
+                val p = javazoom.jl.player.Player(inputStream)
+                player = p
+                startTimeMs = System.currentTimeMillis() - skipMs
+                isPaused = false
+                p.play()
+                
+                // When play() returns, the song is finished naturally
+                if (player == p) {
+                    lastPositionMs = if (estimatedDurationMs > 0) estimatedDurationMs else 0
+                    player = null
+                    isPaused = false
+                }
+            } catch (e: Exception) {
+                player = null
+            }
+        }
+    }
+
+    override fun pause() {
+        if (player != null && !isPaused) {
+            lastPositionMs = getCurrentPosition()
+            player?.close()
+            isPaused = true
+        }
+    }
+
+    override fun resume() {
+        if (isPaused && currentUrl != null) {
+            startThread(lastPositionMs)
+        }
+    }
+
+    override fun stop() {
+        player?.close()
+        player = null
+        isPaused = false
+        lastPositionMs = 0
+        // Don't wipe estimatedDurationMs here, wipe it in play() for new track
+    }
+
+    override fun setVolume(volume: Float) {}
+
+    override fun isPlaying(): Boolean = player != null && !isPaused
+
+    override fun seekTo(position: Long) {
+        if (currentUrl != null) {
+            val wasPlaying = isPlaying()
+            // Surgical stop: close player but don't reset lastPositionMs yet
+            player?.close()
+            player = null
+            
+            lastPositionMs = position
+            if (wasPlaying || isPaused) {
+                startThread(position)
+                if (isPaused) pause() // stay paused if it was paused
+            }
+        }
+    }
+
+    override fun getCurrentPosition(): Long {
+        val pos = if (isPlaying()) {
+            System.currentTimeMillis() - startTimeMs
+        } else {
+            lastPositionMs
+        }
+        return if (estimatedDurationMs > 0) pos.coerceAtMost(estimatedDurationMs) else pos
+    }
+
+    override fun getDuration(): Long = estimatedDurationMs
+}
 
 class DesktopCharacterStorage : CharacterStorage {
     private val prefs = Preferences.userRoot().node("com.dnd.helper")
@@ -34,6 +167,7 @@ class DesktopCharacterStorage : CharacterStorage {
 
 actual val platformModule = module {
     single<CharacterStorage> { DesktopCharacterStorage() }
+    single<AudioPlayer> { DesktopAudioPlayer() }
 }
 
 actual val isDesktop: Boolean = true

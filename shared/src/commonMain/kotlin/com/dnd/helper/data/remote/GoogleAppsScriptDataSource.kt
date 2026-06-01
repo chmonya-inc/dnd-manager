@@ -69,6 +69,15 @@ class GoogleAppsScriptDataSource(
     suspend fun deleteNpc(id: String): Result<Unit> =
         executeUnit(request = AppsScriptRequest(action = "deleteNpc", id = id, tableId = tableId()))
 
+    suspend fun getMusic(): Result<List<com.dnd.helper.domain.model.MusicTrack>> =
+        execute(request = AppsScriptRequest(action = "getMusic", tableId = tableId()))
+
+    suspend fun saveMusic(music: com.dnd.helper.domain.model.MusicTrack): Result<Unit> =
+        executeUnit(request = AppsScriptRequest(action = "saveMusic", music = music, tableId = tableId()))
+
+    suspend fun deleteMusic(id: String): Result<Unit> =
+        executeUnit(request = AppsScriptRequest(action = "deleteMusic", id = id, tableId = tableId()))
+
     suspend fun getLogs(): Result<List<com.dnd.helper.domain.model.LogEntry>> =
         execute(request = AppsScriptRequest(action = "getLogs", tableId = tableId()))
 

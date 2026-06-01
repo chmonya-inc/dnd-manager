@@ -8,5 +8,6 @@ data class InitialData(
     val locations: List<Location>,
     val monsters: List<Monster>,
     val npcs: List<Npc>,
+    val music: List<MusicTrack> = emptyList(),
     val lastModified: String
 )

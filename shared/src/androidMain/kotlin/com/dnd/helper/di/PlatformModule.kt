@@ -1,6 +1,8 @@
 package com.dnd.helper.di
 
 import android.content.Context
+import com.dnd.helper.domain.music.AndroidAudioPlayer
+import com.dnd.helper.domain.music.AudioPlayer
 import com.dnd.helper.domain.storage.CharacterStorage
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -35,6 +37,7 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
 
 actual val platformModule = module {
     single<CharacterStorage> { AndroidCharacterStorage(androidContext()) }
+    single<AudioPlayer> { AndroidAudioPlayer() }
 }
 
 actual val isDesktop: Boolean = false

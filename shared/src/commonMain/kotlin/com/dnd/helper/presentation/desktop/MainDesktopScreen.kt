@@ -1,5 +1,6 @@
 package com.dnd.helper.presentation.desktop
 
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,7 +12,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.dnd.helper.domain.storage.CharacterStorage
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
@@ -20,6 +23,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import kotlin.math.roundToInt
 
 sealed class DesktopTab(val title: String, val icon: ImageVector) {
     data object Characters : DesktopTab("Characters", Icons.Default.People)
@@ -50,6 +54,8 @@ fun MainDesktopScreen() {
     var initialCreatorType by remember { mutableStateOf<CreatorType?>(null) }
     var showDiceDialog by remember { mutableStateOf(false) }
     var showSessionsDialog by remember { mutableStateOf(false) }
+    var showMusicPlayer by remember { mutableStateOf(false) }
+    var musicPlayerOffset by remember { mutableStateOf(IntOffset(0, 0)) }
 
     // Track active session for forcing ViewModel recreation on session switch
     var activeTableId by remember { mutableStateOf<String?>(null) }
@@ -108,6 +114,22 @@ fun MainDesktopScreen() {
                     }
                     
                     Spacer(Modifier.weight(1f))
+
+                    // Music Player Button
+                    FloatingActionButton(
+                        onClick = { showMusicPlayer = !showMusicPlayer },
+                        modifier = Modifier.size(48.dp),
+                        containerColor = if (showMusicPlayer) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer,
+                        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (showMusicPlayer) Icons.Default.MusicNote else Icons.Default.MusicOff,
+                            contentDescription = "Music",
+                            tint = if (showMusicPlayer) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
 
                     // Sessions Button
                     FloatingActionButton(
@@ -178,6 +200,24 @@ fun MainDesktopScreen() {
                     )
                     DesktopTab.Logs -> LogScreen()
                     DesktopTab.Presenter -> PresentationScreen()
+                }
+
+                if (showMusicPlayer) {
+                    MusicPlayerScreen(
+                        modifier = Modifier
+                            .offset { musicPlayerOffset }
+                            .padding(16.dp)
+                            .pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    musicPlayerOffset = IntOffset(
+                                        x = (musicPlayerOffset.x + dragAmount.x).roundToInt(),
+                                        y = (musicPlayerOffset.y + dragAmount.y).roundToInt()
+                                    )
+                                }
+                            },
+                        onClose = { showMusicPlayer = false }
+                    )
                 }
             }
         }

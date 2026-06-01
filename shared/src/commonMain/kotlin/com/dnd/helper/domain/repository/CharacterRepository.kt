@@ -30,6 +30,10 @@ interface CharacterRepository {
     suspend fun saveNpc(npc: com.dnd.helper.domain.model.Npc): Result<Unit>
     suspend fun deleteNpc(id: String): Result<Unit>
 
+    suspend fun getMusic(forceRefresh: Boolean = false): Result<List<com.dnd.helper.domain.model.MusicTrack>>
+    suspend fun saveMusic(music: com.dnd.helper.domain.model.MusicTrack): Result<Unit>
+    suspend fun deleteMusic(id: String): Result<Unit>
+
     suspend fun getLogs(): Result<List<com.dnd.helper.domain.model.LogEntry>>
     suspend fun saveLog(log: com.dnd.helper.domain.model.LogEntry): Result<Unit>
 

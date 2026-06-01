@@ -7,6 +7,7 @@ const METADATA_SHEET_NAME = "Metadata";
 const LOCATION_SHEET_NAME = "Locations";
 const MONSTER_SHEET_NAME = "Monsters";
 const NPC_SHEET_NAME = "Npcs";
+const MUSIC_SHEET_NAME = "Music";
 const SUMMARY_SHEET_NAME = "CharactersSummary";
 const LOG_SHEET_NAME = "Logs";
 
@@ -23,10 +24,11 @@ const ITEM_HEADERS = ["ItemID", "ItemName", "Slot", "Rarity", "StatsJSON", "Desc
 const LOCATION_HEADERS = ["ID", "Name", "Description", "ImageUrl"];
 const MONSTER_HEADERS = ["ID", "Name", "Description", "ImageUrl", "StatsJSON", "MaxHP", "CurrentHP", "ArmorClass", "Speed", "CR", "Type", "Alignment", "Size"];
 const NPC_HEADERS = ["ID", "Name", "Description", "ImageUrl", "Background"];
+const MUSIC_HEADERS = ["ID", "Name", "URL"];
 const LOG_HEADERS = ["Timestamp", "Action", "Details", "InitialState", "EndState", "Success"];
 
-const WRITE_ACTIONS = ["saveCharacter", "deleteCharacter", "saveLocation", "deleteLocation", "saveMonster", "deleteMonster", "saveNpc", "deleteNpc", "saveLog"];
-const READ_ACTIONS = ["getCharacters", "getCharacter", "getLastModified", "getLocations", "getMonsters", "getNpcs", "getInitialData", "getLogs"];
+const WRITE_ACTIONS = ["saveCharacter", "deleteCharacter", "saveLocation", "deleteLocation", "saveMonster", "deleteMonster", "saveNpc", "deleteNpc", "saveLog", "saveMusic", "deleteMusic"];
+const READ_ACTIONS = ["getCharacters", "getCharacter", "getLastModified", "getLocations", "getMonsters", "getNpcs", "getInitialData", "getLogs", "getMusic"];
 
 function doGet(e) {
   var requestJson = e.parameter.request;
@@ -74,6 +76,9 @@ function handleRequest(request, tableId) {
     case "deleteNpc": return handleDeleteNpc(request.id, tableId);
     case "saveLog": return handleSaveLog(request.log, tableId);
     case "getLogs": return handleGetLogs(tableId);
+    case "getMusic": return handleGetMusic(tableId);
+    case "saveMusic": return handleSaveMusic(request.music, tableId);
+    case "deleteMusic": return handleDeleteMusic(request.id, tableId);
     default: return { success: false, error: "Unknown action" };
   }
 }
@@ -106,6 +111,7 @@ function handleGetInitialData(tableId) {
       locations: handleGetLocations(tableId).data,
       monsters: handleGetMonsters(tableId).data,
       npcs: handleGetNpcs(tableId).data,
+      music: handleGetMusic(tableId).data,
       lastModified: handleGetLastModified(tableId).data
     }
   };
@@ -392,6 +398,38 @@ function handleDeleteNpc(id, tableId) {
   return { success: true };
 }
 
+function getMusicSheet(tableId) {
+  var ss = getSpreadsheet(tableId);
+  var sheet = ss.getSheetByName(MUSIC_SHEET_NAME) || ss.insertSheet(MUSIC_SHEET_NAME);
+  if (sheet.getLastRow() === 0) sheet.appendRow(MUSIC_HEADERS);
+  return sheet;
+}
+function handleGetMusic(tableId) {
+  var values = getMusicSheet(tableId).getDataRange().getValues();
+  var data = [];
+  for (var i = 1; i < values.length; i++) {
+    if (values[i][0]) data.push({ id: String(values[i][0]), name: String(values[i][1]), url: String(values[i][2]) });
+  }
+  return { success: true, data: data };
+}
+function handleSaveMusic(m, tableId) {
+  var sheet = getMusicSheet(tableId);
+  var data = sheet.getDataRange().getValues();
+  var idx = -1;
+  for (var i = 1; i < data.length; i++) if (data[i][0] == m.id) { idx = i + 1; break; }
+  var row = [m.id, m.name, m.url];
+  if (idx > 0) sheet.getRange(idx, 1, 1, row.length).setValues([row]); else sheet.appendRow(row);
+  updateLastModified(tableId);
+  return { success: true };
+}
+function handleDeleteMusic(id, tableId) {
+  var sheet = getMusicSheet(tableId);
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) if (data[i][0] == id) { sheet.deleteRow(i + 1); break; }
+  updateLastModified(tableId);
+  return { success: true };
+}
+
 function getLogsSheet(tableId) {
   var ss = getSpreadsheet(tableId);
   var sheet = ss.getSheetByName(LOG_SHEET_NAME) || ss.insertSheet(LOG_SHEET_NAME);
@@ -406,12 +444,22 @@ function handleSaveLog(log, tableId) {
   if (!timestamp || timestamp.indexOf("2024-05-20") === 0) {
     timestamp = new Date().toISOString();
   }
+
+  var initialState = log.initialState;
+  if (initialState && typeof initialState === 'object') {
+    initialState = JSON.stringify(initialState);
+  }
+  var endState = log.endState;
+  if (endState && typeof endState === 'object') {
+    endState = JSON.stringify(endState);
+  }
+
   var row = [
     timestamp,
     log.action,
     log.details || "",
-    log.initialState || "",
-    log.endState || "",
+    initialState || "",
+    endState || "",
     log.success !== false
   ];
   sheet.appendRow(row);
@@ -424,14 +472,21 @@ function handleGetLogs(tableId) {
   // Return last 100 logs
   var start = Math.max(1, values.length - 100);
   for (var i = values.length - 1; i >= start; i--) {
-    if (values[i][0]) data.push({
-      timestamp: values[i][0],
-      action: values[i][1],
-      details: values[i][2],
-      initialState: values[i][3],
-      endState: values[i][4],
-      success: values[i][5]
-    });
+    if (values[i][0] && values[i][0] !== LOG_HEADERS[0]) {
+      var initialState = values[i][3];
+      if (initialState && typeof initialState === 'object') initialState = JSON.stringify(initialState);
+      var endState = values[i][4];
+      if (endState && typeof endState === 'object') endState = JSON.stringify(endState);
+
+      data.push({
+        timestamp: String(values[i][0]),
+        action: String(values[i][1]),
+        details: String(values[i][2]),
+        initialState: String(initialState || ""),
+        endState: String(endState || ""),
+        success: values[i][5] === true || String(values[i][5]).toLowerCase() === "true"
+      });
+    }
   }
   return { success: true, data: data };
 }

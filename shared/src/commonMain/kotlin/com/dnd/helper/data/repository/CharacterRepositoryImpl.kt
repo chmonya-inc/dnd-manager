@@ -26,6 +26,7 @@ class CharacterRepositoryImpl(
     private var locationsCache: List<Location>? = null
     private var monstersCache: List<Monster>? = null
     private var npcsCache: List<Npc>? = null
+    private var musicCache: List<com.dnd.helper.domain.model.MusicTrack>? = null
 
     /** Tracks the last table ID we fetched from; used to auto-invalidate caches on session switch. */
     private var lastTableId: String? = null
@@ -58,6 +59,7 @@ class CharacterRepositoryImpl(
             locationsCache = data.locations
             monstersCache = data.monsters
             npcsCache = data.npcs
+            musicCache = data.music
             
             // Update heavy character cache for any characters that have items or notes
             filteredChars.forEach { char ->
@@ -210,6 +212,28 @@ class CharacterRepositoryImpl(
     override suspend fun deleteNpc(id: String): Result<Unit> {
         val result = dataSource.deleteNpc(id)
         if (result is Result.Success) npcsCache = null
+        return result
+    }
+
+    override suspend fun getMusic(forceRefresh: Boolean): Result<List<com.dnd.helper.domain.model.MusicTrack>> {
+        val tableChanged = checkTableIdChanged()
+        if (!forceRefresh && !tableChanged) {
+            musicCache?.let { return Result.Success(it) }
+        }
+        val result = dataSource.getMusic()
+        if (result is Result.Success) musicCache = result.data
+        return result
+    }
+
+    override suspend fun saveMusic(music: com.dnd.helper.domain.model.MusicTrack): Result<Unit> {
+        val result = dataSource.saveMusic(music)
+        if (result is Result.Success) musicCache = null
+        return result
+    }
+
+    override suspend fun deleteMusic(id: String): Result<Unit> {
+        val result = dataSource.deleteMusic(id)
+        if (result is Result.Success) musicCache = null
         return result
     }
 
