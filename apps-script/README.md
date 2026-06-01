@@ -82,7 +82,7 @@ All requests are HTTP POST with `Content-Type: application/json`.
 
 ```json
 {
-  "action": "getCharacters"
+  "action": "getCharacters" 
 }
 ```
 
