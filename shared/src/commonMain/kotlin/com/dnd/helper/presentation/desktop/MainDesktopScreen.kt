@@ -15,9 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.domain.storage.CharacterStorage
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
@@ -292,6 +295,7 @@ private fun SessionsDialog(
     onSessionSelected: (String) -> Unit,
     storage: CharacterStorage = org.koin.compose.koinInject(),
 ) {
+    val clipboardManager = LocalClipboardManager.current
     var sessions by remember {
         mutableStateOf(
             loadSessions(storage)
@@ -308,8 +312,9 @@ private fun SessionsDialog(
             Column(modifier = Modifier.fillMaxWidth()) {
                 // Active session info
                 if (activeTableId.isNotBlank()) {
+                    val activeSession = sessions.find { it.id == activeTableId }
                     Text(
-                        text = "Active: ${activeTableId}",
+                        text = "Active: ${activeSession?.name ?: "Unknown"}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -344,6 +349,10 @@ private fun SessionsDialog(
                                         storage.saveTableId("")
                                         activeTableId = ""
                                     }
+                                },
+                                onCopy = {
+                                    val encoded = IdUtils.encode(session.id)
+                                    clipboardManager.setText(AnnotatedString(encoded))
                                 }
                             )
                         }
@@ -379,7 +388,7 @@ private fun SessionsDialog(
                 OutlinedTextField(
                     value = newId,
                     onValueChange = { newId = it },
-                    label = { Text("Spreadsheet ID") },
+                    label = { Text("Spreadsheet ID or Game ID") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
@@ -387,10 +396,11 @@ private fun SessionsDialog(
                 Button(
                     onClick = {
                         if (newName.isNotBlank() && newId.isNotBlank()) {
+                            val decodedId = IdUtils.decode(newId)
                             val updated = sessions.toMutableList()
                             // Replace if same ID exists
-                            updated.removeAll { it.id == newId }
-                            updated.add(Session(id = newId, name = newName))
+                            updated.removeAll { it.id == decodedId }
+                            updated.add(Session(id = decodedId, name = newName))
                             sessions = updated
                             storage.saveSessions(sessionsJson.encodeToString(sessions))
                             newName = ""
@@ -419,6 +429,7 @@ private fun SessionRow(
     isActive: Boolean,
     onSelect: () -> Unit,
     onDelete: () -> Unit,
+    onCopy: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -443,12 +454,23 @@ private fun SessionRow(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = session.id,
+                    text = "Ready to share",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = "Copy Game ID",
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 TextButton(
                     onClick = onSelect,
                     enabled = !isActive,

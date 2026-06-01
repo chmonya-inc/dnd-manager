@@ -84,7 +84,7 @@ fun StartScreen(
                 OutlinedTextField(
                     value = state.tableId,
                     onValueChange = { viewModel.onEvent(StartEvent.TableIdChanged(it)) },
-                    label = { Text("Session Table ID (Spreadsheet ID)") },
+                    label = { Text("Game ID or Spreadsheet ID") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     trailingIcon = {
