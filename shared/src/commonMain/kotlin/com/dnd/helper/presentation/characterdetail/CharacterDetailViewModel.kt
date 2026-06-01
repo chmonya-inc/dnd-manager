@@ -37,7 +37,7 @@ class CharacterDetailViewModel(
 
     /**
      * Active debounced save job. When the user rapidly edits stats/HP/level,
-     * each click cancels the previous job and starts a new 5-second timer.
+     * each click cancels the previous job and starts a new 1-second timer.
      * Only when the timer fires is the data pushed to the server.
      */
     private var debouncedSaveJob: Job? = null
@@ -50,7 +50,7 @@ class CharacterDetailViewModel(
 
     /**
      * The character state that needs to be synced to the server.
-     * Updated on every optimistic local change. Flushed after 5s of inactivity.
+     * Updated on every optimistic local change. Flushed after 1s of inactivity.
      */
     private var pendingSaveCharacter: com.dnd.helper.domain.model.Character? = null
 
@@ -89,7 +89,35 @@ class CharacterDetailViewModel(
             CharacterDetailEvent.AddItem -> addItem()
             is CharacterDetailEvent.RemoveItem -> removeItem(event.itemId)
             is CharacterDetailEvent.UpdateItem -> updateItem(event.item)
+            CharacterDetailEvent.AddNote -> addNote()
+            is CharacterDetailEvent.RemoveNote -> removeNote(event.noteId)
+            is CharacterDetailEvent.UpdateNote -> updateNote(event.note)
         }
+    }
+
+    private fun addNote() {
+        val current = _state.value.character ?: return
+        val newNote = com.dnd.helper.domain.model.Note(
+            id = "note-${kotlin.random.Random.nextInt()}",
+            title = "New Note",
+            content = "",
+            timestamp = 0L // For simplicity in common code
+        )
+        val updatedCharacter = current.copy(notes = current.notes + newNote)
+        scheduleDebouncedSave(updatedCharacter)
+    }
+
+    private fun removeNote(noteId: String) {
+        val current = _state.value.character ?: return
+        val updatedCharacter = current.copy(notes = current.notes.filter { it.id != noteId })
+        scheduleDebouncedSave(updatedCharacter)
+    }
+
+    private fun updateNote(note: com.dnd.helper.domain.model.Note) {
+        val current = _state.value.character ?: return
+        val updatedNotes = current.notes.map { if (it.id == note.id) note else it }
+        val updatedCharacter = current.copy(notes = updatedNotes)
+        scheduleDebouncedSave(updatedCharacter)
     }
 
     private fun addItem() {
@@ -143,7 +171,7 @@ class CharacterDetailViewModel(
     }
 
     /** Starts auto-refresh polling. Call from DisposableEffect/onResume. */
-    fun startAutoRefresh(intervalMs: Long = 4_000L) {
+    fun startAutoRefresh(intervalMs: Long = 1_000L) {
         if (pollingJob?.isActive == true) return
         pollingJob = viewModelScope.launch {
             while (isActive) {
@@ -208,16 +236,21 @@ class CharacterDetailViewModel(
     }
 
     private fun saveChanges() {
-        val edited = _state.value.editedCharacter ?: return
-        
-        // Use originalCharacter from before the edit started
-        if (originalCharacter == null) {
-            originalCharacter = _state.value.character
-        }
+        val state = _state.value
+        if (state.isEditing) {
+            val edited = state.editedCharacter ?: return
+            
+            // Use originalCharacter from before the edit started
+            if (originalCharacter == null) {
+                originalCharacter = state.character
+            }
 
-        // Edit-mode "Save" is an explicit user action — save immediately.
-        performSave(edited)
-        _state.value = _state.value.copy(isSaving = true)
+            // Edit-mode "Save" is an explicit user action — save immediately.
+            performSave(edited)
+        } else {
+            // User explicitly clicked "Save" to flush pending debounced changes
+            flushPendingSave()
+        }
     }
 
     private fun updateLevel(delta: Int) {
@@ -315,7 +348,7 @@ class CharacterDetailViewModel(
 
     /**
      * Schedules a debounced save. Each new call cancels the previous timer.
-     * After 5 seconds of inactivity the character is pushed to the server.
+     * After 1 second of inactivity the character is pushed to the server.
      * The UI is updated optimistically immediately.
      */
     private fun scheduleDebouncedSave(character: com.dnd.helper.domain.model.Character) {
@@ -335,8 +368,8 @@ class CharacterDetailViewModel(
         debouncedSaveJob?.cancel()
 
         debouncedSaveJob = viewModelScope.launch {
-            delay(5_000L)
-            // Timer fired — user hasn't made another change in 5s
+            delay(1_000L)
+            // Timer fired — user hasn't made another change in 1s
             val characterToSave = pendingSaveCharacter ?: character
             pendingSaveCharacter = null
             performSave(characterToSave)
@@ -350,6 +383,7 @@ class CharacterDetailViewModel(
     private fun performSave(character: com.dnd.helper.domain.model.Character) {
         val previousUICharacter = _state.value.character
         hasPendingLocalChange = true
+        _state.value = _state.value.copy(isSaving = true)
 
         // For logs, use the state BEFORE any edits in this cycle
         val initialJson = originalCharacter?.let { Json.encodeToString(it) }
@@ -363,12 +397,17 @@ class CharacterDetailViewModel(
         viewModelScope.launch {
             when (val result = repository.saveCharacter(character)) {
                 is Result.Success -> {
+                    // Update state IMMEDIATELY after data is saved.
+                    // Don't wait for the secondary 'saveLog' network call.
                     _state.value = _state.value.copy(
                         isSaving = false,
                         hasUnsavedChanges = false,
                     )
                     
-                    // Log the change
+                    // On success, this new state becomes the original state for future edits
+                    originalCharacter = character
+
+                    // Log the change in background
                     repository.saveLog(com.dnd.helper.domain.model.LogEntry(
                         action = "Update Character: ${character.name}",
                         details = diffDetails,
@@ -376,9 +415,6 @@ class CharacterDetailViewModel(
                         endState = endJson,
                         success = true
                     ))
-                    
-                    // On success, this new state becomes the original state for future edits
-                    originalCharacter = character
                 }
                 is Result.Error -> {
                     hasPendingLocalChange = false
@@ -440,6 +476,19 @@ class CharacterDetailViewModel(
             old.skills.forEach { oldSkill ->
                 new.skills.find { it.id == oldSkill.id }?.let { newSkill ->
                     if (oldSkill.level != newSkill.level) changes.add("${newSkill.name} LVL: ${oldSkill.level} -> ${newSkill.level}")
+                }
+            }
+        }
+
+        // Notes
+        if (old.notes.size != new.notes.size) {
+            changes.add("Notes: ${old.notes.size} -> ${new.notes.size}")
+        } else {
+            old.notes.forEach { oldNote ->
+                new.notes.find { it.id == oldNote.id }?.let { newNote ->
+                    if (oldNote.title != newNote.title || oldNote.content != newNote.content) {
+                        changes.add("Note '${newNote.title}' updated")
+                    }
                 }
             }
         }

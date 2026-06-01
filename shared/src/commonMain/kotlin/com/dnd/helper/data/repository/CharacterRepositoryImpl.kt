@@ -31,9 +31,9 @@ class CharacterRepositoryImpl(
             monstersCache = data.monsters
             npcsCache = data.npcs
             
-            // Update heavy character cache for any characters that have items
+            // Update heavy character cache for any characters that have items or notes
             filteredChars.forEach { char ->
-                if (char.items.isNotEmpty()) {
+                if (char.items.isNotEmpty() || char.notes.isNotEmpty()) {
                     heavyCharacterCache[char.id] = char
                 }
             }
@@ -61,11 +61,12 @@ class CharacterRepositoryImpl(
                         weapons = heavy.weapons,
                         skills = heavy.skills,
                         features = heavy.features,
-                        proficiencies = heavy.proficiencies
+                        proficiencies = heavy.proficiencies,
+                        notes = heavy.notes
                     )
                 } else {
-                    // If the new data actually has items, update the heavy cache
-                    if (newChar.items.isNotEmpty()) {
+                    // If the new data actually has items or notes, update the heavy cache
+                    if (newChar.items.isNotEmpty() || newChar.notes.isNotEmpty()) {
                         heavyCharacterCache[newChar.id] = newChar
                     }
                     newChar

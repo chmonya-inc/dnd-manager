@@ -148,13 +148,16 @@ fun CharacterDetailScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(state.character?.name ?: "Character")
                         if (state.hasUnsavedChanges) {
-                            // Small orange dot — indicates pending debounced save
-                            Box(
-                                modifier = Modifier
-                                    .padding(start = 8.dp)
-                                    .size(8.dp)
-                                    .background(Color(0xFFFB8C00), RoundedCornerShape(4.dp))
-                            )
+                            IconButton(
+                                onClick = { viewModel.onEvent(CharacterDetailEvent.SaveChanges) },
+                                modifier = Modifier.size(32.dp).padding(start = 8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .background(Color(0xFFFB8C00), RoundedCornerShape(5.dp))
+                                )
+                            }
                         }
                     }
                 },
@@ -169,6 +172,13 @@ fun CharacterDetailScreen(
                     }
                 },
                 actions = {
+                    if (state.isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.padding(horizontal = 8.dp).size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     if (isDesktop) {
                         val presentationViewModel: com.dnd.helper.presentation.desktop.PresentationViewModel = koinViewModel()
                         IconButton(onClick = {
@@ -192,8 +202,14 @@ fun CharacterDetailScreen(
                             Icon(imageVector = Icons.Default.Close, contentDescription = "Cancel")
                         }
                     } else {
-                        IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.ToggleEdit) }) {
-                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+                        if (state.hasUnsavedChanges) {
+                            IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.SaveChanges) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Save Pending",
+                                    tint = Color(0xFFFB8C00)
+                                )
+                            }
                         }
                         IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.Refresh) }) {
                             Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")
@@ -271,7 +287,7 @@ fun CharacterDetailScreen(
                         1 -> StatsTab(character)
                         2 -> InventoryTab(items = character.items, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
                         3 -> CombatTab(character, isMasterMode = state.isMasterMode)
-                        4 -> FeaturesTab(character, isMasterMode = state.isMasterMode)
+                        4 -> FeaturesTab(character, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
                         5 -> SkillsTab(character, isMasterMode = state.isMasterMode)
                     }
                 }

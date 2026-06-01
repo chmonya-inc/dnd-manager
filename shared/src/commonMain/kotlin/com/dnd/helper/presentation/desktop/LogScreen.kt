@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.sp
 import com.dnd.helper.domain.model.LogEntry
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -152,8 +154,19 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
                         Text("State Comparison:", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(8.dp))
                         
-                        // Show raw diff or structured view
-                        val diffLines = remember(log) { calculateVisualDiff(log.initialState, log.endState) }
+                        // Calculate diff only when expanded and off the main thread
+                        var diffLines by remember { mutableStateOf<List<String>>(emptyList()) }
+                        var isCalculating by remember { mutableStateOf(true) }
+                        
+                        LaunchedEffect(log, expanded) {
+                            if (expanded) {
+                                isCalculating = true
+                                diffLines = withContext(Dispatchers.Default) {
+                                    calculateVisualDiff(log.initialState, log.endState)
+                                }
+                                isCalculating = false
+                            }
+                        }
                         
                         Column(
                             modifier = Modifier
@@ -161,7 +174,9 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
                                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
                                 .padding(12.dp)
                         ) {
-                            if (diffLines.isEmpty()) {
+                            if (isCalculating) {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
+                            } else if (diffLines.isEmpty()) {
                                 Text("No data changes detected in JSON", style = MaterialTheme.typography.bodySmall)
                             } else {
                                 diffLines.forEach { line ->
@@ -188,47 +203,55 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
 private fun calculateVisualDiff(initial: String?, end: String?): List<String> {
     if (initial == null || end == null) return emptyList()
     
-    // We try to find actual property changes in the JSON
-    // A full JSON diff is complex, but we can do a simplified line-by-line or key-by-key comparison
     val lines = mutableListOf<String>()
     
     try {
         val json = Json { prettyPrint = true }
-        val initialObj = Json.parseToJsonElement(initial)
-        val endObj = Json.parseToJsonElement(end)
         
-        val initialPretty = json.encodeToString(initialObj).lines()
-        val endPretty = json.encodeToString(endObj).lines()
+        // Parse and re-format to ensure consistent pretty printing
+        val initialPretty = try {
+            val initialObj = Json.parseToJsonElement(initial)
+            json.encodeToString(initialObj).lines()
+        } catch (e: Exception) {
+            initial.lines()
+        }
         
-        // Simple line diff for visual representation
-        var i = 0
-        var j = 0
-        while (i < initialPretty.size || j < endPretty.size) {
-            val lineI = initialPretty.getOrNull(i)
-            val lineJ = endPretty.getOrNull(j)
-            
-            if (lineI == lineJ) {
-                // Keep some context lines around changes if needed, 
-                // but for now only show changes to keep it "merged into line"
-                i++; j++
-            } else {
-                if (lineI != null && (lineJ == null || !endPretty.contains(lineI))) {
-                    lines.add("- $lineI")
-                    i++
-                }
-                if (lineJ != null && (lineI == null || !initialPretty.contains(lineJ))) {
-                    lines.add("+ $lineJ")
-                    j++
-                }
+        val endPretty = try {
+            val endObj = Json.parseToJsonElement(end)
+            json.encodeToString(endObj).lines()
+        } catch (e: Exception) {
+            end.lines()
+        }
+        
+        // Use Sets for O(1) lookups to avoid O(N^2) complexity which hangs the UI
+        val initialSet = initialPretty.toSet()
+        val endSet = endPretty.toSet()
+        
+        // Find lines removed (in initial but not in end)
+        initialPretty.forEach { line ->
+            if (line.isNotBlank() && line.trim() != "{" && line.trim() != "}" && line.trim() != "[" && line.trim() != "]" && line !in endSet) {
+                lines.add("- $line")
             }
-            
-            if (lines.size > 50) { // Safety limit
-                lines.add("... diff truncated")
-                break
+            if (lines.size > 25) return@forEach 
+        }
+        
+        // Find lines added (in end but not in initial)
+        endPretty.forEach { line ->
+            if (line.isNotBlank() && line.trim() != "{" && line.trim() != "}" && line.trim() != "[" && line.trim() != "]" && line !in initialSet) {
+                lines.add("+ $line")
+            }
+            if (lines.size > 50) return@forEach
+        }
+        
+        if (lines.isEmpty()) {
+            // Check if it's just a reordering issue
+            if (initialPretty != endPretty) {
+                lines.add("Data reordered or non-visible changes")
             }
         }
+        
     } catch (e: Exception) {
-        lines.add("Error parsing states: ${e.message}")
+        lines.add("Error comparing states: ${e.message}")
     }
     
     return lines

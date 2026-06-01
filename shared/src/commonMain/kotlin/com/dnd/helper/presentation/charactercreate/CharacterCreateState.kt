@@ -64,6 +64,7 @@ data class CharacterCreateState(
     val items: List<Item> = emptyList(),
     val weapons: List<Weapon> = emptyList(),
     val skillList: List<Skill> = emptyList(),
+    val notes: List<com.dnd.helper.domain.model.Note> = emptyList(),
 
     // Features (newline-separated)
     val classFeatures: String = "",

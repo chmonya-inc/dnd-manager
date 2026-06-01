@@ -1,3 +1,5 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 import java.util.Properties
 
 plugins {
@@ -54,7 +56,13 @@ kotlin {
     }
     jvm("desktop")
     wasmJs {
-        browser()
+        browser {
+            commonWebpackConfig {
+                devServer?.apply {
+                    port = 8080 // You can change this if needed
+                }
+            }
+        }
     }
 
     sourceSets {

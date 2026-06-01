@@ -16,7 +16,7 @@ const CHARACTER_HEADERS = [
   "Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma",
   "Subclass", "Background", "ExperiencePoints",
   "AppearanceJSON", "CombatJSON", "ProficienciesJSON", "WeaponsJSON", "FeaturesJSON",
-  "SkillsJSON", "ItemsJSON"
+  "SkillsJSON", "ItemsJSON", "NotesJSON"
 ];
 
 const ITEM_HEADERS = ["ItemID", "ItemName", "Slot", "Rarity", "StatsJSON", "Description", "Equipped", "ImageUrl"];
@@ -164,7 +164,7 @@ function handleSaveCharacter(character) {
     charSheet.getRange(4, 1, 1, ITEM_HEADERS.length).setValues([ITEM_HEADERS]);
   }
 
-  charSheet.getRange(2, 1, 1, CHARACTER_HEADERS.length - 1).setValues([characterToRow(character).slice(0, -1)]);
+  charSheet.getRange(2, 1, 1, CHARACTER_HEADERS.length).setValues([characterToRow(character)]);
 
   var lastRow = charSheet.getLastRow();
   if (lastRow > 4) charSheet.deleteRows(5, lastRow - 4);
@@ -192,7 +192,7 @@ function handleSaveCharacter(character) {
 }
 
 function rowToCharacter(row) {
-  var appearance = {}; var combat = {}; var proficiencies = {}; var weapons = []; var features = {}; var skills = []; var items = [];
+  var appearance = {}; var combat = {}; var proficiencies = {}; var weapons = []; var features = {}; var skills = []; var items = []; var notes = [];
   try { appearance = JSON.parse(row[19] || "{}"); } catch (e) {}
   try { combat = JSON.parse(row[20] || "{}"); } catch (e) {}
   try { proficiencies = JSON.parse(row[21] || "{}"); } catch (e) {}
@@ -200,6 +200,7 @@ function rowToCharacter(row) {
   try { features = JSON.parse(row[23] || "{}"); } catch (e) {}
   try { skills = JSON.parse(row[24] || "[]"); } catch (e) {}
   try { items = JSON.parse(row[25] || "[]"); } catch (e) {}
+  try { notes = JSON.parse(row[26] || "[]"); } catch (e) {}
 
   return {
     id: String(row[0] || ""), name: String(row[1] || ""), playerName: String(row[2] || ""),
@@ -214,7 +215,7 @@ function rowToCharacter(row) {
     subclass: String(row[16] || ""), background: String(row[17] || ""),
     experiencePoints: Number(row[18]) || 0,
     appearance: appearance, combat: combat, proficiencies: proficiencies,
-    weapons: weapons, features: features, skills: skills, items: items
+    weapons: weapons, features: features, skills: skills, items: items, notes: notes
   };
 }
 
@@ -230,7 +231,7 @@ function characterToRow(character) {
     JSON.stringify(character.appearance || {}), JSON.stringify(character.combat || {}),
     JSON.stringify(character.proficiencies || {}), JSON.stringify(character.weapons || []),
     JSON.stringify(character.features || {}), JSON.stringify(character.skills || []),
-    JSON.stringify(character.items || [])
+    JSON.stringify(character.items || []), JSON.stringify(character.notes || [])
   ];
 }
 
@@ -244,7 +245,7 @@ function handleGetCharacter(id) {
   if (!sheet) return { success: false, error: "Not found" };
   var values = sheet.getDataRange().getValues();
   if (values.length < 2) return { success: false, error: "Empty" };
-  var character = rowToCharacter(values[1].concat([JSON.stringify([])])); // items read from rows
+  var character = rowToCharacter(values[1]);
   var items = [];
   if (values.length > 4) {
     for (var i = 4; i < values.length; i++) {

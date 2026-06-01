@@ -47,7 +47,7 @@ class LogViewModel(
         }
     }
 
-    fun startPolling(intervalMs: Long = 5_000L) {
+    fun startPolling(intervalMs: Long = 1_000L) {
         if (pollingJob?.isActive == true) return
         pollingJob = viewModelScope.launch {
             while (isActive) {

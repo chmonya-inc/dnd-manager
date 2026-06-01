@@ -23,4 +23,9 @@ sealed interface CharacterDetailEvent {
     data object AddItem : CharacterDetailEvent
     data class RemoveItem(val itemId: String) : CharacterDetailEvent
     data class UpdateItem(val item: com.dnd.helper.domain.model.Item) : CharacterDetailEvent
+
+    // Notes
+    data object AddNote : CharacterDetailEvent
+    data class RemoveNote(val noteId: String) : CharacterDetailEvent
+    data class UpdateNote(val note: com.dnd.helper.domain.model.Note) : CharacterDetailEvent
 }

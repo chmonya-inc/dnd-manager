@@ -19,11 +19,13 @@ import com.dnd.helper.domain.model.Weapon
 fun CombatTab(
     character: Character,
     isMasterMode: Boolean = false,
+    isScrollable: Boolean = true,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .then(if (isScrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

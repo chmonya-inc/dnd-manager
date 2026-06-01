@@ -81,7 +81,7 @@ val appModule = module {
     }
     factory { LibraryViewModel(get()) }
     factory { LogViewModel(get()) }
-    single { com.dnd.helper.presentation.desktop.PresentationViewModel() }
+    single { com.dnd.helper.presentation.desktop.PresentationViewModel(get()) }
 }
 
 @Composable

@@ -26,6 +26,7 @@ data class Character(
     val features: CharacterFeatures = CharacterFeatures(),
     val skills: List<Skill> = emptyList(),
     val items: List<Item> = emptyList(),
+    val notes: List<Note> = emptyList(),
 ) {
     val displayImageUrl: String? get() = ImageUrlHelper.process(imageUrl)
 }

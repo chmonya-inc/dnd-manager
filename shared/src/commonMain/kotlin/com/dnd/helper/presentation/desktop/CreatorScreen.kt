@@ -1,16 +1,26 @@
 package com.dnd.helper.presentation.desktop
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.dnd.helper.domain.model.*
 import com.dnd.helper.domain.repository.CharacterRepository
@@ -19,12 +29,19 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import kotlin.random.Random
 
-sealed class CreatorType(val title: String, val icon: ImageVector) {
-    data object Character : CreatorType("Character", Icons.Default.PersonAdd)
-    data class Item(val existingItem: com.dnd.helper.domain.model.Item? = null, val ownerId: String? = null) : CreatorType("Item", Icons.Default.AddBox)
-    data class Monster(val existingMonster: com.dnd.helper.domain.model.Monster? = null) : CreatorType("Monster", Icons.Default.BugReport)
-    data class Npc(val existingNpc: com.dnd.helper.domain.model.Npc? = null) : CreatorType("NPC", Icons.Default.EmojiPeople)
-    data class Location(val existingLocation: com.dnd.helper.domain.model.Location? = null) : CreatorType("Location", Icons.Default.AddLocation)
+// Theme colors for different categories
+private val MonsterColor = Color(0xFFEF5350) // Red
+private val NpcColor = Color(0xFF66BB6A)     // Green
+private val LocationColor = Color(0xFF42A5F5) // Blue
+private val ItemColor = Color(0xFFFFA726)     // Orange
+private val CharacterColor = Color(0xFFAB47BC) // Purple
+
+sealed class CreatorType(val title: String, val icon: ImageVector, val color: Color) {
+    data object Character : CreatorType("Character", Icons.Default.PersonAdd, CharacterColor)
+    data class Item(val existingItem: com.dnd.helper.domain.model.Item? = null, val ownerId: String? = null) : CreatorType("Item", Icons.Default.ShoppingBag, ItemColor)
+    data class Monster(val existingMonster: com.dnd.helper.domain.model.Monster? = null) : CreatorType("Monster", Icons.Default.BugReport, MonsterColor)
+    data class Npc(val existingNpc: com.dnd.helper.domain.model.Npc? = null) : CreatorType("NPC", Icons.Default.EmojiPeople, NpcColor)
+    data class Location(val existingLocation: com.dnd.helper.domain.model.Location? = null) : CreatorType("Location", Icons.Default.Explore, LocationColor)
 }
 
 @Composable
@@ -47,20 +64,43 @@ fun CreatorScreen(
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp,
+                shadowElevation = 2.dp
             ) {
-                IconButton(onClick = { 
-                    selectedType = null
-                    onBack()
-                }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { 
+                        selectedType = null
+                        onBack()
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(selectedType!!.color.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = selectedType!!.icon,
+                            contentDescription = null,
+                            tint = selectedType!!.color,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        text = if (isEditing) "Edit ${selectedType!!.title}" else "Create New ${selectedType!!.title}", 
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-                Text(
-                    text = if (isEditing) "Edit ${selectedType!!.title}" else "Create New ${selectedType!!.title}", 
-                    style = MaterialTheme.typography.headlineSmall
-                )
             }
             
             Box(modifier = Modifier.fillMaxSize()) {
@@ -127,6 +167,58 @@ fun CreatorScreen(
 }
 
 @Composable
+private fun CreatorFormLayout(
+    accentColor: Color,
+    isSaving: Boolean,
+    saveButtonText: String,
+    saveEnabled: Boolean,
+    onSave: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        content()
+        
+        Spacer(Modifier.height(16.dp))
+        
+        Button(
+            onClick = onSave,
+            enabled = saveEnabled && !isSaving,
+            modifier = Modifier.align(Alignment.End).height(48.dp).widthIn(min = 160.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            if (isSaving) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Default.Check, null)
+                Spacer(Modifier.width(8.dp))
+                Text(saveButtonText, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(icon: ImageVector, title: String, color: Color) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(top = 8.dp)
+    ) {
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium, color = color, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.width(16.dp))
+        HorizontalDivider(modifier = Modifier.weight(1f), color = color.copy(alpha = 0.2f))
+    }
+}
+
+@Composable
 private fun NpcCreateForm(
     existing: Npc? = null,
     onBackClick: () -> Unit,
@@ -141,67 +233,64 @@ private fun NpcCreateForm(
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
     var isSaving by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    CreatorFormLayout(
+        accentColor = NpcColor,
+        isSaving = isSaving,
+        saveButtonText = if (existing != null) "Update NPC" else "Create NPC",
+        saveEnabled = name.isNotBlank(),
+        onSave = {
+            isSaving = true
+            scope.launch {
+                val npc = Npc(
+                    id = existing?.id ?: "npc-${Random.nextLong()}",
+                    name = name,
+                    background = background,
+                    description = description,
+                    imageUrl = imageUrl.ifBlank { null }
+                )
+                repository.saveNpc(npc)
+                isSaving = false
+                onCreated()
+            }
+        }
     ) {
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("NPC Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        SectionHeader(Icons.Default.Person, "Identity", NpcColor)
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("NPC Name *") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            OutlinedTextField(
+                value = background,
+                onValueChange = { background = it },
+                label = { Text("Background / Role") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
         
+        SectionHeader(Icons.Default.Image, "Appearance", NpcColor)
         OutlinedTextField(
             value = imageUrl,
             onValueChange = { imageUrl = it },
             label = { Text("Image URL") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = background,
-            onValueChange = { background = it },
-            label = { Text("Background / Role") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("https://...") }
         )
         
+        SectionHeader(Icons.AutoMirrored.Filled.Notes, "Backstory & Notes", NpcColor)
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Description / Notes") },
+            label = { Text("Description / Personality / Plot Hooks") },
             modifier = Modifier.fillMaxWidth(),
-            minLines = 5
+            minLines = 8,
+            shape = RoundedCornerShape(12.dp)
         )
-        
-        Button(
-            onClick = {
-                isSaving = true
-                scope.launch {
-                    val npc = Npc(
-                        id = existing?.id ?: "npc-${Random.nextLong()}",
-                        name = name,
-                        background = background,
-                        description = description,
-                        imageUrl = imageUrl.ifBlank { null }
-                    )
-                    repository.saveNpc(npc)
-                    isSaving = false
-                    onCreated()
-                }
-            },
-            enabled = name.isNotBlank() && !isSaving,
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            if (isSaving) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-            } else {
-                Text(if (existing != null) "Update NPC" else "Create NPC")
-            }
-        }
     }
 }
 
@@ -234,89 +323,90 @@ private fun MonsterCreateForm(
     
     var isSaving by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    CreatorFormLayout(
+        accentColor = MonsterColor,
+        isSaving = isSaving,
+        saveButtonText = if (existing != null) "Update Monster" else "Create Monster",
+        saveEnabled = name.isNotBlank(),
+        onSave = {
+            isSaving = true
+            scope.launch {
+                val monster = Monster(
+                    id = existing?.id ?: "monster-${Random.nextLong()}",
+                    name = name,
+                    description = description,
+                    imageUrl = imageUrl.ifBlank { null },
+                    challengeRating = cr,
+                    type = type,
+                    alignment = alignment,
+                    size = size,
+                    maxHp = hp.toIntOrNull() ?: 10,
+                    currentHp = hp.toIntOrNull() ?: 10,
+                    armorClass = ac.toIntOrNull() ?: 10,
+                    speed = speed.toIntOrNull() ?: 30,
+                    stats = CharacterStats(
+                        strength = str.toIntOrNull() ?: 10,
+                        dexterity = dex.toIntOrNull() ?: 10,
+                        constitution = con.toIntOrNull() ?: 10,
+                        intelligence = int.toIntOrNull() ?: 10,
+                        wisdom = wis.toIntOrNull() ?: 10,
+                        charisma = cha.toIntOrNull() ?: 10
+                    )
+                )
+                repository.saveMonster(monster)
+                isSaving = false
+                onCreated()
+            }
+        }
     ) {
+        SectionHeader(Icons.Default.Info, "General", MonsterColor)
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Monster Name") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = imageUrl, onValueChange = { imageUrl = it }, label = { Text("Image URL") }, modifier = Modifier.weight(1f))
+            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Monster Name *") }, modifier = Modifier.weight(2f), shape = RoundedCornerShape(12.dp))
+            OutlinedTextField(value = cr, onValueChange = { cr = it }, label = { Text("CR") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
+        }
+        
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            OutlinedTextField(value = type, onValueChange = { type = it }, label = { Text("Type") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
+            OutlinedTextField(value = alignment, onValueChange = { alignment = it }, label = { Text("Alignment") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
+            OutlinedTextField(value = size, onValueChange = { size = it }, label = { Text("Size") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp))
         }
 
+        SectionHeader(Icons.Default.Shield, "Combat Stats", MonsterColor)
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            OutlinedTextField(value = type, onValueChange = { type = it }, label = { Text("Type") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = cr, onValueChange = { cr = it }, label = { Text("CR") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = alignment, onValueChange = { alignment = it }, label = { Text("Alignment") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = size, onValueChange = { size = it }, label = { Text("Size") }, modifier = Modifier.weight(1f))
+            OutlinedTextField(value = hp, onValueChange = { hp = it }, label = { Text("Max HP") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            OutlinedTextField(value = ac, onValueChange = { ac = it }, label = { Text("AC") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            OutlinedTextField(value = speed, onValueChange = { speed = it }, label = { Text("Speed (ft)") }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            OutlinedTextField(value = hp, onValueChange = { hp = it }, label = { Text("HP") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = ac, onValueChange = { ac = it }, label = { Text("AC") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = speed, onValueChange = { speed = it }, label = { Text("Speed") }, modifier = Modifier.weight(1f))
-        }
-
-        Text("Abilities", style = MaterialTheme.typography.titleMedium)
+        SectionHeader(Icons.Default.FitnessCenter, "Ability Scores", MonsterColor)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(value = str, onValueChange = { str = it }, label = { Text("STR") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = dex, onValueChange = { dex = it }, label = { Text("DEX") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = con, onValueChange = { con = it }, label = { Text("CON") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = int, onValueChange = { int = it }, label = { Text("INT") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = wis, onValueChange = { wis = it }, label = { Text("WIS") }, modifier = Modifier.weight(1f))
-            OutlinedTextField(value = cha, onValueChange = { cha = it }, label = { Text("CHA") }, modifier = Modifier.weight(1f))
+            listOf("STR" to str to {v:String -> str=v}, "DEX" to dex to {v:String -> dex=v}, "CON" to con to {v:String -> con=v}, 
+                   "INT" to int to {v:String -> int=v}, "WIS" to wis to {v:String -> wis=v}, "CHA" to cha to {v:String -> cha=v}).forEach { (data, setter) ->
+                val (label, value) = data
+                OutlinedTextField(
+                    value = value, 
+                    onValueChange = setter, 
+                    label = { Text(label) }, 
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.Center)
+                )
+            }
         }
 
+        SectionHeader(Icons.Default.Image, "Media", MonsterColor)
+        OutlinedTextField(value = imageUrl, onValueChange = { imageUrl = it }, label = { Text("Image URL") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+
+        SectionHeader(Icons.AutoMirrored.Filled.List, "Traits & Actions", MonsterColor)
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Description / Attacks") },
+            label = { Text("Attacks, Special Traits, Legendary Actions...") },
             modifier = Modifier.fillMaxWidth(),
-            minLines = 5
+            minLines = 8,
+            shape = RoundedCornerShape(12.dp)
         )
-        
-        Button(
-            onClick = {
-                isSaving = true
-                scope.launch {
-                    val monster = Monster(
-                        id = existing?.id ?: "monster-${Random.nextLong()}",
-                        name = name,
-                        description = description,
-                        imageUrl = imageUrl.ifBlank { null },
-                        challengeRating = cr,
-                        type = type,
-                        alignment = alignment,
-                        size = size,
-                        maxHp = hp.toIntOrNull() ?: 10,
-                        currentHp = hp.toIntOrNull() ?: 10,
-                        armorClass = ac.toIntOrNull() ?: 10,
-                        speed = speed.toIntOrNull() ?: 30,
-                        stats = CharacterStats(
-                            strength = str.toIntOrNull() ?: 10,
-                            dexterity = dex.toIntOrNull() ?: 10,
-                            constitution = con.toIntOrNull() ?: 10,
-                            intelligence = int.toIntOrNull() ?: 10,
-                            wisdom = wis.toIntOrNull() ?: 10,
-                            charisma = cha.toIntOrNull() ?: 10
-                        )
-                    )
-                    repository.saveMonster(monster)
-                    isSaving = false
-                    onCreated()
-                }
-            },
-            enabled = name.isNotBlank() && !isSaving,
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            if (isSaving) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-            } else {
-                Text(if (existing != null) "Update Monster" else "Create Monster")
-            }
-        }
     }
 }
 
@@ -348,38 +438,89 @@ private fun ItemCreateForm(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    CreatorFormLayout(
+        accentColor = ItemColor,
+        isSaving = isSaving,
+        saveButtonText = if (existing != null) "Update Item" else "Create and Assign Item",
+        saveEnabled = name.isNotBlank() && selectedCharId.isNotBlank(),
+        onSave = {
+            isSaving = true
+            scope.launch {
+                val item = Item(
+                    id = existing?.id ?: "item-${Random.nextLong()}",
+                    name = name,
+                    description = description,
+                    imageUrl = imageUrl.ifBlank { null },
+                    rarity = rarity,
+                    slot = slot,
+                    equipped = existing?.equipped ?: false,
+                    stats = existing?.stats ?: emptyMap()
+                )
+                
+                val char = characters.find { it.id == selectedCharId }
+                if (char != null) {
+                    val newItems = if (existing != null) {
+                        char.items.map { if (it.id == existing.id) item else it }
+                    } else {
+                        char.items + item
+                    }
+                    repository.saveCharacter(char.copy(items = newItems))
+                }
+                
+                isSaving = false
+                onCreated()
+            }
+        }
     ) {
+        SectionHeader(Icons.Default.Person, "Owner", ItemColor)
         if (existing == null) {
-            Text("Assign to Character:", style = MaterialTheme.typography.titleMedium)
+            Text("Select Character to receive this item:", style = MaterialTheme.typography.bodyMedium)
             if (characters.isEmpty()) {
-                CircularProgressIndicator()
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             } else {
-                Column(modifier = Modifier.heightIn(max = 200.dp).verticalScroll(rememberScrollState())) {
-                    characters.forEach { char ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(selected = selectedCharId == char.id, onClick = { selectedCharId = char.id })
-                            Text(char.name, modifier = Modifier.padding(start = 8.dp))
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp).verticalScroll(rememberScrollState()).padding(8.dp)) {
+                        characters.forEach { char ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(if (selectedCharId == char.id) ItemColor.copy(alpha = 0.1f) else Color.Transparent)
+                            ) {
+                                RadioButton(selected = selectedCharId == char.id, onClick = { selectedCharId = char.id }, colors = RadioButtonDefaults.colors(selectedColor = ItemColor))
+                                Text(char.name, modifier = Modifier.padding(start = 8.dp), fontWeight = if (selectedCharId == char.id) FontWeight.Bold else FontWeight.Normal)
+                            }
                         }
                     }
                 }
             }
         } else {
-            Text("Editing item for character: ${characters.find { it.id == selectedCharId }?.name ?: selectedCharId}", 
-                 style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(
+                value = characters.find { it.id == selectedCharId }?.name ?: selectedCharId,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Owner") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                enabled = false
+            )
         }
 
-        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Item Name") }, modifier = Modifier.fillMaxWidth())
+        SectionHeader(Icons.Default.Info, "General Info", ItemColor)
+        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Item Name *") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
         
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             var rarityExpanded by remember { mutableStateOf(false) }
             Box(modifier = Modifier.weight(1f)) {
-                OutlinedButton(onClick = { rarityExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { rarityExpanded = true }, 
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ItemColor)
+                ) {
+                    Icon(Icons.Default.Star, null)
+                    Spacer(Modifier.width(8.dp))
                     Text("Rarity: ${rarity.name}")
                 }
                 DropdownMenu(expanded = rarityExpanded, onDismissRequest = { rarityExpanded = false }) {
@@ -391,7 +532,14 @@ private fun ItemCreateForm(
             
             var slotExpanded by remember { mutableStateOf(false) }
             Box(modifier = Modifier.weight(1f)) {
-                OutlinedButton(onClick = { slotExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { slotExpanded = true }, 
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ItemColor)
+                ) {
+                    Icon(Icons.Default.Accessibility, null)
+                    Spacer(Modifier.width(8.dp))
                     Text("Slot: ${slot?.name ?: "None"}")
                 }
                 DropdownMenu(expanded = slotExpanded, onDismissRequest = { slotExpanded = false }) {
@@ -403,47 +551,11 @@ private fun ItemCreateForm(
             }
         }
 
-        OutlinedTextField(value = imageUrl, onValueChange = { imageUrl = it }, label = { Text("Image URL") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+        SectionHeader(Icons.Default.Image, "Visuals", ItemColor)
+        OutlinedTextField(value = imageUrl, onValueChange = { imageUrl = it }, label = { Text("Image URL") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
         
-        Button(
-            onClick = {
-                isSaving = true
-                scope.launch {
-                    val item = Item(
-                        id = existing?.id ?: "item-${Random.nextLong()}",
-                        name = name,
-                        description = description,
-                        imageUrl = imageUrl.ifBlank { null },
-                        rarity = rarity,
-                        slot = slot,
-                        equipped = existing?.equipped ?: false,
-                        stats = existing?.stats ?: emptyMap()
-                    )
-                    
-                    val char = characters.find { it.id == selectedCharId }
-                    if (char != null) {
-                        val newItems = if (existing != null) {
-                            char.items.map { if (it.id == existing.id) item else it }
-                        } else {
-                            char.items + item
-                        }
-                        repository.saveCharacter(char.copy(items = newItems))
-                    }
-                    
-                    isSaving = false
-                    onCreated()
-                }
-            },
-            enabled = name.isNotBlank() && selectedCharId.isNotBlank() && !isSaving,
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            if (isSaving) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-            } else {
-                Text(if (existing != null) "Update Item" else "Create and Assign Item")
-            }
-        }
+        SectionHeader(Icons.Default.Description, "Description", ItemColor)
+        OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Properties & Lore") }, modifier = Modifier.fillMaxWidth(), minLines = 5, shape = RoundedCornerShape(12.dp))
     }
 }
 
@@ -461,59 +573,54 @@ private fun LocationCreateForm(
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
     var isSaving by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+    CreatorFormLayout(
+        accentColor = LocationColor,
+        isSaving = isSaving,
+        saveButtonText = if (existing != null) "Update Location" else "Create Location",
+        saveEnabled = name.isNotBlank(),
+        onSave = {
+            isSaving = true
+            scope.launch {
+                val location = Location(
+                    id = existing?.id ?: Random.nextLong().toString(),
+                    name = name,
+                    description = description,
+                    imageUrl = imageUrl
+                )
+                repository.saveLocation(location)
+                isSaving = false
+                onCreated()
+            }
+        }
     ) {
+        SectionHeader(Icons.Default.Map, "Identity", LocationColor)
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
-            label = { Text("Location Name") },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Location Name *") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
         )
         
+        SectionHeader(Icons.Default.Image, "Media", LocationColor)
         OutlinedTextField(
             value = imageUrl,
             onValueChange = { imageUrl = it },
             label = { Text("Image URL") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("https://...") }
         )
         
+        SectionHeader(Icons.Default.Description, "Details & Lore", LocationColor)
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Description") },
+            label = { Text("History, Inhabitants, Atmosphere...") },
             modifier = Modifier.fillMaxWidth(),
-            minLines = 3
+            minLines = 8,
+            shape = RoundedCornerShape(12.dp)
         )
-        
-        Button(
-            onClick = {
-                isSaving = true
-                scope.launch {
-                    val location = Location(
-                        id = existing?.id ?: Random.nextLong().toString(),
-                        name = name,
-                        description = description,
-                        imageUrl = imageUrl
-                    )
-                    repository.saveLocation(location)
-                    isSaving = false
-                    onCreated()
-                }
-            },
-            enabled = name.isNotBlank() && !isSaving,
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            if (isSaving) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-            } else {
-                Text(if (existing != null) "Update Location" else "Create Location")
-            }
-        }
     }
 }
 
@@ -528,9 +635,21 @@ private fun CreatorSelection(onSelect: (CreatorType) -> Unit) {
     )
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("What do you want to create?", style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(32.dp))
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
+            Text(
+                "Dungeon Master Toolkit", 
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                "Choose what to weave into your world next", 
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(Modifier.height(48.dp))
+            
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 types.forEach { type ->
                     CreatorCard(type, onClick = { onSelect(type) })
@@ -542,23 +661,53 @@ private fun CreatorSelection(onSelect: (CreatorType) -> Unit) {
 
 @Composable
 private fun CreatorCard(type: CreatorType, onClick: () -> Unit) {
+    var hovered by remember { mutableStateOf(false) }
+    
     ElevatedCard(
         onClick = onClick,
-        modifier = Modifier.size(160.dp)
+        modifier = Modifier
+            .size(width = 180.dp, height = 220.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = if (hovered) type.color.copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 8.dp,
+            hoveredElevation = 12.dp
+        )
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = type.icon,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary
+            Surface(
+                modifier = Modifier.size(80.dp),
+                shape = RoundedCornerShape(20.dp),
+                color = type.color.copy(alpha = 0.12f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = type.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = type.color
+                    )
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+            Text(
+                type.title, 
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = type.color
             )
-            Spacer(Modifier.height(16.dp))
-            Text(type.title, style = MaterialTheme.typography.titleLarge)
+            Text(
+                "New", 
+                style = MaterialTheme.typography.labelMedium,
+                color = type.color.copy(alpha = 0.6f)
+            )
         }
     }
 }

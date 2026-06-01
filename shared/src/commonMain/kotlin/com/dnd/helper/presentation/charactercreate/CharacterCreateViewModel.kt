@@ -325,6 +325,7 @@ class CharacterCreateViewModel(
             ),
             skills = s.skillList,
             items = s.items,
+            notes = s.notes,
         )
 
         _state.value = s.copy(isSaving = true, error = null)
