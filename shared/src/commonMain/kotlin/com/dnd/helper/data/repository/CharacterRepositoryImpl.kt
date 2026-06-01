@@ -7,9 +7,11 @@ import com.dnd.helper.domain.model.Location
 import com.dnd.helper.domain.model.Monster
 import com.dnd.helper.domain.model.Npc
 import com.dnd.helper.domain.repository.CharacterRepository
+import com.dnd.helper.domain.storage.CharacterStorage
 
 class CharacterRepositoryImpl(
     private val dataSource: GoogleAppsScriptDataSource,
+    private val storage: CharacterStorage,
 ) : CharacterRepository {
 
     // Simple in-memory caches to make UI instant
@@ -19,7 +21,27 @@ class CharacterRepositoryImpl(
     private var monstersCache: List<Monster>? = null
     private var npcsCache: List<Npc>? = null
 
+    /** Tracks the last table ID we fetched from; used to auto-invalidate caches on session switch. */
+    private var lastTableId: String? = null
+
+    /** Checks if the stored table ID changed since last call. If so, wipes all caches. */
+    private fun checkTableIdChanged(): Boolean {
+        val current = storage.getTableId()
+        return if (current != lastTableId) {
+            lastTableId = current
+            charactersCache = null
+            heavyCharacterCache.clear()
+            locationsCache = null
+            monstersCache = null
+            npcsCache = null
+            true
+        } else {
+            false
+        }
+    }
+
     override suspend fun getInitialData(): Result<com.dnd.helper.domain.model.InitialData> {
+        checkTableIdChanged()
         val result = dataSource.getInitialData()
         if (result is Result.Success) {
             val data = result.data
@@ -42,8 +64,8 @@ class CharacterRepositoryImpl(
     }
 
     override suspend fun getCharacters(forceRefresh: Boolean): Result<List<Character>> {
-        // Return cached data immediately if available and not forcing refresh
-        if (!forceRefresh) {
+        val tableChanged = checkTableIdChanged()
+        if (!forceRefresh && !tableChanged) {
             charactersCache?.let { return Result.Success(it) }
         }
         
@@ -80,6 +102,7 @@ class CharacterRepositoryImpl(
     }
 
     override suspend fun getCharacter(id: String): Result<Character> {
+        checkTableIdChanged()
         val result = dataSource.getCharacter(id)
         if (result is Result.Success) {
             val character = result.data
@@ -111,7 +134,8 @@ class CharacterRepositoryImpl(
     }
 
     override suspend fun getLocations(forceRefresh: Boolean): Result<List<Location>> {
-        if (!forceRefresh) {
+        val tableChanged = checkTableIdChanged()
+        if (!forceRefresh && !tableChanged) {
             locationsCache?.let { return Result.Success(it) }
         }
         val result = dataSource.getLocations()
@@ -132,7 +156,8 @@ class CharacterRepositoryImpl(
     }
 
     override suspend fun getMonsters(forceRefresh: Boolean): Result<List<Monster>> {
-        if (!forceRefresh) {
+        val tableChanged = checkTableIdChanged()
+        if (!forceRefresh && !tableChanged) {
             monstersCache?.let { return Result.Success(it) }
         }
         val result = dataSource.getMonsters()
@@ -153,7 +178,8 @@ class CharacterRepositoryImpl(
     }
 
     override suspend fun getNpcs(forceRefresh: Boolean): Result<List<Npc>> {
-        if (!forceRefresh) {
+        val tableChanged = checkTableIdChanged()
+        if (!forceRefresh && !tableChanged) {
             npcsCache?.let { return Result.Success(it) }
         }
         val result = dataSource.getNpcs()

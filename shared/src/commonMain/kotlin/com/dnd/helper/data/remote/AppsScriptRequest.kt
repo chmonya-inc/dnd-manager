@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonObject
 data class AppsScriptRequest(
     val action: String,
     val id: String? = null,
+    val tableId: String? = null,
     val character: Character? = null,
     val location: Location? = null,
     val monster: com.dnd.helper.domain.model.Monster? = null,

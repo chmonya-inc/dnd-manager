@@ -5,6 +5,7 @@ import com.dnd.helper.domain.common.AppError
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.Location
+import com.dnd.helper.domain.storage.CharacterStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -15,6 +16,7 @@ import kotlinx.serialization.json.JsonElement
 
 class GoogleAppsScriptDataSource(
     private val httpClient: HttpClient,
+    private val storage: CharacterStorage,
 ) {
     private val json = Json {
         ignoreUnknownKeys = true
@@ -23,53 +25,55 @@ class GoogleAppsScriptDataSource(
         encodeDefaults = true
     }
 
+    private fun tableId(): String? = storage.getTableId()
+
     suspend fun getInitialData(): Result<com.dnd.helper.domain.model.InitialData> =
-        execute(request = AppsScriptRequest(action = "getInitialData"))
+        execute(request = AppsScriptRequest(action = "getInitialData", tableId = tableId()))
 
     suspend fun getCharacters(): Result<List<Character>> =
-        execute(request = AppsScriptRequest(action = "getCharacters"))
+        execute(request = AppsScriptRequest(action = "getCharacters", tableId = tableId()))
 
     suspend fun getCharacter(id: String): Result<Character> =
-        execute(request = AppsScriptRequest(action = "getCharacter", id = id))
+        execute(request = AppsScriptRequest(action = "getCharacter", id = id, tableId = tableId()))
 
     suspend fun saveCharacter(character: Character): Result<Unit> =
-        executeUnit(request = AppsScriptRequest(action = "saveCharacter", character = character))
+        executeUnit(request = AppsScriptRequest(action = "saveCharacter", character = character, tableId = tableId()))
 
     suspend fun deleteCharacter(id: String): Result<Unit> =
-        executeUnit(request = AppsScriptRequest(action = "deleteCharacter", id = id))
+        executeUnit(request = AppsScriptRequest(action = "deleteCharacter", id = id, tableId = tableId()))
 
     suspend fun getLocations(): Result<List<Location>> =
-        execute(request = AppsScriptRequest(action = "getLocations"))
+        execute(request = AppsScriptRequest(action = "getLocations", tableId = tableId()))
 
     suspend fun saveLocation(location: Location): Result<Unit> =
-        executeUnit(request = AppsScriptRequest(action = "saveLocation", location = location))
+        executeUnit(request = AppsScriptRequest(action = "saveLocation", location = location, tableId = tableId()))
 
     suspend fun deleteLocation(id: String): Result<Unit> =
-        executeUnit(request = AppsScriptRequest(action = "deleteLocation", id = id))
+        executeUnit(request = AppsScriptRequest(action = "deleteLocation", id = id, tableId = tableId()))
 
     suspend fun getMonsters(): Result<List<com.dnd.helper.domain.model.Monster>> =
-        execute(request = AppsScriptRequest(action = "getMonsters"))
+        execute(request = AppsScriptRequest(action = "getMonsters", tableId = tableId()))
 
     suspend fun saveMonster(monster: com.dnd.helper.domain.model.Monster): Result<Unit> =
-        executeUnit(request = AppsScriptRequest(action = "saveMonster", monster = monster))
+        executeUnit(request = AppsScriptRequest(action = "saveMonster", monster = monster, tableId = tableId()))
 
     suspend fun deleteMonster(id: String): Result<Unit> =
-        executeUnit(request = AppsScriptRequest(action = "deleteMonster", id = id))
+        executeUnit(request = AppsScriptRequest(action = "deleteMonster", id = id, tableId = tableId()))
 
     suspend fun getNpcs(): Result<List<com.dnd.helper.domain.model.Npc>> =
-        execute(request = AppsScriptRequest(action = "getNpcs"))
+        execute(request = AppsScriptRequest(action = "getNpcs", tableId = tableId()))
 
     suspend fun saveNpc(npc: com.dnd.helper.domain.model.Npc): Result<Unit> =
-        executeUnit(request = AppsScriptRequest(action = "saveNpc", npc = npc))
+        executeUnit(request = AppsScriptRequest(action = "saveNpc", npc = npc, tableId = tableId()))
 
     suspend fun deleteNpc(id: String): Result<Unit> =
-        executeUnit(request = AppsScriptRequest(action = "deleteNpc", id = id))
+        executeUnit(request = AppsScriptRequest(action = "deleteNpc", id = id, tableId = tableId()))
 
     suspend fun getLogs(): Result<List<com.dnd.helper.domain.model.LogEntry>> =
-        execute(request = AppsScriptRequest(action = "getLogs"))
+        execute(request = AppsScriptRequest(action = "getLogs", tableId = tableId()))
 
     suspend fun saveLog(log: com.dnd.helper.domain.model.LogEntry): Result<Unit> =
-        executeUnit(request = AppsScriptRequest(action = "saveLog", log = log))
+        executeUnit(request = AppsScriptRequest(action = "saveLog", log = log, tableId = tableId()))
 
     /**
      * Returns the last-modified timestamp from the server.
@@ -77,7 +81,7 @@ class GoogleAppsScriptDataSource(
      * and only fetch full data when the timestamp changes.
      */
     suspend fun getLastModified(): Result<String> =
-        execute(request = AppsScriptRequest(action = "getLastModified"))
+        execute(request = AppsScriptRequest(action = "getLastModified", tableId = tableId()))
 
     /**
      * Builds the request URL with the JSON payload encoded as a query parameter.

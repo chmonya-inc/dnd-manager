@@ -1,6 +1,8 @@
 package com.dnd.helper.presentation.desktop
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.*
@@ -9,13 +11,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.dnd.helper.domain.storage.CharacterStorage
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 sealed class DesktopTab(val title: String, val icon: ImageVector) {
+    data object Summary : DesktopTab("Summary", Icons.Default.Dashboard)
     data object Characters : DesktopTab("Characters", Icons.Default.People)
     data object Library : DesktopTab("Library", Icons.AutoMirrored.Filled.LibraryBooks)
     data object Creator : DesktopTab("Creator", Icons.Default.AddCircle)
@@ -24,11 +31,18 @@ sealed class DesktopTab(val title: String, val icon: ImageVector) {
 }
 
 private val tabs = listOf(
+    DesktopTab.Summary,
     DesktopTab.Characters,
     DesktopTab.Library,
     DesktopTab.Creator,
     DesktopTab.Logs,
     DesktopTab.Presenter
+)
+
+@Serializable
+data class Session(
+    val id: String,
+    val name: String,
 )
 
 @Composable
@@ -37,9 +51,25 @@ fun MainDesktopScreen() {
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
     var initialCreatorType by remember { mutableStateOf<CreatorType?>(null) }
     var showDiceDialog by remember { mutableStateOf(false) }
+    var showSessionsDialog by remember { mutableStateOf(false) }
+
+    // Track active session for forcing ViewModel recreation on session switch
+    var activeTableId by remember { mutableStateOf<String?>(null) }
 
     if (showDiceDialog) {
         DiceRollDialog(onDismiss = { showDiceDialog = false })
+    }
+
+    if (showSessionsDialog) {
+        SessionsDialog(
+            onDismiss = { showSessionsDialog = false },
+            onSessionSelected = { newTableId ->
+                activeTableId = newTableId
+                selectedCharacterId = null
+                selectedTab = DesktopTab.Characters
+                showSessionsDialog = false
+            }
+        )
     }
 
     Surface(
@@ -81,6 +111,22 @@ fun MainDesktopScreen() {
                     
                     Spacer(Modifier.weight(1f))
 
+                    // Sessions Button
+                    FloatingActionButton(
+                        onClick = { showSessionsDialog = true },
+                        modifier = Modifier.size(48.dp),
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Storage,
+                            contentDescription = "Sessions",
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
                     // Global Dice Button on the left side
                     FloatingActionButton(
                         onClick = { showDiceDialog = true },
@@ -96,6 +142,14 @@ fun MainDesktopScreen() {
             // Content Area
             Box(modifier = Modifier.fillMaxSize()) {
                 when (selectedTab) {
+                    DesktopTab.Summary -> {
+                        MasterSummaryScreen(
+                            onCharacterClick = { characterId ->
+                                selectedCharacterId = characterId
+                                selectedTab = DesktopTab.Characters
+                            },
+                        )
+                    }
                     DesktopTab.Characters -> {
                         CharactersSplitPane(
                             selectedCharacterId = selectedCharacterId,
@@ -103,7 +157,8 @@ fun MainDesktopScreen() {
                             onCreateCharacter = { 
                                 initialCreatorType = CreatorType.Character
                                 selectedTab = DesktopTab.Creator 
-                            }
+                            },
+                            sessionKey = activeTableId ?: "",
                         )
                     }
                     DesktopTab.Library -> LibraryScreen(
@@ -143,7 +198,8 @@ fun MainDesktopScreen() {
 fun CharactersSplitPane(
     selectedCharacterId: String?,
     onCharacterSelected: (String) -> Unit,
-    onCreateCharacter: () -> Unit
+    onCreateCharacter: () -> Unit,
+    sessionKey: String = "",
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
         // Left Panel: Character List (30%)
@@ -151,7 +207,8 @@ fun CharactersSplitPane(
             CharacterListScreen(
                 onCharacterClick = onCharacterSelected,
                 onCreateCharacter = onCreateCharacter,
-                showTopBar = true
+                showTopBar = true,
+                sessionKey = sessionKey,
             )
         }
 
@@ -173,5 +230,199 @@ fun CharactersSplitPane(
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SessionsDialog(
+    onDismiss: () -> Unit,
+    onSessionSelected: (String) -> Unit,
+    storage: CharacterStorage = org.koin.compose.koinInject(),
+) {
+    var sessions by remember {
+        mutableStateOf(
+            loadSessions(storage)
+        )
+    }
+    var activeTableId by remember { mutableStateOf(storage.getTableId() ?: "") }
+    var newName by remember { mutableStateOf("") }
+    var newId by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Sessions") },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Active session info
+                if (activeTableId.isNotBlank()) {
+                    Text(
+                        text = "Active: ${activeTableId}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                // Saved sessions list
+                if (sessions.isNotEmpty()) {
+                    Text(
+                        text = "Saved Sessions",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(sessions, key = { it.id }) { session ->
+                            SessionRow(
+                                session = session,
+                                isActive = session.id == activeTableId,
+                                onSelect = {
+                                    storage.saveTableId(session.id)
+                                    activeTableId = session.id
+                                    onSessionSelected(session.id)
+                                },
+                                onDelete = {
+                                    sessions = sessions.filter { it.id != session.id }
+                                    storage.saveSessions(sessionsJson.encodeToString(sessions))
+                                    if (activeTableId == session.id) {
+                                        storage.saveTableId("")
+                                        activeTableId = ""
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                } else {
+                    Text(
+                        text = "No saved sessions.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(16.dp))
+                }
+
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
+
+                // Add new session
+                Text(
+                    text = "Add New Session",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text("Session Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = newId,
+                    onValueChange = { newId = it },
+                    label = { Text("Spreadsheet ID") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        if (newName.isNotBlank() && newId.isNotBlank()) {
+                            val updated = sessions.toMutableList()
+                            // Replace if same ID exists
+                            updated.removeAll { it.id == newId }
+                            updated.add(Session(id = newId, name = newName))
+                            sessions = updated
+                            storage.saveSessions(sessionsJson.encodeToString(sessions))
+                            newName = ""
+                            newId = ""
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = newName.isNotBlank() && newId.isNotBlank(),
+                ) {
+                    Text("Add Session")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        },
+        dismissButton = null,
+    )
+}
+
+@Composable
+private fun SessionRow(
+    session: Session,
+    isActive: Boolean,
+    onSelect: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isActive)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = session.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = session.id,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(
+                    onClick = onSelect,
+                    enabled = !isActive,
+                ) {
+                    Text(if (isActive) "Active" else "Select")
+                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private val sessionsJson = Json { ignoreUnknownKeys = true }
+
+private fun loadSessions(storage: CharacterStorage): List<Session> {
+    val raw = storage.getSessions() ?: return emptyList()
+    return try {
+        sessionsJson.decodeFromString<List<Session>>(raw)
+    } catch (e: Exception) {
+        emptyList()
     }
 }

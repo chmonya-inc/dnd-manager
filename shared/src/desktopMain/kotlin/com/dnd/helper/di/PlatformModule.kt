@@ -14,6 +14,22 @@ class DesktopCharacterStorage : CharacterStorage {
     override fun getCharacterId(): String? {
         return prefs.get("last_character_id", null)
     }
+
+    override fun saveTableId(id: String) {
+        prefs.put("last_table_id", id)
+    }
+
+    override fun getTableId(): String? {
+        return prefs.get("last_table_id", null)
+    }
+
+    override fun saveSessions(sessionsJson: String) {
+        prefs.put("saved_sessions", sessionsJson)
+    }
+
+    override fun getSessions(): String? {
+        return prefs.get("saved_sessions", null)
+    }
 }
 
 actual val platformModule = module {

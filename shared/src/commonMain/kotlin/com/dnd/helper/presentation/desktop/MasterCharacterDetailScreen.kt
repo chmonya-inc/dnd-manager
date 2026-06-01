@@ -208,6 +208,10 @@ private fun MasterContent(
                     MasterHeader(character, viewModel)
                     Spacer(Modifier.height(24.dp))
                     MasterHealthSection(character, viewModel)
+                    if (character.currentHp <= 0) {
+                        Spacer(Modifier.height(12.dp))
+                        MasterDeathSaves(character, viewModel)
+                    }
                 }
 
                 // Middle Column: Stats and Skills
@@ -616,6 +620,131 @@ private fun MasterNoteCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MasterDeathSaves(
+    character: com.dnd.helper.domain.model.Character,
+    viewModel: CharacterDetailViewModel,
+) {
+    val combat = character.combat
+    val isStable = combat.deathSaveSuccesses >= 3
+    val isDead = combat.deathSaveFailures >= 3
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                isDead -> Color(0xFFD32F2F).copy(alpha = 0.15f)
+                isStable -> Color(0xFF43A047).copy(alpha = 0.15f)
+                else -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+            }
+        ),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(
+            1.dp,
+            when {
+                isDead -> Color(0xFFD32F2F).copy(alpha = 0.5f)
+                isStable -> Color(0xFF43A047).copy(alpha = 0.5f)
+                else -> MaterialTheme.colorScheme.error.copy(alpha = 0.3f)
+            }
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "Death Saving Throws",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                // Successes
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Successes",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF43A047),
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        repeat(3) { i ->
+                            DeathSaveDiamond(
+                                filled = i < combat.deathSaveSuccesses,
+                                color = Color(0xFF43A047),
+                            )
+                        }
+                    }
+                }
+                // Failures
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Failures",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFD32F2F),
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        repeat(3) { i ->
+                            DeathSaveDiamond(
+                                filled = i < combat.deathSaveFailures,
+                                color = Color(0xFFD32F2F),
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            when {
+                isStable -> Text(
+                    text = "✓ Stabilized",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF43A047),
+                )
+                isDead -> Text(
+                    text = "✗ Dead",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFD32F2F),
+                )
+                else -> Button(
+                    onClick = { viewModel.onEvent(CharacterDetailEvent.RollDeathSave) },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text("Roll Death Save (d20)")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeathSaveDiamond(filled: Boolean, color: Color) {
+    Box(
+        modifier = Modifier
+            .size(22.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .background(
+                if (filled) color else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (filled) {
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = Color.White,
             )
         }
     }

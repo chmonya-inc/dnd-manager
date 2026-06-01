@@ -67,7 +67,8 @@ fun CharacterListScreen(
     onCreateCharacter: () -> Unit,
     modifier: Modifier = Modifier,
     showTopBar: Boolean = true,
-    viewModel: CharacterListViewModel = org.koin.compose.viewmodel.koinViewModel(),
+    sessionKey: String = "",
+    viewModel: CharacterListViewModel = org.koin.compose.viewmodel.koinViewModel(key = sessionKey),
 ) {
     val state by viewModel.state.collectAsState()
 

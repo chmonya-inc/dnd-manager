@@ -1,5 +1,5 @@
 /**
- * D&D Helper — Google Apps Script Backend (Optimized + Items Support)
+ * D&D Helper — Google Apps Script Backend (Optimized + Items Support + Multi-Table)
  */
 
 const SPREADSHEET_ID = "";
@@ -33,6 +33,7 @@ function doGet(e) {
   if (!requestJson) return jsonOutput({ success: false, error: "Missing request" });
   var request = JSON.parse(requestJson);
   var action = request.action;
+  var tableId = request.tableId || "";
 
   try {
     var result;
@@ -40,13 +41,13 @@ function doGet(e) {
       var lock = LockService.getScriptLock();
       lock.waitLock(30000);
       try {
-        result = handleRequest(request);
+        result = handleRequest(request, tableId);
         SpreadsheetApp.flush();
       } finally {
         lock.releaseLock();
       }
     } else {
-      result = handleRequest(request);
+      result = handleRequest(request, tableId);
     }
     return jsonOutput(result);
   } catch (error) {
@@ -54,25 +55,25 @@ function doGet(e) {
   }
 }
 
-function handleRequest(request) {
+function handleRequest(request, tableId) {
   switch (request.action) {
-    case "getInitialData": return handleGetInitialData();
-    case "getCharacters": return handleGetCharacters();
-    case "getCharacter": return handleGetCharacter(request.id);
-    case "saveCharacter": return handleSaveCharacter(request.character);
-    case "deleteCharacter": return handleDeleteCharacter(request.id);
-    case "getLastModified": return handleGetLastModified();
-    case "getLocations": return handleGetLocations();
-    case "saveLocation": return handleSaveLocation(request.location);
-    case "deleteLocation": return handleDeleteLocation(request.id);
-    case "getMonsters": return handleGetMonsters();
-    case "saveMonster": return handleSaveMonster(request.monster);
-    case "deleteMonster": return handleDeleteMonster(request.id);
-    case "getNpcs": return handleGetNpcs();
-    case "saveNpc": return handleSaveNpc(request.npc);
-    case "deleteNpc": return handleDeleteNpc(request.id);
-    case "saveLog": return handleSaveLog(request.log);
-    case "getLogs": return handleGetLogs();
+    case "getInitialData": return handleGetInitialData(tableId);
+    case "getCharacters": return handleGetCharacters(tableId);
+    case "getCharacter": return handleGetCharacter(request.id, tableId);
+    case "saveCharacter": return handleSaveCharacter(request.character, tableId);
+    case "deleteCharacter": return handleDeleteCharacter(request.id, tableId);
+    case "getLastModified": return handleGetLastModified(tableId);
+    case "getLocations": return handleGetLocations(tableId);
+    case "saveLocation": return handleSaveLocation(request.location, tableId);
+    case "deleteLocation": return handleDeleteLocation(request.id, tableId);
+    case "getMonsters": return handleGetMonsters(tableId);
+    case "saveMonster": return handleSaveMonster(request.monster, tableId);
+    case "deleteMonster": return handleDeleteMonster(request.id, tableId);
+    case "getNpcs": return handleGetNpcs(tableId);
+    case "saveNpc": return handleSaveNpc(request.npc, tableId);
+    case "deleteNpc": return handleDeleteNpc(request.id, tableId);
+    case "saveLog": return handleSaveLog(request.log, tableId);
+    case "getLogs": return handleGetLogs(tableId);
     default: return { success: false, error: "Unknown action" };
   }
 }
@@ -81,12 +82,13 @@ function jsonOutput(data) {
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function getSpreadsheet() {
+function getSpreadsheet(tableId) {
+  if (tableId) return SpreadsheetApp.openById(tableId);
   return SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
 }
 
-function getSummarySheet() {
-  var ss = getSpreadsheet();
+function getSummarySheet(tableId) {
+  var ss = getSpreadsheet(tableId);
   var sheet = ss.getSheetByName(SUMMARY_SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SUMMARY_SHEET_NAME);
@@ -96,25 +98,25 @@ function getSummarySheet() {
   return sheet;
 }
 
-function handleGetInitialData() {
+function handleGetInitialData(tableId) {
   return {
     success: true,
     data: {
-      characters: handleGetCharacters().data,
-      locations: handleGetLocations().data,
-      monsters: handleGetMonsters().data,
-      npcs: handleGetNpcs().data,
-      lastModified: handleGetLastModified().data
+      characters: handleGetCharacters(tableId).data,
+      locations: handleGetLocations(tableId).data,
+      monsters: handleGetMonsters(tableId).data,
+      npcs: handleGetNpcs(tableId).data,
+      lastModified: handleGetLastModified(tableId).data
     }
   };
 }
 
-function handleGetCharacters() {
-  var sheet = getSummarySheet();
+function handleGetCharacters(tableId) {
+  var sheet = getSummarySheet(tableId);
   var values = sheet.getDataRange().getValues();
   if (values.length < 2) return { success: true, data: [] };
 
-  var ss = getSpreadsheet();
+  var ss = getSpreadsheet(tableId);
   var characters = [];
   for (var i = 1; i < values.length; i++) {
     var charId = values[i][0];
@@ -153,10 +155,10 @@ function handleGetCharacters() {
   return { success: true, data: characters };
 }
 
-function handleSaveCharacter(character) {
+function handleSaveCharacter(character, tableId) {
   if (!character || !character.id) return { success: false, error: "Invalid ID" };
 
-  var ss = getSpreadsheet();
+  var ss = getSpreadsheet(tableId);
   var charSheet = ss.getSheetByName(character.id) || ss.insertSheet(character.id);
 
   if (charSheet.getLastRow() === 0) {
@@ -173,7 +175,7 @@ function handleSaveCharacter(character) {
     charSheet.getRange(5, 1, items.length, ITEM_HEADERS.length).setValues(items.map(itemToRow));
   }
 
-  var summarySheet = getSummarySheet();
+  var summarySheet = getSummarySheet(tableId);
   var summaryData = summarySheet.getDataRange().getValues();
   var rowIndex = -1;
   for (var i = 1; i < summaryData.length; i++) {
@@ -187,7 +189,7 @@ function handleSaveCharacter(character) {
     summarySheet.appendRow(row);
   }
 
-  updateLastModified();
+  updateLastModified(tableId);
   return { success: true };
 }
 
@@ -239,8 +241,8 @@ function itemToRow(item) {
   return [String(item.id || ""), String(item.name || ""), item.slot || "", String(item.rarity || "COMMON"), JSON.stringify(item.stats || {}), String(item.description || ""), item.equipped ? "true" : "false", item.imageUrl || ""];
 }
 
-function handleGetCharacter(id) {
-  var ss = getSpreadsheet();
+function handleGetCharacter(id, tableId) {
+  var ss = getSpreadsheet(tableId);
   var sheet = ss.getSheetByName(id);
   if (!sheet) return { success: false, error: "Not found" };
   var values = sheet.getDataRange().getValues();
@@ -262,73 +264,73 @@ function handleGetCharacter(id) {
   return { success: true, data: character };
 }
 
-function handleDeleteCharacter(id) {
-  var ss = getSpreadsheet();
+function handleDeleteCharacter(id, tableId) {
+  var ss = getSpreadsheet(tableId);
   var sheet = ss.getSheetByName(id);
   if (sheet) ss.deleteSheet(sheet);
 
-  var summary = getSummarySheet();
+  var summary = getSummarySheet(tableId);
   var data = summary.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) {
     if (data[i][0] == id) { summary.deleteRow(i + 1); break; }
   }
-  updateLastModified();
+  updateLastModified(tableId);
   return { success: true };
 }
 
-function updateLastModified() {
-  var sheet = getSpreadsheet().getSheetByName(METADATA_SHEET_NAME) || getSpreadsheet().insertSheet(METADATA_SHEET_NAME);
+function updateLastModified(tableId) {
+  var sheet = getSpreadsheet(tableId).getSheetByName(METADATA_SHEET_NAME) || getSpreadsheet(tableId).insertSheet(METADATA_SHEET_NAME);
   sheet.getRange("A1").setValue("lastModified");
   sheet.getRange("B1").setValue(new Date().toISOString());
 }
 
-function handleGetLastModified() {
-  var ss = getSpreadsheet();
+function handleGetLastModified(tableId) {
+  var ss = getSpreadsheet(tableId);
   var sheet = ss.getSheetByName(METADATA_SHEET_NAME);
   var ts = sheet ? sheet.getRange("B1").getValue() : new Date().toISOString();
   return { success: true, data: ts.toString() };
 }
 
-function getLocationsSheet() {
-  var ss = getSpreadsheet();
+function getLocationsSheet(tableId) {
+  var ss = getSpreadsheet(tableId);
   var sheet = ss.getSheetByName(LOCATION_SHEET_NAME) || ss.insertSheet(LOCATION_SHEET_NAME);
   if (sheet.getLastRow() === 0) sheet.appendRow(LOCATION_HEADERS);
   return sheet;
 }
-function handleGetLocations() {
-  var values = getLocationsSheet().getDataRange().getValues();
+function handleGetLocations(tableId) {
+  var values = getLocationsSheet(tableId).getDataRange().getValues();
   var data = [];
   for (var i = 1; i < values.length; i++) {
     if (values[i][0]) data.push({ id: String(values[i][0]), name: values[i][1], description: values[i][2], imageUrl: values[i][3] });
   }
   return { success: true, data: data };
 }
-function handleSaveLocation(loc) {
-  var sheet = getLocationsSheet();
+function handleSaveLocation(loc, tableId) {
+  var sheet = getLocationsSheet(tableId);
   var data = sheet.getDataRange().getValues();
   var idx = -1;
   for (var i = 1; i < data.length; i++) if (data[i][0] == loc.id) { idx = i + 1; break; }
   var row = [loc.id, loc.name, loc.description, loc.imageUrl];
   if (idx > 0) sheet.getRange(idx, 1, 1, 4).setValues([row]); else sheet.appendRow(row);
-  updateLastModified();
+  updateLastModified(tableId);
   return { success: true };
 }
-function handleDeleteLocation(id) {
-  var sheet = getLocationsSheet();
+function handleDeleteLocation(id, tableId) {
+  var sheet = getLocationsSheet(tableId);
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) if (data[i][0] == id) { sheet.deleteRow(i + 1); break; }
-  updateLastModified();
+  updateLastModified(tableId);
   return { success: true };
 }
 
-function getMonstersSheet() {
-  var ss = getSpreadsheet();
+function getMonstersSheet(tableId) {
+  var ss = getSpreadsheet(tableId);
   var sheet = ss.getSheetByName(MONSTER_SHEET_NAME) || ss.insertSheet(MONSTER_SHEET_NAME);
   if (sheet.getLastRow() === 0) sheet.appendRow(MONSTER_HEADERS);
   return sheet;
 }
-function handleGetMonsters() {
-  var values = getMonstersSheet().getDataRange().getValues();
+function handleGetMonsters(tableId) {
+  var values = getMonstersSheet(tableId).getDataRange().getValues();
   var data = [];
   for (var i = 1; i < values.length; i++) {
     if (values[i][0]) data.push({
@@ -340,65 +342,65 @@ function handleGetMonsters() {
   }
   return { success: true, data: data };
 }
-function handleSaveMonster(m) {
-  var sheet = getMonstersSheet();
+function handleSaveMonster(m, tableId) {
+  var sheet = getMonstersSheet(tableId);
   var data = sheet.getDataRange().getValues();
   var idx = -1;
   for (var i = 1; i < data.length; i++) if (data[i][0] == m.id) { idx = i + 1; break; }
   var row = [m.id, m.name, m.description, m.imageUrl, JSON.stringify(m.stats), m.maxHp, m.currentHp, m.armorClass, m.speed, m.challengeRating, m.type, m.alignment, m.size];
   if (idx > 0) sheet.getRange(idx, 1, 1, row.length).setValues([row]); else sheet.appendRow(row);
-  updateLastModified();
+  updateLastModified(tableId);
   return { success: true };
 }
-function handleDeleteMonster(id) {
-  var sheet = getMonstersSheet();
+function handleDeleteMonster(id, tableId) {
+  var sheet = getMonstersSheet(tableId);
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) if (data[i][0] == id) { sheet.deleteRow(i + 1); break; }
-  updateLastModified();
+  updateLastModified(tableId);
   return { success: true };
 }
 
-function getNpcsSheet() {
-  var ss = getSpreadsheet();
+function getNpcsSheet(tableId) {
+  var ss = getSpreadsheet(tableId);
   var sheet = ss.getSheetByName(NPC_SHEET_NAME) || ss.insertSheet(NPC_SHEET_NAME);
   if (sheet.getLastRow() === 0) sheet.appendRow(NPC_HEADERS);
   return sheet;
 }
-function handleGetNpcs() {
-  var values = getNpcsSheet().getDataRange().getValues();
+function handleGetNpcs(tableId) {
+  var values = getNpcsSheet(tableId).getDataRange().getValues();
   var data = [];
   for (var i = 1; i < values.length; i++) {
     if (values[i][0]) data.push({ id: String(values[i][0]), name: values[i][1], description: values[i][2], imageUrl: values[i][3], background: values[i][4] });
   }
   return { success: true, data: data };
 }
-function handleSaveNpc(n) {
-  var sheet = getNpcsSheet();
+function handleSaveNpc(n, tableId) {
+  var sheet = getNpcsSheet(tableId);
   var data = sheet.getDataRange().getValues();
   var idx = -1;
   for (var i = 1; i < data.length; i++) if (data[i][0] == n.id) { idx = i + 1; break; }
   var row = [n.id, n.name, n.description, n.imageUrl, n.background];
   if (idx > 0) sheet.getRange(idx, 1, 1, 5).setValues([row]); else sheet.appendRow(row);
-  updateLastModified();
+  updateLastModified(tableId);
   return { success: true };
 }
-function handleDeleteNpc(id) {
-  var sheet = getNpcsSheet();
+function handleDeleteNpc(id, tableId) {
+  var sheet = getNpcsSheet(tableId);
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) if (data[i][0] == id) { sheet.deleteRow(i + 1); break; }
-  updateLastModified();
+  updateLastModified(tableId);
   return { success: true };
 }
 
-function getLogsSheet() {
-  var ss = getSpreadsheet();
+function getLogsSheet(tableId) {
+  var ss = getSpreadsheet(tableId);
   var sheet = ss.getSheetByName(LOG_SHEET_NAME) || ss.insertSheet(LOG_SHEET_NAME);
   if (sheet.getLastRow() === 0) sheet.appendRow(LOG_HEADERS);
   return sheet;
 }
 
-function handleSaveLog(log) {
-  var sheet = getLogsSheet();
+function handleSaveLog(log, tableId) {
+  var sheet = getLogsSheet(tableId);
   // Use server time if timestamp is missing or mocked
   var timestamp = log.timestamp;
   if (!timestamp || timestamp.indexOf("2024-05-20") === 0) {
@@ -416,8 +418,8 @@ function handleSaveLog(log) {
   return { success: true };
 }
 
-function handleGetLogs() {
-  var values = getLogsSheet().getDataRange().getValues();
+function handleGetLogs(tableId) {
+  var values = getLogsSheet(tableId).getDataRange().getValues();
   var data = [];
   // Return last 100 logs
   var start = Math.max(1, values.length - 100);

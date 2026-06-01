@@ -12,6 +12,22 @@ class WasmCharacterStorage : CharacterStorage {
     override fun getCharacterId(): String? {
         return localStorage.getItem("last_character_id")
     }
+
+    override fun saveTableId(id: String) {
+        localStorage.setItem("last_table_id", id)
+    }
+
+    override fun getTableId(): String? {
+        return localStorage.getItem("last_table_id")
+    }
+
+    override fun saveSessions(sessionsJson: String) {
+        localStorage.setItem("saved_sessions", sessionsJson)
+    }
+
+    override fun getSessions(): String? {
+        return localStorage.getItem("saved_sessions")
+    }
 }
 
 actual val platformModule = module {

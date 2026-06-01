@@ -15,6 +15,22 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
     override fun getCharacterId(): String? {
         return prefs.getString("last_character_id", null)
     }
+
+    override fun saveTableId(id: String) {
+        prefs.edit().putString("last_table_id", id).apply()
+    }
+
+    override fun getTableId(): String? {
+        return prefs.getString("last_table_id", null)
+    }
+
+    override fun saveSessions(sessionsJson: String) {
+        prefs.edit().putString("saved_sessions", sessionsJson).apply()
+    }
+
+    override fun getSessions(): String? {
+        return prefs.getString("saved_sessions", null)
+    }
 }
 
 actual val platformModule = module {

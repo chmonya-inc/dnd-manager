@@ -39,7 +39,7 @@ fun StartScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Enter your Character ID to begin",
+                text = "Enter your Character ID and Session Table to begin",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -55,6 +55,23 @@ fun StartScreen(
                 trailingIcon = {
                     if (state.characterId.isNotBlank()) {
                         IconButton(onClick = { viewModel.onEvent(StartEvent.CharacterIdChanged("")) }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear")
+                        }
+                    }
+                }
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = state.tableId,
+                onValueChange = { viewModel.onEvent(StartEvent.TableIdChanged(it)) },
+                label = { Text("Session Table ID (Spreadsheet ID)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                trailingIcon = {
+                    if (state.tableId.isNotBlank()) {
+                        IconButton(onClick = { viewModel.onEvent(StartEvent.TableIdChanged("")) }) {
                             Icon(Icons.Default.Close, contentDescription = "Clear")
                         }
                     }

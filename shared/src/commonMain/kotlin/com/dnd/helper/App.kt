@@ -71,8 +71,8 @@ val appModule = module {
         }
     }
 
-    single { GoogleAppsScriptDataSource(get()) }
-    single<CharacterRepository> { CharacterRepositoryImpl(get()) }
+    single { GoogleAppsScriptDataSource(get(), get()) }
+    single<CharacterRepository> { CharacterRepositoryImpl(get(), get()) }
     factory { CharacterListViewModel(get(), get()) }
     factory { StartViewModel(get()) }
     factory { CharacterCreateViewModel(get()) }
