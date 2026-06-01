@@ -7,4 +7,6 @@ interface CharacterStorage {
     fun getTableId(): String?
     fun saveSessions(sessionsJson: String)
     fun getSessions(): String?
+    fun saveTheme(themeName: String)
+    fun getTheme(): String?
 }

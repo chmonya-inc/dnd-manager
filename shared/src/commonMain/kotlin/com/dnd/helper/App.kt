@@ -1,7 +1,7 @@
 package com.dnd.helper
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -26,6 +26,7 @@ import com.dnd.helper.presentation.desktop.*
 import com.dnd.helper.presentation.start.StartScreen
 import com.dnd.helper.presentation.start.StartViewModel
 import com.dnd.helper.theme.DndHelperTheme
+import com.dnd.helper.theme.ThemeViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import kotlinx.serialization.Serializable
@@ -82,6 +83,7 @@ val appModule = module {
     factory { LibraryViewModel(get()) }
     factory { LogViewModel(get()) }
     factory { MusicViewModel(get(), get()) }
+    single { ThemeViewModel(get()) }
     single { com.dnd.helper.presentation.desktop.PresentationViewModel(get()) }
 }
 
@@ -111,7 +113,10 @@ fun App(koinConfiguration: KoinAppDeclaration = {}) {
             }
         }
 
-        DndHelperTheme {
+        val themeViewModel: ThemeViewModel = koinViewModel()
+        val currentTheme by themeViewModel.currentTheme.collectAsState()
+
+        DndHelperTheme(theme = currentTheme) {
             val navController = rememberNavController()
             val startDestination = if (isDesktop) MainDesktop else Start
 

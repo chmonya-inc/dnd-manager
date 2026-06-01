@@ -28,6 +28,14 @@ class WasmCharacterStorage : CharacterStorage {
     override fun getSessions(): String? {
         return localStorage.getItem("saved_sessions")
     }
+
+    override fun saveTheme(themeName: String) {
+        localStorage.setItem("app_theme", themeName)
+    }
+
+    override fun getTheme(): String? {
+        return localStorage.getItem("app_theme")
+    }
 }
 
 actual val platformModule = module {

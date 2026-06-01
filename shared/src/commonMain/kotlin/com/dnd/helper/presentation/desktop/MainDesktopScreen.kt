@@ -1,9 +1,11 @@
 package com.dnd.helper.presentation.desktop
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.*
@@ -19,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import com.dnd.helper.domain.storage.CharacterStorage
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
+import com.dnd.helper.theme.AppTheme
+import com.dnd.helper.theme.ThemeViewModel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
@@ -55,6 +59,7 @@ fun MainDesktopScreen() {
     var showDiceDialog by remember { mutableStateOf(false) }
     var showSessionsDialog by remember { mutableStateOf(false) }
     var showMusicPlayer by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
     var musicPlayerOffset by remember { mutableStateOf(IntOffset(0, 0)) }
 
     // Track active session for forcing ViewModel recreation on session switch
@@ -74,6 +79,10 @@ fun MainDesktopScreen() {
                 showSessionsDialog = false
             }
         )
+    }
+
+    if (showThemeDialog) {
+        ThemeDialog(onDismiss = { showThemeDialog = false })
     }
 
     Surface(
@@ -155,6 +164,18 @@ fun MainDesktopScreen() {
                         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
                     ) {
                         Text(text = "🎲", style = MaterialTheme.typography.titleLarge)
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Theme Button
+                    FloatingActionButton(
+                        onClick = { showThemeDialog = true },
+                        modifier = Modifier.size(48.dp),
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
+                    ) {
+                        Icon(Icons.Default.Palette, "Theme")
                     }
                 }
             }
@@ -448,6 +469,51 @@ private fun SessionRow(
 }
 
 private val sessionsJson = Json { ignoreUnknownKeys = true }
+
+@Composable
+fun ThemeDialog(
+    onDismiss: () -> Unit,
+    viewModel: ThemeViewModel = koinViewModel()
+) {
+    val currentTheme by viewModel.currentTheme.collectAsState()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select UI Theme") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                AppTheme.entries.forEach { theme ->
+                    Surface(
+                        onClick = { viewModel.setTheme(theme) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (currentTheme == theme) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                        border = if (currentTheme == theme) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                if (currentTheme == theme) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                null,
+                                tint = if (currentTheme == theme) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(theme.displayName, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Done") }
+        }
+    )
+}
 
 private fun loadSessions(storage: CharacterStorage): List<Session> {
     val raw = storage.getSessions() ?: return emptyList()

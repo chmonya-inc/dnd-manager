@@ -33,6 +33,14 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
     override fun getSessions(): String? {
         return prefs.getString("saved_sessions", null)
     }
+
+    override fun saveTheme(themeName: String) {
+        prefs.edit().putString("app_theme", themeName).apply()
+    }
+
+    override fun getTheme(): String? {
+        return prefs.getString("app_theme", null)
+    }
 }
 
 actual val platformModule = module {

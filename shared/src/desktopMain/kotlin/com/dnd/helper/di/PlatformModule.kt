@@ -163,6 +163,14 @@ class DesktopCharacterStorage : CharacterStorage {
     override fun getSessions(): String? {
         return prefs.get("saved_sessions", null)
     }
+
+    override fun saveTheme(themeName: String) {
+        prefs.put("app_theme", themeName)
+    }
+
+    override fun getTheme(): String? {
+        return prefs.get("app_theme", null)
+    }
 }
 
 actual val platformModule = module {
