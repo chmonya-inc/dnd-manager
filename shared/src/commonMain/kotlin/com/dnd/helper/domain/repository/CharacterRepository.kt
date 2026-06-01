@@ -37,6 +37,10 @@ interface CharacterRepository {
     suspend fun getLogs(): Result<List<com.dnd.helper.domain.model.LogEntry>>
     suspend fun saveLog(log: com.dnd.helper.domain.model.LogEntry): Result<Unit>
 
+    suspend fun getEvents(forceRefresh: Boolean = false): Result<List<com.dnd.helper.domain.model.GameEvent>>
+    suspend fun saveEvent(event: com.dnd.helper.domain.model.GameEvent): Result<Unit>
+    suspend fun deleteEvent(id: String): Result<Unit>
+
     /**
      * Returns the server's last-modified timestamp (ISO-8601 string).
      * Lightweight — used for auto-refresh polling.

@@ -159,6 +159,9 @@ fun StatsTab(character: Character) {
                 }
             }
         }
+
+        // Add spacer to prevent overlap with FAB
+        Spacer(modifier = Modifier.height(80.dp))
     }
 }
 

@@ -25,14 +25,25 @@ const LOCATION_HEADERS = ["ID", "Name", "Description", "ImageUrl"];
 const MONSTER_HEADERS = ["ID", "Name", "Description", "ImageUrl", "StatsJSON", "MaxHP", "CurrentHP", "ArmorClass", "Speed", "CR", "Type", "Alignment", "Size"];
 const NPC_HEADERS = ["ID", "Name", "Description", "ImageUrl", "Background"];
 const MUSIC_HEADERS = ["ID", "Name", "URL"];
+const EVENT_HEADERS = ["ID", "Name", "ItemsJSON"];
 const LOG_HEADERS = ["Timestamp", "Action", "Details", "InitialState", "EndState", "Success"];
 
-const WRITE_ACTIONS = ["saveCharacter", "deleteCharacter", "saveLocation", "deleteLocation", "saveMonster", "deleteMonster", "saveNpc", "deleteNpc", "saveLog", "saveMusic", "deleteMusic"];
-const READ_ACTIONS = ["getCharacters", "getCharacter", "getLastModified", "getLocations", "getMonsters", "getNpcs", "getInitialData", "getLogs", "getMusic"];
+const WRITE_ACTIONS = ["saveCharacter", "deleteCharacter", "saveLocation", "deleteLocation", "saveMonster", "deleteMonster", "saveNpc", "deleteNpc", "saveLog", "saveMusic", "deleteMusic", "saveEvent", "deleteEvent"];
+const READ_ACTIONS = ["getCharacters", "getCharacter", "getLastModified", "getLocations", "getMonsters", "getNpcs", "getInitialData", "getLogs", "getMusic", "getEvents"];
 
 function doGet(e) {
   var requestJson = e.parameter.request;
   if (!requestJson) return jsonOutput({ success: false, error: "Missing request" });
+  return processRequest(requestJson);
+}
+
+function doPost(e) {
+  var requestJson = e.postData.contents;
+  if (!requestJson) return jsonOutput({ success: false, error: "Missing post data" });
+  return processRequest(requestJson);
+}
+
+function processRequest(requestJson) {
   var request = JSON.parse(requestJson);
   var action = request.action;
   var tableId = request.tableId || "";
@@ -79,6 +90,9 @@ function handleRequest(request, tableId) {
     case "getMusic": return handleGetMusic(tableId);
     case "saveMusic": return handleSaveMusic(request.music, tableId);
     case "deleteMusic": return handleDeleteMusic(request.id, tableId);
+    case "getEvents": return handleGetEvents(tableId);
+    case "saveEvent": return handleSaveEvent(request.event, tableId);
+    case "deleteEvent": return handleDeleteEvent(request.id, tableId);
     default: return { success: false, error: "Unknown action" };
   }
 }
@@ -112,6 +126,7 @@ function handleGetInitialData(tableId) {
       monsters: handleGetMonsters(tableId).data,
       npcs: handleGetNpcs(tableId).data,
       music: handleGetMusic(tableId).data,
+      events: handleGetEvents(tableId).data,
       lastModified: handleGetLastModified(tableId).data
     }
   };
@@ -424,6 +439,38 @@ function handleSaveMusic(m, tableId) {
 }
 function handleDeleteMusic(id, tableId) {
   var sheet = getMusicSheet(tableId);
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) if (data[i][0] == id) { sheet.deleteRow(i + 1); break; }
+  updateLastModified(tableId);
+  return { success: true };
+}
+
+function getEventsSheet(tableId) {
+  var ss = getSpreadsheet(tableId);
+  var sheet = ss.getSheetByName("Events") || ss.insertSheet("Events");
+  if (sheet.getLastRow() === 0) sheet.appendRow(EVENT_HEADERS);
+  return sheet;
+}
+function handleGetEvents(tableId) {
+  var values = getEventsSheet(tableId).getDataRange().getValues();
+  var data = [];
+  for (var i = 1; i < values.length; i++) {
+    if (values[i][0]) data.push({ id: String(values[i][0]), name: String(values[i][1]), items: JSON.parse(values[i][2] || "[]") });
+  }
+  return { success: true, data: data };
+}
+function handleSaveEvent(e, tableId) {
+  var sheet = getEventsSheet(tableId);
+  var data = sheet.getDataRange().getValues();
+  var idx = -1;
+  for (var i = 1; i < data.length; i++) if (data[i][0] == e.id) { idx = i + 1; break; }
+  var row = [e.id, e.name, JSON.stringify(e.items)];
+  if (idx > 0) sheet.getRange(idx, 1, 1, row.length).setValues([row]); else sheet.appendRow(row);
+  updateLastModified(tableId);
+  return { success: true };
+}
+function handleDeleteEvent(id, tableId) {
+  var sheet = getEventsSheet(tableId);
   var data = sheet.getDataRange().getValues();
   for (var i = 1; i < data.length; i++) if (data[i][0] == id) { sheet.deleteRow(i + 1); break; }
   updateLastModified(tableId);

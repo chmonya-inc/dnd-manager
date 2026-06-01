@@ -66,8 +66,19 @@ val appModule = module {
     // We add a User-Agent to avoid being blocked by Google Drive.
     single {
         HttpClient {
+            followRedirects = true
+            expectSuccess = false // We handle status checks manually in DataSource
             install(io.ktor.client.plugins.DefaultRequest) {
                 header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            }
+            // Add logging to help diagnose server issues
+            install(io.ktor.client.plugins.logging.Logging) {
+                level = io.ktor.client.plugins.logging.LogLevel.INFO
+                logger = object : io.ktor.client.plugins.logging.Logger {
+                    override fun log(message: String) {
+                        println("[Ktor] $message")
+                    }
+                }
             }
         }
     }

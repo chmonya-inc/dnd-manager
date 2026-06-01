@@ -9,6 +9,9 @@ import com.dnd.helper.domain.storage.CharacterStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.http.encodeURLQueryComponent
 import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
@@ -84,6 +87,15 @@ class GoogleAppsScriptDataSource(
     suspend fun saveLog(log: com.dnd.helper.domain.model.LogEntry): Result<Unit> =
         executeUnit(request = AppsScriptRequest(action = "saveLog", log = log, tableId = tableId()))
 
+    suspend fun getEvents(): Result<List<com.dnd.helper.domain.model.GameEvent>> =
+        execute(request = AppsScriptRequest(action = "getEvents", tableId = tableId()))
+
+    suspend fun saveEvent(event: com.dnd.helper.domain.model.GameEvent): Result<Unit> =
+        executeUnit(request = AppsScriptRequest(action = "saveEvent", event = event, tableId = tableId()))
+
+    suspend fun deleteEvent(id: String): Result<Unit> =
+        executeUnit(request = AppsScriptRequest(action = "deleteEvent", id = id, tableId = tableId()))
+
     /**
      * Returns the last-modified timestamp from the server.
      * This is a lightweight poll endpoint — clients call it frequently
@@ -100,9 +112,13 @@ class GoogleAppsScriptDataSource(
      * JSON in the URL, we avoid the redirect issue entirely.
      */
     private fun buildUrl(request: AppsScriptRequest): String {
+        val baseUrl = GoogleAppsScriptConfig.WEB_APP_URL
+        if (!baseUrl.endsWith("/exec")) {
+            println("[AppsScript] WARNING: URL might be wrong. It should end with '/exec'. Current: $baseUrl")
+        }
         val jsonStr = json.encodeToString(request)
         val encoded = jsonStr.encodeURLQueryComponent()
-        return "${GoogleAppsScriptConfig.WEB_APP_URL}?request=$encoded"
+        return "$baseUrl?request=$encoded"
     }
 
     private suspend inline fun <reified T> execute(
@@ -121,6 +137,12 @@ class GoogleAppsScriptDataSource(
             if (!response.status.isSuccess()) {
                 return Result.Error(
                     AppError.Unknown(httpErrorHint(response.status.value, rawBody))
+                )
+            }
+
+            if (rawBody.trim().startsWith("<!DOCTYPE html") || rawBody.trim().startsWith("<html")) {
+                return Result.Error(
+                    AppError.Unknown("Server returned HTML instead of JSON. Check if your Apps Script is deployed as 'Anyone' and the URL is correct.")
                 )
             }
 
@@ -150,8 +172,9 @@ class GoogleAppsScriptDataSource(
                 )
             }
 
-            if (parsed.success && parsed.data != null) {
-                Result.Success(parsed.data)
+            if (parsed.success && (parsed.data != null || null is T)) {
+                @Suppress("UNCHECKED_CAST")
+                Result.Success(parsed.data as T)
             } else {
                 Result.Error(
                     AppError.Unknown(parsed.error ?: "Server returned success=false")
@@ -174,48 +197,10 @@ class GoogleAppsScriptDataSource(
     private suspend fun executeUnit(
         request: AppsScriptRequest,
     ): Result<Unit> {
-        return try {
-            val url = buildUrl(request)
-            println("[AppsScript] → GET $url")
-
-            val response = httpClient.get(url)
-            val rawBody: String = response.body()
-
-            println("[AppsScript] ← Status: ${response.status}")
-            println("[AppsScript] ← Raw: ${rawBody.take(400)}")
-
-            if (!response.status.isSuccess()) {
-                return Result.Error(
-                    AppError.Unknown(httpErrorHint(response.status.value, rawBody))
-                )
-            }
-
-            val parsed = try {
-                json.decodeFromString<AppsScriptResponse<JsonElement?>>(rawBody)
-            } catch (e: Exception) {
-                return Result.Error(
-                    AppError.Unknown("JSON parse failed: ${e.message}")
-                )
-            }
-
-            if (parsed.success) {
-                Result.Success(Unit)
-            } else {
-                Result.Error(
-                    AppError.Unknown(parsed.error ?: "Server returned success=false")
-                )
-            }
-        } catch (e: Exception) {
-            val msg = "${e::class.simpleName}: ${e.message}"
-            println("[AppsScript] ← ERROR: $msg")
-
-            // Handle some common network exceptions by name to avoid JVM-specific imports
-            when (e::class.simpleName) {
-                "UnknownHostException" -> Result.Error(AppError.Network)
-                "SocketTimeoutException", "ConnectTimeoutException", "HttpRequestTimeoutException" -> 
-                    Result.Error(AppError.Unknown("Connection timed out"))
-                else -> Result.Error(AppError.Unknown(msg))
-            }
+        val result = execute<JsonElement?>(request)
+        return when (result) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> result
         }
     }
 

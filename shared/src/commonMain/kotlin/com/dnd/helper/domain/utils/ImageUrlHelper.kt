@@ -18,9 +18,9 @@ object ImageUrlHelper {
                 url.contains("/d/") -> {
                     url.substringAfter("/d/").substringBefore("/")
                 }
-                // Pattern 2: ...?id=FILE_ID
+                // Pattern 2: ...?id=FILE_ID (e.g., open?id=..., uc?id=...)
                 url.contains("id=") -> {
-                    url.substringAfter("id=").substringBefore("&")
+                    url.substringAfter("id=").substringBefore("&").substringBefore("/").substringBefore(" ")
                 }
                 else -> null
             }

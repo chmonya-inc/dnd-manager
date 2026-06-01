@@ -27,6 +27,7 @@ class CharacterRepositoryImpl(
     private var monstersCache: List<Monster>? = null
     private var npcsCache: List<Npc>? = null
     private var musicCache: List<com.dnd.helper.domain.model.MusicTrack>? = null
+    private var eventsCache: List<com.dnd.helper.domain.model.GameEvent>? = null
 
     /** Tracks the last table ID we fetched from; used to auto-invalidate caches on session switch. */
     private var lastTableId: String? = null
@@ -60,6 +61,7 @@ class CharacterRepositoryImpl(
             monstersCache = data.monsters
             npcsCache = data.npcs
             musicCache = data.music
+            eventsCache = data.events
             
             // Update heavy character cache for any characters that have items or notes
             filteredChars.forEach { char ->
@@ -243,6 +245,28 @@ class CharacterRepositoryImpl(
 
     override suspend fun saveLog(log: com.dnd.helper.domain.model.LogEntry): Result<Unit> {
         return dataSource.saveLog(log)
+    }
+
+    override suspend fun getEvents(forceRefresh: Boolean): Result<List<com.dnd.helper.domain.model.GameEvent>> {
+        val tableChanged = checkTableIdChanged()
+        if (!forceRefresh && !tableChanged) {
+            eventsCache?.let { return Result.Success(it) }
+        }
+        val result = dataSource.getEvents()
+        if (result is Result.Success) eventsCache = result.data
+        return result
+    }
+
+    override suspend fun saveEvent(event: com.dnd.helper.domain.model.GameEvent): Result<Unit> {
+        val result = dataSource.saveEvent(event)
+        if (result is Result.Success) eventsCache = null
+        return result
+    }
+
+    override suspend fun deleteEvent(id: String): Result<Unit> {
+        val result = dataSource.deleteEvent(id)
+        if (result is Result.Success) eventsCache = null
+        return result
     }
 
     override suspend fun getLastModified(): Result<String> {

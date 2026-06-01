@@ -899,7 +899,7 @@ private fun CharacteristicsContent(
         if (!character.imageUrl.isNullOrBlank()) {
             Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
                 AsyncImage(
-                    model = character.imageUrl,
+                    model = character.displayImageUrl,
                     contentDescription = character.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,

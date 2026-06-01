@@ -198,7 +198,7 @@ private fun MasterContent(
                 Column(modifier = Modifier.width(300.dp)) {
                     if (!character.imageUrl.isNullOrBlank()) {
                         AsyncImage(
-                            model = character.imageUrl,
+                            model = character.displayImageUrl,
                             contentDescription = character.name,
                             modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(16.dp)),
                             contentScale = ContentScale.Crop
@@ -277,6 +277,8 @@ private fun MasterContent(
                     )
                 }
             }
+
+            Spacer(Modifier.height(80.dp))
         }
     }
 }

@@ -68,6 +68,11 @@ fun PresentationScreen(
     val monsters by viewModel.monsters.collectAsState()
     val npcs by viewModel.npcs.collectAsState()
     val locations by viewModel.locations.collectAsState()
+    val events by viewModel.events.collectAsState()
+    val activeEvent by viewModel.activeEvent.collectAsState()
+
+    var searchQuery by remember { mutableStateOf("") }
+    var showSaveAsDialog by remember { mutableStateOf(false) }
 
     // Drag and Drop State
     var draggedItemInfo by remember { mutableStateOf<Triple<Item, String, String>?>(null) } // Item, fromId, fromName
@@ -171,9 +176,60 @@ fun PresentationScreen(
             Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 // Workspace
                 Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Logical Canvas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.width(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = activeEvent?.name ?: "Unsaved Scene",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = if (activeEvent != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                            
+                            if (activeEvent != null) {
+                                // 1. Quick Save (Update Content)
+                                IconButton(
+                                    onClick = { viewModel.saveCurrentEvent(activeEvent!!.name) },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(Icons.Default.Save, "Update Scene", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                }
+                                
+                                // 2. Save As (New Copy)
+                                IconButton(
+                                    onClick = { showSaveAsDialog = true },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(Icons.Default.ContentCopy, "Save as New Scene", modifier = Modifier.size(18.dp))
+                                }
+                            } else {
+                                // Save New Scene
+                                IconButton(
+                                    onClick = { showSaveAsDialog = true },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(Icons.Default.AddCircle, "Save New Scene", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                            
+                            if (showSaveAsDialog) {
+                                SaveEventDialog(
+                                    initialName = if (activeEvent != null) "${activeEvent!!.name} (Copy)" else "",
+                                    onDismiss = { showSaveAsDialog = false },
+                                    onSave = { name ->
+                                        if (activeEvent != null) {
+                                            viewModel.saveAsNewEvent(name)
+                                        } else {
+                                            viewModel.saveCurrentEvent(name)
+                                        }
+                                        showSaveAsDialog = false
+                                    }
+                                )
+                            }
+                        }
                         Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(6.dp)) {
                             Text("1000x1000", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall)
                         }
@@ -210,23 +266,61 @@ fun PresentationScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text("Assets", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            IconButton(onClick = { viewModel.refreshAll(force = true) }, modifier = Modifier.size(32.dp)) {
-                                Icon(Icons.Default.Refresh, contentDescription = "Refresh Libraries", modifier = Modifier.size(18.dp))
-                            }
+                                Row {
+                                    IconButton(onClick = { viewModel.refreshAll(force = true) }, modifier = Modifier.size(32.dp)) {
+                                        Icon(Icons.Default.Refresh, contentDescription = "Refresh Libraries", modifier = Modifier.size(18.dp))
+                                    }
+                                }
                             }
                             
                             Spacer(Modifier.height(8.dp))
                             
-                            OutlinedButton(
-                                onClick = { viewModel.clearItems() },
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = { Text("Search assets...", style = MaterialTheme.typography.bodyMedium) },
                                 modifier = Modifier.fillMaxWidth(),
-                                enabled = activeItems.isNotEmpty(),
+                                leadingIcon = { Icon(Icons.Default.Search, null, modifier = Modifier.size(18.dp)) },
+                                trailingIcon = {
+                                    if (searchQuery.isNotEmpty()) {
+                                        IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(24.dp)) {
+                                            Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                },
                                 shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Icon(Icons.Default.DeleteSweep, null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Wipe Workspace", style = MaterialTheme.typography.labelLarge)
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                                ),
+                                singleLine = true
+                            )
+                            
+                            Spacer(Modifier.height(12.dp))
+                            
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(
+                                    onClick = { viewModel.createNewScene() },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("New Scene", style = MaterialTheme.typography.labelLarge)
+                                }
+                                
+                                OutlinedButton(
+                                    onClick = { viewModel.clearItems() },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = activeItems.isNotEmpty(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Icon(Icons.Default.DeleteSweep, null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Clear All", style = MaterialTheme.typography.labelLarge)
+                                }
                             }
                         }
                     }
@@ -234,6 +328,7 @@ fun PresentationScreen(
                     Spacer(Modifier.height(16.dp))
 
                     val distinctChars = characterListState.characters.distinctBy { it.id }
+                        .filter { it.name.contains(searchQuery, ignoreCase = true) }
                     
                     // 1. Characters Section
                     FoldableSection(title = "Characters", count = distinctChars.size, icon = Icons.Default.Groups, color = CharacterColor) {
@@ -268,9 +363,10 @@ fun PresentationScreen(
                     Spacer(Modifier.height(8.dp))
 
                     // 2. Monsters Section
-                    FoldableSection(title = "Monsters", count = monsters.size, icon = Icons.Default.BugReport, color = MonsterColor) {
+                    val filteredMonsters = monsters.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                    FoldableSection(title = "Monsters", count = filteredMonsters.size, icon = Icons.Default.BugReport, color = MonsterColor) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
-                            items(monsters) { monster ->
+                            items(filteredMonsters) { monster ->
                                 PresenterSidebarRow(monster.name, MonsterColor, icon = Icons.Default.BugReport, onClick = {
                                     viewModel.addItem(
                                         title = monster.name, 
@@ -292,9 +388,10 @@ fun PresentationScreen(
                     Spacer(Modifier.height(8.dp))
 
                     // 3. NPCs Section
-                    FoldableSection(title = "NPCs", count = npcs.size, icon = Icons.Default.EmojiPeople, color = NpcColor) {
+                    val filteredNpcs = npcs.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                    FoldableSection(title = "NPCs", count = filteredNpcs.size, icon = Icons.Default.EmojiPeople, color = NpcColor) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
-                            items(npcs) { npc ->
+                            items(filteredNpcs) { npc ->
                                 PresenterSidebarRow(npc.name, NpcColor, icon = Icons.Default.EmojiPeople, onClick = {
                                     viewModel.addItem(
                                         title = npc.name, 
@@ -312,9 +409,10 @@ fun PresentationScreen(
                     Spacer(Modifier.height(8.dp))
 
                     // 4. Locations Section
-                    FoldableSection(title = "Locations", count = locations.size, icon = Icons.Default.Explore, color = LocationColor) {
+                    val filteredLocations = locations.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                    FoldableSection(title = "Locations", count = filteredLocations.size, icon = Icons.Default.Explore, color = LocationColor) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
-                            items(locations) { location ->
+                            items(filteredLocations) { location ->
                                 PresenterSidebarRow(location.name, LocationColor, icon = Icons.Default.Explore, onClick = {
                                     viewModel.addItem(location.name, "Location", imageUrl = location.displayImageUrl, isBackground = true)
                                 })
@@ -324,8 +422,37 @@ fun PresentationScreen(
 
                     Spacer(Modifier.height(8.dp))
 
-                    // 5. Items Section
+                    // 5. Events Section
+                    val filteredEvents = events.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                    FoldableSection(title = "Saved Events", count = filteredEvents.size, icon = Icons.Default.AutoFixHigh, color = MaterialTheme.colorScheme.secondary) {
+                        LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                            items(filteredEvents) { event ->
+                                var showSaveDialog by remember { mutableStateOf(false) }
+                                EventSidebarRow(
+                                    event = event,
+                                    onLoad = { viewModel.loadEvent(event) },
+                                    onDelete = { viewModel.deleteEvent(event.id) },
+                                    onSave = { showSaveDialog = true }
+                                )
+                                if (showSaveDialog) {
+                                    SaveEventDialog(
+                                        initialName = event.name,
+                                        onDismiss = { showSaveDialog = false },
+                                        onSave = { name ->
+                                            viewModel.saveCurrentEvent(name, event.id)
+                                            showSaveDialog = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // 6. Items Section
                     val allItems = distinctChars.flatMap { c -> c.items.map { Triple(it, c.id, c.name) } }
+                        .filter { it.first.name.contains(searchQuery, ignoreCase = true) }
                     FoldableSection(title = "Inventory", count = allItems.size, icon = Icons.Default.ShoppingBag, color = ItemColor) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(allItems) { (item, ownerId, ownerName) ->
@@ -398,6 +525,78 @@ fun PresentationScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(item.name, color = Color.White, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SaveEventDialog(
+    initialName: String = "",
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Save Current Event") },
+        text = {
+            Column {
+                Text("Save all currently placed characters, monsters, and backgrounds as a single event.")
+                Spacer(Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Event Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onSave(name) }, enabled = name.isNotBlank()) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun EventSidebarRow(
+    event: GameEvent,
+    onLoad: () -> Unit,
+    onDelete: () -> Unit,
+    onSave: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+    ) {
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(event.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                Text("${event.items.size} elements", style = MaterialTheme.typography.labelSmall)
+            }
+            Row {
+                IconButton(onClick = onSave, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Save, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                IconButton(onClick = onLoad, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }

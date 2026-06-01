@@ -112,6 +112,9 @@ fun OverviewTab(
         if (character.combat.conditions.isNotEmpty()) {
             ConditionsChipRow(character.combat.conditions)
         }
+
+        // Add spacer to prevent overlap with FAB
+        Spacer(modifier = Modifier.height(80.dp))
     }
 }
 

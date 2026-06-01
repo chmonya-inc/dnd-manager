@@ -16,5 +16,6 @@ data class AppsScriptRequest(
     val npc: com.dnd.helper.domain.model.Npc? = null,
     val music: com.dnd.helper.domain.model.MusicTrack? = null,
     val log: com.dnd.helper.domain.model.LogEntry? = null,
+    val event: com.dnd.helper.domain.model.GameEvent? = null,
     val payload: JsonObject? = null,
 )

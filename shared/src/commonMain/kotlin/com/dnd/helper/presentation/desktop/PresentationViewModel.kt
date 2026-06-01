@@ -7,27 +7,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlin.random.Random
 
-data class PresentedItem(
-    val id: String,
-    val sourceId: String? = null, // The real ID (Character ID, Monster ID, etc.)
-    val title: String,
-    val type: String,
-    val imageUrl: String? = null,
-    // x, y, width, height are all in logical units (0 to 1000)
-    val x: Float = 0f,
-    val y: Float = 0f,
-    val width: Float = 200f,
-    val height: Float = 200f,
-    val isBackground: Boolean = false,
-    
-    // Stats for display
-    val currentHp: Int? = null,
-    val maxHp: Int? = null,
-    val armorClass: Int? = null,
-    val stats: com.dnd.helper.domain.model.CharacterStats? = null,
-    val subInfo: String? = null, // e.g. "CR 1/2", "Humanoid"
-    val description: String? = null
-)
+import com.dnd.helper.domain.model.PresentedItem
+import kotlinx.coroutines.*
 
 class PresentationViewModel(
     private val repository: com.dnd.helper.domain.repository.CharacterRepository
@@ -49,6 +30,12 @@ class PresentationViewModel(
 
     private val _locations = MutableStateFlow<List<com.dnd.helper.domain.model.Location>>(emptyList())
     val locations = _locations.asStateFlow()
+
+    private val _events = MutableStateFlow<List<com.dnd.helper.domain.model.GameEvent>>(emptyList())
+    val events = _events.asStateFlow()
+
+    private val _activeEvent = MutableStateFlow<com.dnd.helper.domain.model.GameEvent?>(null)
+    val activeEvent = _activeEvent.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -83,6 +70,9 @@ class PresentationViewModel(
             
             val lResult = repository.getLocations(forceRefresh = force)
             if (lResult is com.dnd.helper.domain.common.Result.Success) _locations.value = lResult.data
+
+            val eResult = repository.getEvents(forceRefresh = force)
+            if (eResult is com.dnd.helper.domain.common.Result.Success) _events.value = eResult.data
             
             refreshActiveItems()
             _isLoading.value = false
@@ -272,6 +262,89 @@ class PresentationViewModel(
     }
 
     fun clearItems() {
+        activeItems.clear()
+    }
+
+    fun saveCurrentEvent(name: String, id: String? = null) {
+        val targetId = id ?: _activeEvent.value?.id ?: Random.nextLong().toString()
+        val event = com.dnd.helper.domain.model.GameEvent(
+            id = targetId,
+            name = name,
+            items = activeItems.toList()
+        )
+        
+        // Optimistic update
+        _activeEvent.value = event
+        _events.update { list ->
+            val index = list.indexOfFirst { it.id == targetId }
+            if (index != -1) {
+                list.toMutableList().apply { set(index, event) }
+            } else {
+                list + event
+            }
+        }
+
+        viewModelScope.launch {
+            repository.saveEvent(event)
+            // Refresh to ensure server sync, but UI already updated
+            val result = repository.getEvents(forceRefresh = true)
+            if (result is com.dnd.helper.domain.common.Result.Success) {
+                _events.value = result.data
+            }
+        }
+    }
+
+    fun renameEvent(id: String, newName: String) {
+        val event = _events.value.find { it.id == id } ?: return
+        val updated = event.copy(name = newName)
+        
+        // Optimistic update
+        if (_activeEvent.value?.id == id) {
+            _activeEvent.value = updated
+        }
+        _events.update { list ->
+            list.map { if (it.id == id) updated else it }
+        }
+
+        viewModelScope.launch {
+            repository.saveEvent(updated)
+        }
+    }
+
+    fun saveAsNewEvent(name: String) {
+        val event = com.dnd.helper.domain.model.GameEvent(
+            id = Random.nextLong().toString(),
+            name = name,
+            items = activeItems.toList()
+        )
+        _activeEvent.value = event
+        _events.update { it + event }
+        
+        viewModelScope.launch {
+            repository.saveEvent(event)
+        }
+    }
+
+    fun loadEvent(event: com.dnd.helper.domain.model.GameEvent) {
+        _activeEvent.value = event
+        activeItems.clear()
+        activeItems.addAll(event.items)
+    }
+
+    fun deleteEvent(id: String) {
+        // Optimistic update
+        if (_activeEvent.value?.id == id) {
+            _activeEvent.value = null
+        }
+        _events.update { it.filter { event -> event.id != id } }
+
+        viewModelScope.launch {
+            repository.deleteEvent(id)
+        }
+    }
+
+    fun createNewScene() {
+        _activeEvent.value = null
         activeItems.clear()
     }
 }
