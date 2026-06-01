@@ -43,6 +43,12 @@ class CharacterDetailViewModel(
     private var debouncedSaveJob: Job? = null
 
     /**
+     * Set to true for 1 second after a successful save to prevent
+     * auto-refresh from immediately reloading data we just pushed.
+     */
+    private var isRecentlySaved = false
+
+    /**
      * The character state as it exists on the server.
      * Updated only after a successful save or a full load/reload.
      */
@@ -176,9 +182,11 @@ class CharacterDetailViewModel(
         pollingJob = viewModelScope.launch {
             while (isActive) {
                 delay(intervalMs)
-                // Skip auto-refresh while the user is actively editing —
-                // we don't want to overwrite their in-progress changes.
-                if (!_state.value.isEditing) {
+                
+                val state = _state.value
+                // Stop polling while there is unsaved events (isEditing or hasUnsavedChanges)
+                // and for a short period after a successful save.
+                if (!state.isEditing && !state.hasUnsavedChanges && !isRecentlySaved) {
                     checkForUpdates()
                 }
             }
@@ -410,6 +418,13 @@ class CharacterDetailViewModel(
                         isSaving = false,
                         hasUnsavedChanges = false,
                     )
+                    
+                    // Pause polling for 1 second after a successful save
+                    isRecentlySaved = true
+                    viewModelScope.launch {
+                        delay(1000)
+                        isRecentlySaved = false
+                    }
                     
                     // On success, this new state becomes the original state for future edits
                     originalCharacter = character

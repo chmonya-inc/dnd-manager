@@ -1,8 +1,12 @@
 # D&D Helper
 
-A Kotlin Multiplatform (KMP) companion application for Dungeons & Dragons 5th Edition sessions. Manage your characters, items, and world library across Android, Desktop, and Web with real-time synchronization via Google Sheets.
+## Images
+<p align="center">
+  <img src="images/288shots_so.png" alt="App Preview 1" height="400" />
+  <img src="images/766shots_so.png" alt="App Preview 2" height="400" />
+</p>
 
-![Main Screenshot](screenshots/main.png)
+A Kotlin Multiplatform (KMP) companion application for Dungeons & Dragons 5th Edition sessions. Manage your characters, items, and world library across Android, Desktop, and Web with real-time synchronization via Google Sheets.
 
 ## 🚀 Key Features
 
