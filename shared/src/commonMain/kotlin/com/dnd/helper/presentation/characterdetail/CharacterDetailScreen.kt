@@ -936,20 +936,22 @@ private fun CharacteristicsContent(
     state: CharacterDetailState,
     viewModel: CharacterDetailViewModel
 ) {
+    val displayChar = if (state.isEditing) state.editedCharacter ?: character else character
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        if (!character.imageUrl.isNullOrBlank()) {
+        if (!displayChar.imageUrl.isNullOrBlank()) {
             Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
                 AsyncImage(
-                    model = character.displayImageUrl,
-                    contentDescription = character.name,
+                    model = displayChar.displayImageUrl,
+                    contentDescription = displayChar.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
                     onError = { imageState ->
-                        println("[AsyncImage] Failed to load hero image for ${character.name}: ${imageState.result.throwable}")
+                        println("[AsyncImage] Failed to load hero image for ${displayChar.name}: ${imageState.result.throwable}")
                     },
                 )
             }

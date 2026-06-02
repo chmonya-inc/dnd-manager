@@ -186,40 +186,44 @@ private fun MasterContent(
     state: CharacterDetailState,
     viewModel: CharacterDetailViewModel
 ) {
+    val displayChar = if (state.isEditing) state.editedCharacter ?: character else character
+
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        if (state.isEditing) {
-            state.editedCharacter?.let { edited ->
-                EditFields(edited, state, viewModel)
-            }
-        } else {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Left Column: Avatar and Basic Info
-                Column(modifier = Modifier.width(260.dp)) {
-                    Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
-                        AsyncImage(
-                            model = character.displayImageUrl,
-                            contentDescription = character.name,
-                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                        
-                        if (state.isEditing) {
-                            Surface(
-                                modifier = Modifier
-                                    .align(Alignment.BottomEnd)
-                                    .padding(8.dp)
-                                    .size(36.dp)
-                                    .clickable { /* Handled via TextField in EditFields for now, or could add dialog */ },
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primary,
-                                tonalElevation = 4.dp
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(20.dp), tint = Color.White)
-                                }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            // Left Column: Avatar and Basic Info
+            Column(modifier = Modifier.width(260.dp)) {
+                Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+                    AsyncImage(
+                        model = displayChar.displayImageUrl,
+                        contentDescription = displayChar.name,
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    if (state.isEditing) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(8.dp)
+                                .size(36.dp),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            tonalElevation = 4.dp
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(20.dp), tint = Color.White)
                             }
                         }
                     }
+                }
+
+                if (state.isEditing) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(displayChar.name.ifBlank { "New Character" }, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text("${displayChar.race} ${displayChar.characterClass} • Lvl ${displayChar.level}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.height(8.dp))
+                    Text(displayChar.description.take(100) + if(displayChar.description.length > 100) "..." else "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
                     Spacer(Modifier.height(12.dp))
                     MasterHeader(character, viewModel)
                     Spacer(Modifier.height(16.dp))
@@ -229,7 +233,13 @@ private fun MasterContent(
                         MasterDeathSaves(character, viewModel, state.lastDeathSaveRoll)
                     }
                 }
+            }
 
+            if (state.isEditing) {
+                Column(modifier = Modifier.weight(2.2f)) {
+                    EditFields(displayChar, state, viewModel)
+                }
+            } else {
                 // Middle Column: Stats and Skills
                 Column(modifier = Modifier.weight(1.2f)) {
                     ExpandableSection(title = "Core Stats", icon = Icons.Default.FitnessCenter, color = StatsColor, initialExpanded = true) {
@@ -247,7 +257,7 @@ private fun MasterContent(
                 // Right Column: Inventory and Features
                 Column(modifier = Modifier.weight(1f)) {
                     ExpandableSection(title = "Combat Status", icon = Icons.Default.SportsMartialArts, color = CombatColor, initialExpanded = false) {
-                        // CombatTab internally uses a verticalScroll. 
+                        // CombatTab internally uses a verticalScroll.
                         Box(modifier = Modifier.heightIn(max = 450.dp)) {
                             CombatTab(character, isMasterMode = state.isMasterMode, isScrollable = false)
                         }
@@ -261,14 +271,16 @@ private fun MasterContent(
                     }
                     Spacer(Modifier.height(12.dp))
                     ExpandableSection(title = "Features & Traits", icon = Icons.Default.Star, color = FeaturesColor, initialExpanded = false) {
-                        // FeaturesTab internally uses a verticalScroll. 
+                        // FeaturesTab internally uses a verticalScroll.
                         Box(modifier = Modifier.heightIn(max = 500.dp)) {
                             FeaturesTab(character, isMasterMode = state.isMasterMode)
                         }
                     }
                 }
             }
+        }
 
+        if (!state.isEditing) {
             Spacer(Modifier.height(16.dp))
             ExpandableSection(title = "Personal Notes", icon = Icons.Default.Description, color = NotesColor, initialExpanded = true) {
                 MasterNotesSection(notes = character.notes, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)

@@ -455,8 +455,10 @@ class CharacterDetailViewModel(
                     // Update state IMMEDIATELY after data is saved.
                     // Don't wait for the secondary 'saveLog' network call.
                     _state.value = _state.value.copy(
+                        character = character,
                         isSaving = false,
                         hasUnsavedChanges = false,
+                        isEditing = false
                     )
                     
                     // Pause polling (skip remote updates) for 1 second after a successful save

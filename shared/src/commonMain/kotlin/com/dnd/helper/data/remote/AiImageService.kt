@@ -178,9 +178,9 @@ class AiImageService(
     ): String? {
         try {
             val (defaultWidth, defaultHeight) = when (type) {
-                GenerationType.CHARACTER, GenerationType.NPC -> Pair(512, 512)
-                GenerationType.MONSTER -> Pair(512, 512)
-                GenerationType.LOCATION -> Pair(1024, 1024)
+                GenerationType.CHARACTER, GenerationType.NPC -> Pair(1024, 1024)
+                GenerationType.MONSTER -> Pair(1024, 1024)
+                GenerationType.LOCATION -> Pair(2048, 2048)
                 GenerationType.SKILL, GenerationType.ITEM -> Pair(256, 256)
             }
             
