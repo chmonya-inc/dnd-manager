@@ -103,6 +103,7 @@ kotlin {
 
                 implementation(libs.lifecycle.viewmodel)
                 implementation(libs.navigation.compose)
+                api(libs.webview.multiplatform)
             }
         }
 

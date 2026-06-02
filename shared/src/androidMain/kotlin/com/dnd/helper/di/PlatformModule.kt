@@ -49,3 +49,9 @@ actual val platformModule = module {
 }
 
 actual val isDesktop: Boolean = false
+
+actual fun openUrl(url: String) {
+    // Android implementation would need a context, but we are in a static context here.
+    // Usually handled via a Platform helper injected into ViewModels, 
+    // but for this simple request I'll just skip it or log it as it's primarily for Desktop.
+}

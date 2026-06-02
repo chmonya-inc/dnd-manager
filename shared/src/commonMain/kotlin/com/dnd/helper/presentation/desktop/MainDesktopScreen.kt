@@ -27,6 +27,7 @@ import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
+import com.dnd.helper.presentation.desktop.NeuralNetworkScreen
 import com.dnd.helper.theme.AppTheme
 import com.dnd.helper.theme.ThemeViewModel
 import kotlinx.coroutines.launch
@@ -61,8 +62,10 @@ fun MainDesktopScreen() {
     var showDiceDialog by remember { mutableStateOf(false) }
     var showSessionsDialog by remember { mutableStateOf(false) }
     var showMusicPlayer by remember { mutableStateOf(false) }
+    var showNeuralNetwork by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var musicPlayerOffset by remember { mutableStateOf(IntOffset(0, 0)) }
+    var neuralNetworkOffset by remember { mutableStateOf(IntOffset(50, 50)) }
 
     // Track active session for forcing ViewModel recreation on session switch
     var activeTableId by remember { mutableStateOf<String?>(null) }
@@ -137,6 +140,22 @@ fun MainDesktopScreen() {
                             imageVector = if (showMusicPlayer) Icons.Default.MusicNote else Icons.Default.MusicOff,
                             contentDescription = "Music",
                             tint = if (showMusicPlayer) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Neural Network Button
+                    FloatingActionButton(
+                        onClick = { showNeuralNetwork = !showNeuralNetwork },
+                        modifier = Modifier.size(48.dp),
+                        containerColor = if (showNeuralNetwork) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer,
+                        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = "Neural Network",
+                            tint = if (showNeuralNetwork) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onTertiaryContainer,
                         )
                     }
 
@@ -240,6 +259,24 @@ fun MainDesktopScreen() {
                                 }
                             },
                         onClose = { showMusicPlayer = false }
+                    )
+                }
+
+                if (showNeuralNetwork) {
+                    NeuralNetworkScreen(
+                        modifier = Modifier
+                            .offset { neuralNetworkOffset }
+                            .padding(16.dp)
+                            .pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    neuralNetworkOffset = IntOffset(
+                                        x = (neuralNetworkOffset.x + dragAmount.x).roundToInt(),
+                                        y = (neuralNetworkOffset.y + dragAmount.y).roundToInt()
+                                    )
+                                }
+                            },
+                        onClose = { showNeuralNetwork = false }
                     )
                 }
             }

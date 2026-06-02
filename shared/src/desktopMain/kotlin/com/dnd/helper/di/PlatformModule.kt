@@ -179,3 +179,17 @@ actual val platformModule = module {
 }
 
 actual val isDesktop: Boolean = true
+
+actual fun openUrl(url: String) {
+    try {
+        val desktop = if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop() else null
+        if (desktop != null && desktop.isSupported(java.awt.Desktop.Action.BROWSE)) {
+            desktop.browse(java.net.URI(url))
+        } else {
+            // Fallback for some Linux environments
+            Runtime.getRuntime().exec("xdg-open $url")
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
