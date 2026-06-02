@@ -133,7 +133,18 @@ fun DndHelperTheme(
         AppTheme.CELESTIAL -> CelestialShapes
     }
 
-    CompositionLocalProvider(LocalAppTheme provides theme) {
+    val dndColors = when (theme) {
+        AppTheme.DUNGEON -> DungeonDndColors
+        AppTheme.PARCHMENT -> ParchmentDndColors
+        AppTheme.FOREST -> ForestDndColors
+        AppTheme.BLOOD -> BloodDndColors
+        AppTheme.CELESTIAL -> CelestialDndColors
+    }
+
+    CompositionLocalProvider(
+        LocalAppTheme provides theme,
+        LocalDndColors provides dndColors,
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,

@@ -54,7 +54,7 @@ fun SkillDetailDialog(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .heightIn(max = 700.dp),
-            shape = RoundedCornerShape(20.dp),
+            shape = MaterialTheme.shapes.large,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
             Column(
@@ -118,7 +118,7 @@ fun SkillDetailDialog(
                         // AI Generation Section
                         Card(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.medium,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -130,7 +130,7 @@ fun SkillDetailDialog(
                                         label = { Text("AI Prompt") },
                                         modifier = Modifier.weight(1f),
                                         minLines = 2,
-                                        shape = RoundedCornerShape(12.dp),
+                                        shape = MaterialTheme.shapes.medium,
                                         textStyle = MaterialTheme.typography.bodySmall
                                     )
                                     
@@ -142,7 +142,7 @@ fun SkillDetailDialog(
                                             modifier = Modifier.width(70.dp),
                                             singleLine = true,
                                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                            shape = RoundedCornerShape(8.dp),
+                                            shape = MaterialTheme.shapes.small,
                                             textStyle = MaterialTheme.typography.bodySmall
                                         )
                                         OutlinedTextField(
@@ -152,7 +152,7 @@ fun SkillDetailDialog(
                                             modifier = Modifier.width(70.dp),
                                             singleLine = true,
                                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                            shape = RoundedCornerShape(8.dp),
+                                            shape = MaterialTheme.shapes.small,
                                             textStyle = MaterialTheme.typography.bodySmall
                                         )
                                         IconButton(
@@ -278,7 +278,7 @@ private fun SkillTag(text: String, bgColor: Color) {
         style = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.Bold,
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(MaterialTheme.shapes.small)
             .background(bgColor)
             .padding(horizontal = 10.dp, vertical = 4.dp),
     )
@@ -336,7 +336,7 @@ fun SkillIconBox(
     Card(
         modifier = modifier
             .size(size),
-        shape = RoundedCornerShape(6.dp)
+        shape = MaterialTheme.shapes.small
     ) {
         if (!iconUrl.isNullOrBlank()) {
             AsyncImage(

@@ -177,7 +177,7 @@ private fun CharacterListContent(
                         Spacer(Modifier.height(24.dp))
                         Button(
                             onClick = { onEvent(CharacterListEvent.Refresh) },
-                            shape = RoundedCornerShape(12.dp)
+                            shape = MaterialTheme.shapes.medium
                         ) {
                             Text("Retry Sync")
                         }
@@ -212,7 +212,7 @@ private fun CharacterListContent(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(Modifier.height(24.dp))
-                        Button(onClick = onCreateCharacter, shape = RoundedCornerShape(12.dp)) {
+                        Button(onClick = onCreateCharacter, shape = MaterialTheme.shapes.medium) {
                             Icon(Icons.Default.Add, null)
                             Spacer(Modifier.width(8.dp))
                             Text("Create New Character")
@@ -278,7 +278,7 @@ private fun SimpleCharacterCard(
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -304,7 +304,7 @@ private fun SimpleCharacterCard(
             ) {
                 Surface(
                     modifier = Modifier.size(64.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     tonalElevation = 4.dp
                 ) {
@@ -360,7 +360,7 @@ private fun SimpleCharacterCard(
                         Spacer(Modifier.width(8.dp))
                         Surface(
                             color = MaterialTheme.colorScheme.secondaryContainer,
-                            shape = RoundedCornerShape(8.dp)
+                            shape = MaterialTheme.shapes.small
                         ) {
                             Text(
                                 "LVL ${character.level}",
@@ -422,7 +422,7 @@ private fun SummaryCharacterCard(
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -508,7 +508,7 @@ private fun SummaryCharacterCard(
 
                     Surface(
                         color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(6.dp),
+                        shape = MaterialTheme.shapes.small,
                     ) {
                         Text(
                             text = "LVL ${character.level}",
@@ -520,7 +520,7 @@ private fun SummaryCharacterCard(
 
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = RoundedCornerShape(6.dp),
+                        shape = MaterialTheme.shapes.small,
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -558,7 +558,7 @@ private fun SummaryCharacterCard(
                     )
                     LinearProgressIndicator(
                         progress = { hpRatio },
-                        modifier = Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp)),
+                        modifier = Modifier.weight(1f).height(5.dp).clip(MaterialTheme.shapes.extraSmall),
                         color = hpColor,
                         trackColor = hpColor.copy(alpha = 0.2f),
                     )
@@ -664,7 +664,7 @@ private fun AbilityModifiersRow(stats: com.dnd.helper.domain.model.CharacterStat
 private fun SkillChip(skill: Skill) {
     Surface(
         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
-        shape = RoundedCornerShape(4.dp),
+        shape = MaterialTheme.shapes.extraSmall,
     ) {
         Text(
             text = skill.name,
@@ -706,7 +706,7 @@ private fun DeathSaveDot(filled: Boolean, color: Color) {
     Box(
         modifier = Modifier
             .size(12.dp)
-            .clip(RoundedCornerShape(3.dp))
+            .clip(MaterialTheme.shapes.extraSmall)
             .background(
                 if (filled) color else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
             ),

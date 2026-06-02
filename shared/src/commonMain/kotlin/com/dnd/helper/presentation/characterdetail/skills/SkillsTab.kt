@@ -127,7 +127,7 @@ private fun SkillCard(
             .fillMaxWidth()
             .height(125.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
@@ -223,7 +223,7 @@ private fun SkillChip(text: String, color: Color) {
         style = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.Bold,
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(MaterialTheme.shapes.small)
             .background(color)
             .padding(horizontal = 8.dp, vertical = 3.dp),
     )

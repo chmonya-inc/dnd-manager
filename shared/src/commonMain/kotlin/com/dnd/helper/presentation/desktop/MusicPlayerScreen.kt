@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
@@ -13,7 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dnd.helper.domain.model.MusicTrack
@@ -42,7 +42,7 @@ fun MusicPlayerScreen(
         modifier = modifier
             .width(400.dp)
             .height(550.dp)
-            .clip(RoundedCornerShape(16.dp)),
+            .clip(MaterialTheme.shapes.large),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -98,7 +98,7 @@ fun MusicPlayerScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = MaterialTheme.shapes.medium
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Row(
@@ -220,7 +220,7 @@ fun TrackItem(
     Surface(
         onClick = onToggle,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color = if (isCurrent) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Row(

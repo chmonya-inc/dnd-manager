@@ -150,7 +150,7 @@ fun CharacterDetailScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(10.dp)
-                                        .background(Color(0xFFFB8C00), RoundedCornerShape(5.dp))
+                                        .background(Color(0xFFFB8C00), MaterialTheme.shapes.extraSmall)
                                 )
                             }
                         }
@@ -447,7 +447,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
             label = { Text("AI Prompt") },
             modifier = Modifier.weight(1f),
             minLines = 3,
-            shape = RoundedCornerShape(12.dp)
+            shape = MaterialTheme.shapes.medium
         )
         
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -461,7 +461,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
                 modifier = Modifier.width(80.dp),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                shape = RoundedCornerShape(8.dp)
+                shape = MaterialTheme.shapes.small
             )
             OutlinedTextField(
                 value = state.aiHeight.toString(),
@@ -473,7 +473,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
                 modifier = Modifier.width(80.dp),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                shape = RoundedCornerShape(8.dp)
+                shape = MaterialTheme.shapes.small
             )
             IconButton(
                 onClick = { viewModel.onEvent(CharacterDetailEvent.GenerateImage) },
@@ -510,7 +510,7 @@ private fun CharacterHeader(character: com.dnd.helper.domain.model.Character, vi
         )
         Surface(
             color = MaterialTheme.colorScheme.secondaryContainer,
-            shape = RoundedCornerShape(16.dp)
+            shape = MaterialTheme.shapes.large
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
@@ -533,7 +533,7 @@ private fun CharacterHeader(character: com.dnd.helper.domain.model.Character, vi
                     modifier = Modifier
                         .width(44.dp)
                         .height(28.dp)
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f), RoundedCornerShape(6.dp)),
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f), MaterialTheme.shapes.small),
                     contentAlignment = Alignment.Center
                 ) {
                     BasicTextField(
@@ -590,7 +590,7 @@ private fun HealthSection(character: com.dnd.helper.domain.model.Character, view
         colors = CardDefaults.cardColors(
             containerColor = hpColor.copy(alpha = 0.12f)
         ),
-        shape = RoundedCornerShape(16.dp)
+        shape = MaterialTheme.shapes.large
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -650,7 +650,7 @@ private fun HealthSection(character: com.dnd.helper.domain.model.Character, view
             Spacer(modifier = Modifier.height(12.dp))
             LinearProgressIndicator(
                 progress = { hpRatio },
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.extraSmall),
                 color = hpColor,
                 trackColor = hpColor.copy(alpha = 0.2f)
             )
@@ -679,7 +679,7 @@ private fun HealthSection(character: com.dnd.helper.domain.model.Character, view
                     ),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surface,
                         unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -849,7 +849,7 @@ private fun StatCard(
         modifier = modifier,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp)
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -902,7 +902,7 @@ private fun StatCard(
                     modifier = Modifier
                         .width(44.dp)
                         .height(32.dp)
-                        .background(stat.color.copy(alpha = 0.15f), RoundedCornerShape(8.dp)),
+                        .background(stat.color.copy(alpha = 0.15f), MaterialTheme.shapes.small),
                     contentAlignment = Alignment.Center
                 ) {
                     BasicTextField(

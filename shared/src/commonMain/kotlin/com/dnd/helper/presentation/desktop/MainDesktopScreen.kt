@@ -1,5 +1,7 @@
 package com.dnd.helper.presentation.desktop
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
@@ -14,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -47,14 +50,19 @@ sealed class DesktopTab(val title: String, val icon: ImageVector) {
     data object Settings : DesktopTab("Settings", Icons.Default.Settings)
 }
 
-private val tabs = listOf(
+private val primaryTabs = listOf(
     DesktopTab.Characters,
     DesktopTab.Library,
     DesktopTab.Creator,
-    DesktopTab.Logs,
     DesktopTab.Presenter,
-    DesktopTab.Settings
 )
+
+private val secondaryTabs = listOf(
+    DesktopTab.Logs,
+    DesktopTab.Settings,
+)
+
+private val tabs = primaryTabs + secondaryTabs
 
 @Composable
 fun MainDesktopScreen() {
@@ -93,7 +101,25 @@ fun MainDesktopScreen() {
     }
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.isCtrlPressed) {
+                    when (keyEvent.key) {
+                        Key.One -> { selectedTab = DesktopTab.Characters; true }
+                        Key.Two -> { selectedTab = DesktopTab.Library; true }
+                        Key.Three -> { selectedTab = DesktopTab.Creator; true }
+                        Key.Four -> { selectedTab = DesktopTab.Presenter; true }
+                        Key.Five -> { selectedTab = DesktopTab.Logs; true }
+                        Key.Six -> { selectedTab = DesktopTab.Settings; true }
+                        Key.M -> { showMusicPlayer = !showMusicPlayer; true }
+                        Key.D -> { showDiceDialog = !showDiceDialog; true }
+                        else -> false
+                    }
+                } else {
+                    false
+                }
+            },
         color = MaterialTheme.colorScheme.background
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
@@ -117,7 +143,29 @@ fun MainDesktopScreen() {
                 ) {
                     Spacer(Modifier.weight(1f))
                     
-                    tabs.forEach { tab ->
+                    // Primary tabs
+                    primaryTabs.forEach { tab ->
+                        NavigationRailItem(
+                            selected = selectedTab == tab,
+                            onClick = { 
+                                selectedTab = tab
+                                if (tab != DesktopTab.Creator) initialCreatorType = null 
+                            },
+                            icon = { Icon(tab.icon, contentDescription = tab.title) },
+                            label = { Text(tab.title) }
+                        )
+                    }
+
+                    // Divider between primary and secondary tabs
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .width(48.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    )
+
+                    // Secondary tabs
+                    secondaryTabs.forEach { tab ->
                         NavigationRailItem(
                             selected = selectedTab == tab,
                             onClick = { 
@@ -204,47 +252,54 @@ fun MainDesktopScreen() {
             }
 
             // Content Area
-            Box(modifier = Modifier.fillMaxSize()) {
-                when (selectedTab) {
-                    DesktopTab.Characters -> {
-                        CharactersSplitPane(
-                            selectedCharacterId = selectedCharacterId,
-                            onCharacterSelected = { selectedCharacterId = it },
-                            onCreateCharacter = { 
-                                initialCreatorType = CreatorType.Character
-                                selectedTab = DesktopTab.Creator 
-                            },
-                            sessionKey = activeTableId ?: "",
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                AnimatedContent(
+                    targetState = selectedTab,
+                    transitionSpec = {
+                        fadeIn(tween(200)) togetherWith fadeOut(tween(150))
+                    },
+                ) { tab ->
+                    when (tab) {
+                        DesktopTab.Characters -> {
+                            CharactersSplitPane(
+                                selectedCharacterId = selectedCharacterId,
+                                onCharacterSelected = { selectedCharacterId = it },
+                                onCreateCharacter = { 
+                                    initialCreatorType = CreatorType.Character
+                                    selectedTab = DesktopTab.Creator 
+                                },
+                                sessionKey = activeTableId ?: "",
+                            )
+                        }
+                        DesktopTab.Library -> LibraryScreen(
+                            onNavigateToCreator = { type ->
+                                initialCreatorType = type
+                                selectedTab = DesktopTab.Creator
+                            }
                         )
+                        DesktopTab.Creator -> CreatorScreen(
+                            initialType = initialCreatorType,
+                            onCreated = {
+                                if (initialCreatorType != null) {
+                                    selectedTab = DesktopTab.Library
+                                } else {
+                                    selectedTab = DesktopTab.Characters
+                                }
+                                initialCreatorType = null
+                            },
+                            onBack = {
+                                if (initialCreatorType != null) {
+                                    selectedTab = DesktopTab.Library
+                                } else {
+                                    selectedTab = DesktopTab.Characters
+                                }
+                                initialCreatorType = null
+                            }
+                        )
+                        DesktopTab.Logs -> LogScreen()
+                        DesktopTab.Presenter -> PresentationScreen()
+                        DesktopTab.Settings -> SettingsScreen()
                     }
-                    DesktopTab.Library -> LibraryScreen(
-                        onNavigateToCreator = { type ->
-                            initialCreatorType = type
-                            selectedTab = DesktopTab.Creator
-                        }
-                    )
-                    DesktopTab.Creator -> CreatorScreen(
-                        initialType = initialCreatorType,
-                        onCreated = {
-                            if (initialCreatorType != null) {
-                                selectedTab = DesktopTab.Library
-                            } else {
-                                selectedTab = DesktopTab.Characters
-                            }
-                            initialCreatorType = null
-                        },
-                        onBack = {
-                            if (initialCreatorType != null) {
-                                selectedTab = DesktopTab.Library
-                            } else {
-                                selectedTab = DesktopTab.Characters
-                            }
-                            initialCreatorType = null
-                        }
-                    )
-                    DesktopTab.Logs -> LogScreen()
-                    DesktopTab.Presenter -> PresentationScreen()
-                    DesktopTab.Settings -> SettingsScreen()
                 }
 
                 if (showMusicPlayer) {
@@ -256,8 +311,8 @@ fun MainDesktopScreen() {
                                 detectDragGestures { change, dragAmount ->
                                     change.consume()
                                     musicPlayerOffset = IntOffset(
-                                        x = (musicPlayerOffset.x + dragAmount.x).roundToInt(),
-                                        y = (musicPlayerOffset.y + dragAmount.y).roundToInt()
+                                        x = (musicPlayerOffset.x + dragAmount.x).roundToInt().coerceIn(-1000, 1000),
+                                        y = (musicPlayerOffset.y + dragAmount.y).roundToInt().coerceIn(-500, 500)
                                     )
                                 }
                             },
@@ -274,8 +329,8 @@ fun MainDesktopScreen() {
                                 detectDragGestures { change, dragAmount ->
                                     change.consume()
                                     neuralNetworkOffset = IntOffset(
-                                        x = (neuralNetworkOffset.x + dragAmount.x).roundToInt(),
-                                        y = (neuralNetworkOffset.y + dragAmount.y).roundToInt()
+                                        x = (neuralNetworkOffset.x + dragAmount.x).roundToInt().coerceIn(-1000, 1000),
+                                        y = (neuralNetworkOffset.y + dragAmount.y).roundToInt().coerceIn(-500, 500)
                                     )
                                 }
                             },
@@ -319,8 +374,29 @@ fun CharactersSplitPane(
                     viewModel = viewModel
                 )
             } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Select a character to view details", style = MaterialTheme.typography.bodyLarge)
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Shield,
+                        contentDescription = null,
+                        modifier = Modifier.size(80.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "Select a character",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = "Choose a character from the list to view their sheet",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    )
                 }
             }
         }
@@ -564,7 +640,7 @@ fun ThemeDialog(
                     Surface(
                         onClick = { viewModel.setTheme(theme) },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = MaterialTheme.shapes.small,
                         color = if (currentTheme == theme) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
                         border = if (currentTheme == theme) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
                     ) {

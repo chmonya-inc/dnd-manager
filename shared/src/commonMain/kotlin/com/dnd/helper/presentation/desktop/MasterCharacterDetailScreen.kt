@@ -79,7 +79,7 @@ fun MasterCharacterDetailScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(
                                 modifier = Modifier.size(32.dp),
-                                shape = RoundedCornerShape(8.dp),
+                                shape = MaterialTheme.shapes.small,
                                 color = CharacterColor.copy(alpha = 0.15f)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -188,8 +188,8 @@ private fun MasterContent(
 ) {
     val displayChar = if (state.isEditing) state.editedCharacter ?: character else character
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             // Left Column: Avatar and Basic Info
             Column(modifier = Modifier.width(260.dp)) {
                 Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
@@ -199,13 +199,13 @@ private fun MasterContent(
                     AsyncImage(
                         model = if (isGenerating) null else imageUrl,
                         contentDescription = displayChar.name,
-                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                        modifier = Modifier.fillMaxSize().clip(MaterialTheme.shapes.medium),
                         contentScale = ContentScale.Crop
                     )
 
                     if (isGenerating) {
                         Box(
-                            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
+                            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f), MaterialTheme.shapes.medium),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(color = Color.White)
@@ -334,7 +334,7 @@ private fun ExpandableSection(
     var expanded by remember { mutableStateOf(initialExpanded) }
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (expanded) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
         ),
@@ -349,7 +349,7 @@ private fun ExpandableSection(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         modifier = Modifier.size(28.dp),
-                        shape = RoundedCornerShape(6.dp),
+                        shape = MaterialTheme.shapes.small,
                         color = color.copy(alpha = 0.1f)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -436,7 +436,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
             label = { Text("AI Prompt") },
             modifier = Modifier.weight(1f),
             minLines = 3,
-            shape = RoundedCornerShape(12.dp)
+            shape = MaterialTheme.shapes.medium
         )
         
         Column(
@@ -455,7 +455,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = MaterialTheme.shapes.small
                 )
                 OutlinedTextField(
                     value = state.aiHeight.toString(),
@@ -467,14 +467,14 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = MaterialTheme.shapes.small
                 )
             }
             Button(
                 onClick = { viewModel.onEvent(CharacterDetailEvent.GenerateImage) },
                 enabled = edited.imageUrl != "url will appear after generation",
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 if (edited.imageUrl == "url will appear after generation") {
@@ -510,7 +510,7 @@ private fun MasterHeader(character: com.dnd.helper.domain.model.Character, viewM
         )
         Surface(
             color = MaterialTheme.colorScheme.secondaryContainer,
-            shape = RoundedCornerShape(12.dp)
+            shape = MaterialTheme.shapes.medium
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -524,26 +524,26 @@ private fun MasterHeader(character: com.dnd.helper.domain.model.Character, viewM
                 )
                 IconButton(
                     onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateLevel(-amount)) },
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(24.dp)
                 ) {
-                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(10.dp))
+                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(14.dp))
                 }
                 
                 Box(
                     modifier = Modifier
                         .width(36.dp)
                         .height(24.dp)
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f), RoundedCornerShape(4.dp)),
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), MaterialTheme.shapes.small),
                     contentAlignment = Alignment.Center
                 ) {
                     BasicTextField(
                         value = amountText,
-                        onValueChange = { if (it.all { it.isDigit() } && it.length < 3) amountText = it },
+                        onValueChange = { if (it.all { char -> char.isDigit() } && it.length < 3) amountText = it },
                         modifier = Modifier.fillMaxWidth(),
-                        textStyle = MaterialTheme.typography.labelLarge.copy(
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
                             textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -552,9 +552,9 @@ private fun MasterHeader(character: com.dnd.helper.domain.model.Character, viewM
 
                 IconButton(
                     onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateLevel(amount)) },
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(24.dp)
                 ) {
-                    Icon(Icons.Default.Add, null, modifier = Modifier.size(10.dp))
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(14.dp))
                 }
             }
         }
@@ -571,7 +571,7 @@ private fun MasterHealthSection(character: com.dnd.helper.domain.model.Character
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = hpColor.copy(alpha = 0.08f)),
-        shape = RoundedCornerShape(12.dp)
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
@@ -619,26 +619,40 @@ private fun MasterHealthSection(character: com.dnd.helper.domain.model.Character
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             LinearProgressIndicator(
                 progress = { hpRatio },
-                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(MaterialTheme.shapes.extraSmall),
                 color = hpColor,
                 trackColor = hpColor.copy(alpha = 0.2f)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateHp(-amount)) }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(18.dp)) }
-                OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { if (it.all { it.isDigit() } && it.length < 4) amountText = it },
-                    modifier = Modifier.width(54.dp).height(44.dp),
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.Center),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    shape = RoundedCornerShape(8.dp)
-                )
-                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateHp(amount)) }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp)) }
+                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateHp(-amount)) }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(20.dp)) }
+                
+                Box(
+                    modifier = Modifier
+                        .width(48.dp)
+                        .height(28.dp)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), MaterialTheme.shapes.small)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.small),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BasicTextField(
+                        value = amountText,
+                        onValueChange = { if (it.all { it.isDigit() } && it.length < 4) amountText = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.titleMedium.copy(
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                }
+                
+                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateHp(amount)) }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Add, null, modifier = Modifier.size(20.dp)) }
             }
         }
     }
@@ -661,7 +675,7 @@ private fun MasterNotesSection(
             Button(
                 onClick = { onEvent(CharacterDetailEvent.AddNote) },
                 colors = ButtonDefaults.buttonColors(containerColor = NotesColor),
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 modifier = Modifier.height(32.dp),
                 contentPadding = PaddingValues(horizontal = 12.dp)
             ) {
@@ -700,7 +714,7 @@ private fun MasterNoteCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
         border = BorderStroke(1.dp, NotesColor.copy(alpha = 0.2f))
     ) {
@@ -760,7 +774,7 @@ private fun MasterDeathSaves(
                 else -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
             }
         ),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         border = BorderStroke(
             1.dp,
             when {
@@ -861,7 +875,7 @@ private fun DeathSaveDiamond(filled: Boolean, color: Color) {
     Box(
         modifier = Modifier
             .size(22.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(MaterialTheme.shapes.extraSmall)
             .background(
                 if (filled) color else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
             ),
@@ -924,7 +938,7 @@ private fun MasterStatCard(
     Card(
         modifier = modifier,
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(10.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
         Column(
@@ -944,7 +958,7 @@ private fun MasterStatCard(
                 )
                 Surface(
                     color = stat.color.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(4.dp)
+                    shape = MaterialTheme.shapes.extraSmall
                 ) {
                     Text(
                         text = "$modifierSign$modifierVal",
@@ -956,33 +970,34 @@ private fun MasterStatCard(
                 }
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateStat(stat.key, -amount)) }, modifier = Modifier.size(22.dp)) { 
-                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(12.dp)) 
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateStat(stat.key, -amount)) }, modifier = Modifier.size(24.dp)) { 
+                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp)) 
                 }
                 
                 Box(
                     modifier = Modifier
-                        .width(32.dp)
-                        .height(20.dp)
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), RoundedCornerShape(4.dp)),
+                        .width(36.dp)
+                        .height(24.dp)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), MaterialTheme.shapes.small),
                     contentAlignment = Alignment.Center
                 ) {
                     BasicTextField(
                         value = amountText,
                         onValueChange = { if (it.all { it.isDigit() } && it.length < 3) amountText = it },
                         modifier = Modifier.fillMaxWidth(),
-                        textStyle = MaterialTheme.typography.labelSmall.copy(
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
                             textAlign = TextAlign.Center,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         ),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                 }
 
-                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateStat(stat.key, amount)) }, modifier = Modifier.size(22.dp)) { 
-                    Icon(Icons.Default.Add, null, modifier = Modifier.size(12.dp))
+                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateStat(stat.key, amount)) }, modifier = Modifier.size(24.dp)) { 
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
                 }
             }
         }

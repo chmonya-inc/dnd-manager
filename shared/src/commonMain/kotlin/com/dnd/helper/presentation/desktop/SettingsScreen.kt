@@ -2,7 +2,7 @@ package com.dnd.helper.presentation.desktop
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -52,7 +52,7 @@ fun SettingsScreen(
                     label = { Text("ComfyUI Server Address (IP:Port)") },
                     placeholder = { Text("127.0.0.1:8000") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                     leadingIcon = { Icon(Icons.Default.Dns, null) }
                 )
                 
@@ -78,7 +78,7 @@ fun SettingsScreen(
                     ) {
                         Surface(
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                         ) {
@@ -110,7 +110,7 @@ fun SettingsScreen(
                                     }
                                 }
                             },
-                            shape = RoundedCornerShape(12.dp)
+                            shape = MaterialTheme.shapes.medium
                         ) {
                             Icon(Icons.Default.FileUpload, null)
                             Spacer(Modifier.width(8.dp))
@@ -142,7 +142,7 @@ fun SettingsScreen(
                             viewModel.updateGenerationSteps(steps.coerceIn(1, 100))
                         },
                         modifier = Modifier.width(120.dp),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = MaterialTheme.shapes.medium,
                         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                             keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
                         ),
@@ -201,7 +201,7 @@ private fun SettingsSection(
         
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
             )

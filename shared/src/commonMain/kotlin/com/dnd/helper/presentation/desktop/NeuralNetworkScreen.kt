@@ -22,7 +22,7 @@ fun NeuralNetworkScreen(
 ) {
     Surface(
         modifier = modifier.size(width = 900.dp, height = 700.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.large,
         tonalElevation = 8.dp,
         shadowElevation = 12.dp,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
@@ -42,7 +42,7 @@ fun NeuralNetworkScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = MaterialTheme.shapes.small
                         ) {
                             Icon(
                                 Icons.Default.AutoAwesome, 

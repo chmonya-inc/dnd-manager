@@ -1,12 +1,11 @@
 package com.dnd.helper.presentation.desktop
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -25,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.dnd.helper.domain.model.LogEntry
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
+import com.dnd.helper.theme.LocalDndColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
@@ -146,7 +146,11 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
                 }
             }
 
-            AnimatedVisibility(visible = expanded) {
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
                 Column(modifier = Modifier.padding(top = 16.dp)) {
                     HorizontalDivider(modifier = Modifier.padding(bottom = 12.dp), color = MaterialTheme.colorScheme.outlineVariant)
                     
@@ -171,7 +175,7 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.small)
                                 .padding(12.dp)
                         ) {
                             if (isCalculating) {
@@ -186,7 +190,7 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
                                             fontFamily = FontFamily.Monospace,
                                             lineHeight = 16.sp
                                         ),
-                                        color = if (line.startsWith("-")) Color(0xFFD32F2F) else if (line.startsWith("+")) Color(0xFF388E3C) else MaterialTheme.colorScheme.onSurface
+                                        color = if (line.startsWith("-")) LocalDndColors.current.diffRemoved else if (line.startsWith("+")) LocalDndColors.current.diffAdded else MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }

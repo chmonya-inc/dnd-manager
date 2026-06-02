@@ -111,7 +111,7 @@ private fun EquipmentPanel(
         Box(
             modifier = Modifier
                 .size(120.dp)
-                .clip(RoundedCornerShape(20.dp))
+                .clip(MaterialTheme.shapes.large)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                 .align(Alignment.Center),
             contentAlignment = Alignment.Center
@@ -215,7 +215,7 @@ private fun EquipmentSlotBox(
             width = if (item != null) 2.dp else 1.5.dp,
             color = rarityColor
         ),
-        shape = RoundedCornerShape(10.dp)
+        shape = MaterialTheme.shapes.medium
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -233,7 +233,7 @@ private fun EquipmentSlotBox(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(4.dp)
-                                .clip(RoundedCornerShape(6.dp)),
+                                .clip(MaterialTheme.shapes.small),
                             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                         )
                         if (isGenerating) {
@@ -347,7 +347,7 @@ private fun ItemCell(item: Item, onClick: () -> Unit) {
             containerColor = rarityColor.copy(alpha = 0.10f)
         ),
         border = BorderStroke(1.5.dp, rarityColor),
-        shape = RoundedCornerShape(10.dp)
+        shape = MaterialTheme.shapes.medium
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -364,7 +364,7 @@ private fun ItemCell(item: Item, onClick: () -> Unit) {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(2.dp)
-                            .clip(RoundedCornerShape(8.dp)),
+                            .clip(MaterialTheme.shapes.small),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                     )
                     if (isGenerating) {
@@ -423,7 +423,7 @@ private fun ItemDetailDialog(
             modifier = Modifier
                 .fillMaxWidth(0.85f)
                 .heightIn(max = 700.dp),
-            shape = RoundedCornerShape(20.dp),
+            shape = MaterialTheme.shapes.large,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
             Column(
@@ -440,7 +440,7 @@ private fun ItemDetailDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(140.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(MaterialTheme.shapes.medium)
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                         contentAlignment = Alignment.Center,
                     ) {

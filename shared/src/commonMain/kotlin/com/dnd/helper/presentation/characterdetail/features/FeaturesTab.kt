@@ -168,7 +168,7 @@ private fun ProficiencySection(
                 items.forEach { item ->
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = MaterialTheme.shapes.small,
                         onClick = { if (isMasterMode) { /* TODO: Delete proficiency */ } },
                         enabled = isMasterMode
                     ) {
@@ -298,7 +298,7 @@ private fun NoteCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(

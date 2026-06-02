@@ -142,7 +142,7 @@ private fun HeaderCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(220.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(MaterialTheme.shapes.large)
                     .background(MaterialTheme.colorScheme.surface),
                 contentAlignment = Alignment.Center,
             ) {
@@ -225,7 +225,7 @@ private fun HeaderCard(
                         .height(28.dp)
                         .background(
                             MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
-                            RoundedCornerShape(6.dp),
+                            MaterialTheme.shapes.small,
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -279,7 +279,7 @@ private fun HeaderCard(
 private fun LevelBadge(level: Int) {
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
     ) {
         Text(
             text = "LVL $level",
@@ -313,7 +313,7 @@ private fun AppearanceRow(character: Character) {
             chips.forEach { chip ->
                 Surface(
                     color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                 ) {
                     Text(
                         text = chip,
@@ -398,7 +398,7 @@ private fun CombatSummaryCard(
                         modifier = Modifier
                             .width(100.dp)
                             .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp)),
+                            .clip(MaterialTheme.shapes.extraSmall),
                         color = hpColor,
                         trackColor = hpColor.copy(alpha = 0.2f),
                     )
@@ -449,7 +449,7 @@ private fun CombatSummaryCard(
                         .height(32.dp)
                         .background(
                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                            RoundedCornerShape(8.dp),
+                            MaterialTheme.shapes.small,
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -610,7 +610,7 @@ private fun DeathSaveDiamond(filled: Boolean, color: Color) {
     Box(
         modifier = Modifier
             .size(18.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .clip(MaterialTheme.shapes.extraSmall)
             .background(
                 if (filled) color else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
             ),
@@ -778,7 +778,7 @@ private fun StatControls(
                                 .height(32.dp)
                                 .background(
                                     MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    RoundedCornerShape(6.dp),
+                                    MaterialTheme.shapes.small,
                                 ),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -934,7 +934,7 @@ private fun InspirationExhaustionRow(
                         Box(
                             modifier = Modifier
                                 .size(20.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                                .clip(MaterialTheme.shapes.extraSmall)
                                 .background(
                                     when {
                                         active -> Color(0xFFFB8C00)
@@ -968,7 +968,7 @@ private fun ConditionsChipRow(conditions: List<String>) {
         conditions.forEach { condition ->
             Surface(
                 color = Color(0xFFD32F2F).copy(alpha = 0.15f),
-                shape = RoundedCornerShape(8.dp),
+                shape = MaterialTheme.shapes.small,
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD32F2F).copy(alpha = 0.5f)),
             ) {
                 Text(

@@ -191,14 +191,14 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ImageUrlChanged(it)) },
                             label = { Text("Image URL") },
                             modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = MaterialTheme.shapes.medium
                         )
                         OutlinedTextField(
                             value = state.aiWidth.toString(),
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(it.toIntOrNull() ?: state.aiWidth, state.aiHeight)) },
                             label = { Text("W") },
                             modifier = Modifier.width(70.dp),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = MaterialTheme.shapes.small,
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
@@ -207,7 +207,7 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(state.aiWidth, it.toIntOrNull() ?: state.aiHeight)) },
                             label = { Text("H") },
                             modifier = Modifier.width(70.dp),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = MaterialTheme.shapes.small,
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
@@ -229,7 +229,7 @@ fun CharacterCreateScreen(
                         label = { Text("AI Generation Prompt") },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 3,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = MaterialTheme.shapes.medium,
                         placeholder = { Text("Detailed description for AI generation...") }
                     )
                     Spacer(Modifier.height(16.dp))
@@ -846,7 +846,7 @@ private fun SectionHeader(icon: ImageVector, title: String, accent: Color) {
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(MaterialTheme.shapes.small)
                     .background(accent.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -864,7 +864,7 @@ private fun SectionHeader(icon: ImageVector, title: String, accent: Color) {
             modifier = Modifier
                 .width(100.dp)
                 .height(2.dp)
-                .clip(RoundedCornerShape(1.dp))
+                .clip(MaterialTheme.shapes.extraSmall)
                 .background(accent.copy(alpha = 0.2f)),
         )
     }
@@ -874,7 +874,7 @@ private fun SectionHeader(icon: ImageVector, title: String, accent: Color) {
 private fun CardSection(content: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
@@ -900,7 +900,7 @@ private fun TwoColumnRow(content: @Composable RowScope.() -> Unit) {
 private fun StatCard(label: String, value: String, color: Color, modifier: Modifier = Modifier, onValueChange: (String) -> Unit) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(color.copy(alpha = 0.08f))
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -51,12 +51,14 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.sqrt
 
+import com.dnd.helper.theme.LocalDndColors
+
 // Theme colors
-private val MonsterColor = Color(0xFFEF5350)
-private val NpcColor = Color(0xFF66BB6A)
-private val LocationColor = Color(0xFF42A5F5)
-private val ItemColor = Color(0xFFFFA726)
-private val CharacterColor = Color(0xFFAB47BC)
+private val MonsterColor: Color @Composable get() = LocalDndColors.current.monster
+private val NpcColor: Color @Composable get() = LocalDndColors.current.npc
+private val LocationColor: Color @Composable get() = LocalDndColors.current.location
+private val ItemColor: Color @Composable get() = LocalDndColors.current.item
+private val CharacterColor: Color @Composable get() = LocalDndColors.current.character
 
 private const val LOGICAL_CANVAS_SIZE = 1000f
 private const val PROXIMITY_THRESHOLD = 250f // Distance to trigger "fighting" state (increased for visible gap)
@@ -103,7 +105,7 @@ fun PresentationScreen(
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
                 tonalElevation = 2.dp,
                 shadowElevation = 2.dp
             ) {
@@ -144,7 +146,7 @@ fun PresentationScreen(
                                 containerColor = if (showStats) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.surfaceVariant,
                                 contentColor = if (showStats) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
-                            shape = RoundedCornerShape(10.dp)
+                            shape = MaterialTheme.shapes.medium
                         ) {
                             Icon(if (showStats) Icons.Default.Visibility else Icons.Default.VisibilityOff, null)
                             Spacer(Modifier.width(8.dp))
@@ -158,7 +160,7 @@ fun PresentationScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (isWindowOpen) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                             ),
-                            shape = RoundedCornerShape(10.dp)
+                            shape = MaterialTheme.shapes.medium
                         ) {
                             Icon(if (isWindowOpen) Icons.Default.Stop else Icons.Default.PlayArrow, null)
                             Spacer(Modifier.width(8.dp))
@@ -227,7 +229,7 @@ fun PresentationScreen(
                                 )
                             }
                         }
-                        Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(6.dp)) {
+                        Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.small) {
                             Text("1000x1000", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall)
                         }
                     }
@@ -236,9 +238,9 @@ fun PresentationScreen(
                     WorkspaceContainer(
                         modifier = Modifier
                             .fillMaxSize()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(MaterialTheme.shapes.medium)
                             .background(Color(0xFF0A0A0A))
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp)),
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium),
                         activeItems = activeItems,
                         onItemPositionChange = viewModel::updatePosition,
                         onItemSizeChange = viewModel::updateSize,
@@ -255,7 +257,7 @@ fun PresentationScreen(
                 Column(modifier = Modifier.width(320.dp)) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = MaterialTheme.shapes.medium,
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
@@ -287,7 +289,7 @@ fun PresentationScreen(
                                         }
                                     }
                                 },
-                                shape = RoundedCornerShape(8.dp),
+                                shape = MaterialTheme.shapes.small,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                                     focusedContainerColor = MaterialTheme.colorScheme.surface
@@ -301,7 +303,7 @@ fun PresentationScreen(
                                 OutlinedButton(
                                     onClick = { viewModel.createNewScene() },
                                     modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = MaterialTheme.shapes.small,
                                     contentPadding = PaddingValues(0.dp)
                                 ) {
                                     Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
@@ -313,7 +315,7 @@ fun PresentationScreen(
                                     onClick = { viewModel.clearItems() },
                                     modifier = Modifier.weight(1f),
                                     enabled = activeItems.isNotEmpty(),
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = MaterialTheme.shapes.small,
                                     contentPadding = PaddingValues(0.dp)
                                 ) {
                                     Icon(Icons.Default.DeleteSweep, null, modifier = Modifier.size(18.dp))
@@ -519,8 +521,8 @@ fun PresentationScreen(
                         )
                     }
                     .size(width = 200.dp, height = 40.dp)
-                    .background(ItemColor.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
-                    .border(1.dp, Color.White, RoundedCornerShape(8.dp)),
+                    .background(ItemColor.copy(alpha = 0.8f), MaterialTheme.shapes.small)
+                    .border(1.dp, Color.White, MaterialTheme.shapes.small),
                 contentAlignment = Alignment.Center
             ) {
                 Text(item.name, color = Color.White, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
@@ -574,7 +576,7 @@ private fun EventSidebarRow(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
     ) {
         Row(
@@ -613,7 +615,7 @@ private fun PresenterSidebarRow(
     Surface(
         modifier = modifier.fillMaxWidth().padding(vertical = 2.dp),
         onClick = onClick,
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         color = if (isHighlighted) accentColor.copy(alpha = 0.2f) else Color.Transparent,
         border = if (isHighlighted) androidx.compose.foundation.BorderStroke(1.dp, accentColor) else null
     ) {
@@ -650,7 +652,7 @@ private fun FoldableSection(
     var expanded by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (expanded) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
         )
@@ -811,7 +813,7 @@ fun WorkspaceContainer(
                                 Card(
                                     modifier = Modifier.fillMaxSize(),
                                     colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.9f)),
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = MaterialTheme.shapes.medium,
                                     border = androidx.compose.foundation.BorderStroke(1.dp, categoryColor.copy(alpha = 0.5f))
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp).verticalScroll(rememberScrollState())) {
@@ -992,7 +994,7 @@ fun PresentationItem(
                     .fillMaxSize()
                     .padding(4.dp)
                     .blur(12.dp)
-                    .background(categoryColor.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
+                    .background(categoryColor.copy(alpha = 0.4f), MaterialTheme.shapes.large)
             )
         }
 
@@ -1088,7 +1090,7 @@ fun PlayerCard(
     val title = item.title
     val imageUrl = item.imageUrl
     
-    val shape = RoundedCornerShape(18.dp)
+    val shape = MaterialTheme.shapes.large
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Color(0xFF1E1E1E),
@@ -1293,7 +1295,7 @@ fun PlayerCard(
 private fun StatPill(label: String, value: Int) {
     Surface(
         color = Color.Black.copy(alpha = 0.6f),
-        shape = RoundedCornerShape(4.dp),
+        shape = MaterialTheme.shapes.extraSmall,
         border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f))
     ) {
         Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1312,7 +1314,7 @@ fun LocationCard(item: PresentedItem, isDM: Boolean = false, onRemove: () -> Uni
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Color(0xFF121212),
-        shape = RoundedCornerShape(4.dp),
+        shape = MaterialTheme.shapes.extraSmall,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color.DarkGray)
     ) {
         Box(modifier = Modifier.fillMaxSize().clipToBounds()) {

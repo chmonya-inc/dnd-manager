@@ -1,5 +1,6 @@
 package com.dnd.helper.presentation.desktop
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,7 +14,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -21,11 +21,16 @@ import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
@@ -35,17 +40,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
 import coil3.compose.AsyncImage
 import com.dnd.helper.domain.model.*
 import com.dnd.helper.presentation.utils.itemToIcon
 import com.dnd.helper.presentation.utils.toColor
+import com.dnd.helper.theme.LocalDndColors
 import org.koin.compose.viewmodel.koinViewModel
-
-// Consistent colors with CreatorScreen
-private val MonsterColor = Color(0xFFEF5350)
-private val NpcColor = Color(0xFF66BB6A)
-private val LocationColor = Color(0xFF42A5F5)
-private val ItemColor = Color(0xFFFFA726)
 
 @Composable
 fun LibraryScreen(
@@ -54,13 +55,14 @@ fun LibraryScreen(
     onNavigateToCreator: (CreatorType) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val dndColors = LocalDndColors.current
 
     val currentThemeColor = when(state.selectedType) {
-        LibraryType.Items -> ItemColor
-        LibraryType.Mobs -> MonsterColor
-        LibraryType.Npcs -> NpcColor
-        LibraryType.Locations -> LocationColor
-        LibraryType.Templates -> ItemColor
+        LibraryType.Items -> dndColors.item
+        LibraryType.Mobs -> dndColors.monster
+        LibraryType.Npcs -> dndColors.npc
+        LibraryType.Locations -> dndColors.location
+        LibraryType.Templates -> dndColors.item
     }
 
     // Drag and Drop State
@@ -98,11 +100,11 @@ fun LibraryScreen(
                         modifier = Modifier.padding(end = 64.dp)
                     ) {
                         val tabs = listOf(
-                            Triple(LibraryType.Items, ItemColor, Icons.Default.ShoppingBag),
-                            Triple(LibraryType.Mobs, MonsterColor, Icons.Default.BugReport),
-                            Triple(LibraryType.Npcs, NpcColor, Icons.Default.EmojiPeople),
-                            Triple(LibraryType.Locations, LocationColor, Icons.Default.Explore),
-                            Triple(LibraryType.Templates, ItemColor, Icons.Default.AutoAwesome)
+                            Triple(LibraryType.Items, dndColors.item, Icons.Default.ShoppingBag),
+                            Triple(LibraryType.Mobs, dndColors.monster, Icons.Default.BugReport),
+                            Triple(LibraryType.Npcs, dndColors.npc, Icons.Default.EmojiPeople),
+                            Triple(LibraryType.Locations, dndColors.location, Icons.Default.Explore),
+                            Triple(LibraryType.Templates, dndColors.item, Icons.Default.AutoAwesome)
                         )
                         
                         tabs.forEach { (type, color, icon) ->
@@ -214,8 +216,8 @@ fun LibraryScreen(
                         )
                     }
                     .size(width = 200.dp, height = 40.dp)
-                    .background(ItemColor.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
-                    .border(1.dp, Color.White, RoundedCornerShape(8.dp)),
+                    .background(dndColors.item.copy(alpha = 0.8f), MaterialTheme.shapes.small)
+                    .border(1.dp, Color.White, MaterialTheme.shapes.small),
                 contentAlignment = Alignment.Center
             ) {
                 Text(item.name, color = Color.White, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
@@ -239,7 +241,7 @@ private fun CategoryHeader(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(10.dp),
+                shape = MaterialTheme.shapes.small,
                 color = color.copy(alpha = 0.15f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -253,7 +255,7 @@ private fun CategoryHeader(
         Button(
             onClick = onAdd,
             colors = ButtonDefaults.buttonColors(containerColor = color),
-            shape = RoundedCornerShape(12.dp)
+            shape = MaterialTheme.shapes.medium
         ) {
             Icon(Icons.Default.Add, null)
             Spacer(Modifier.width(8.dp))
@@ -271,10 +273,10 @@ private fun NpcGrid(
     onEdit: (Npc) -> Unit
 ) {
     Column {
-        CategoryHeader("NPCs", NpcColor, Icons.Default.EmojiPeople, onCreateNew)
+        CategoryHeader("NPCs", LocalDndColors.current.npc, Icons.Default.EmojiPeople, onCreateNew)
         
         if (npcs.isEmpty()) {
-            EmptyLibraryState("No NPCs found", NpcColor)
+            EmptyLibraryState("No NPCs found", LocalDndColors.current.npc)
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 260.dp),
@@ -333,6 +335,7 @@ private fun LibraryCardActions(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun NpcLibraryCard(
     npc: Npc,
@@ -340,9 +343,17 @@ private fun NpcLibraryCard(
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
+    val npcColor = LocalDndColors.current.npc
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .hoverable(interactionSource)
+            .scale(scale),
+        shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
@@ -363,8 +374,8 @@ private fun NpcLibraryCard(
                         }
                     }
                 } else {
-                    Box(modifier = Modifier.fillMaxSize().background(NpcColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.EmojiPeople, null, modifier = Modifier.size(64.dp), tint = NpcColor.copy(alpha = 0.3f))
+                    Box(modifier = Modifier.fillMaxSize().background(npcColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.EmojiPeople, null, modifier = Modifier.size(64.dp), tint = npcColor.copy(alpha = 0.3f))
                     }
                 }
                 
@@ -386,19 +397,19 @@ private fun NpcLibraryCard(
             
             Column(modifier = Modifier.padding(12.dp)) {
                 if (npc.background.isNotBlank()) {
-                    Surface(color = NpcColor.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
+                    Surface(color = npcColor.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small) {
                         Text(
                             npc.background, 
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelMedium, 
-                            color = NpcColor,
+                            color = npcColor,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
                 
                 Spacer(Modifier.height(8.dp))
-                LibraryCardActions(onEdit, onDelete, onPresent, NpcColor)
+                LibraryCardActions(onEdit, onDelete, onPresent, npcColor)
             }
         }
     }
@@ -413,10 +424,10 @@ private fun MonsterGrid(
     onEdit: (Monster) -> Unit
 ) {
     Column {
-        CategoryHeader("Monsters", MonsterColor, Icons.Default.BugReport, onCreateNew)
+        CategoryHeader("Monsters", LocalDndColors.current.monster, Icons.Default.BugReport, onCreateNew)
         
         if (monsters.isEmpty()) {
-            EmptyLibraryState("No monsters found", MonsterColor)
+            EmptyLibraryState("No monsters found", LocalDndColors.current.monster)
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 260.dp),
@@ -436,6 +447,7 @@ private fun MonsterGrid(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun MonsterLibraryCard(
     monster: Monster,
@@ -443,9 +455,17 @@ private fun MonsterLibraryCard(
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
+    val monsterColor = LocalDndColors.current.monster
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .hoverable(interactionSource)
+            .scale(scale),
+        shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
@@ -466,15 +486,15 @@ private fun MonsterLibraryCard(
                         }
                     }
                 } else {
-                    Box(modifier = Modifier.fillMaxSize().background(MonsterColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.BugReport, null, modifier = Modifier.size(64.dp), tint = MonsterColor.copy(alpha = 0.3f))
+                    Box(modifier = Modifier.fillMaxSize().background(monsterColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.BugReport, null, modifier = Modifier.size(64.dp), tint = monsterColor.copy(alpha = 0.3f))
                     }
                 }
                 
                 Surface(
                     modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
                     color = Color.Black.copy(alpha = 0.7f),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = MaterialTheme.shapes.small
                 ) {
                     Text(
                         "CR ${monster.challengeRating}", 
@@ -508,7 +528,7 @@ private fun MonsterLibraryCard(
                 )
                 
                 Spacer(Modifier.height(8.dp))
-                LibraryCardActions(onEdit, onDelete, onPresent, MonsterColor)
+                LibraryCardActions(onEdit, onDelete, onPresent, monsterColor)
             }
         }
     }
@@ -544,10 +564,10 @@ private fun ItemLibraryGrid(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        CategoryHeader("Items Library", ItemColor, Icons.Default.ShoppingBag, { showCreateDialog = true })
+        CategoryHeader("Items Library", LocalDndColors.current.item, Icons.Default.ShoppingBag, { showCreateDialog = true })
         
         if (distinctCharacters.isEmpty()) {
-            EmptyLibraryState("No characters found to assign items", ItemColor)
+            EmptyLibraryState("No characters found to assign items", LocalDndColors.current.item)
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -557,10 +577,11 @@ private fun ItemLibraryGrid(
                 items(distinctCharacters) { character ->
                     Column {
                         val isHighlighted = dropTargetId == character.id
+                        val itemColor = LocalDndColors.current.item
                         Surface(
-                            color = if (isHighlighted) ItemColor.copy(alpha = 0.2f) else ItemColor.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(12.dp),
-                            border = if (isHighlighted) BorderStroke(2.dp, ItemColor) else null,
+                            color = if (isHighlighted) itemColor.copy(alpha = 0.2f) else itemColor.copy(alpha = 0.1f),
+                            shape = MaterialTheme.shapes.medium,
+                            border = if (isHighlighted) BorderStroke(2.dp, itemColor) else null,
                             modifier = Modifier.onGloballyPositioned { coords ->
                                 characterBounds[character.id] = coords
                             }
@@ -569,13 +590,13 @@ private fun ItemLibraryGrid(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
-                                Icon(Icons.Default.Person, null, modifier = Modifier.size(16.dp), tint = ItemColor)
+                                Icon(Icons.Default.Person, null, modifier = Modifier.size(16.dp), tint = itemColor)
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     text = character.name,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = ItemColor
+                                    color = itemColor
                                 )
                             }
                         }
@@ -652,18 +673,18 @@ fun AddItemToCharacterDialog(
                 Text("Receiver:", style = MaterialTheme.typography.labelLarge)
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = MaterialTheme.shapes.medium
                 ) {
                     Column(modifier = Modifier.heightIn(max = 140.dp).verticalScroll(rememberScrollState()).padding(4.dp)) {
                         characters.forEach { char ->
                             Row(
-                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { selectedCharacterId = char.id },
+                                modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small).clickable { selectedCharacterId = char.id },
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
                                     selected = selectedCharacterId == char.id, 
                                     onClick = { selectedCharacterId = char.id },
-                                    colors = RadioButtonDefaults.colors(selectedColor = ItemColor)
+                                    colors = RadioButtonDefaults.colors(selectedColor = LocalDndColors.current.item)
                                 )
                                 Text(char.name, fontWeight = if (selectedCharacterId == char.id) FontWeight.Bold else FontWeight.Normal)
                             }
@@ -675,7 +696,7 @@ fun AddItemToCharacterDialog(
                     value = itemName, 
                     onValueChange = { itemName = it }, 
                     label = { Text("Item Name") },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -685,7 +706,7 @@ fun AddItemToCharacterDialog(
                         OutlinedButton(
                             onClick = { rarityExpanded = true },
                             modifier = Modifier.fillMaxWidth().height(56.dp),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = MaterialTheme.shapes.medium,
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = rarity.toColor())
                         ) {
                             Text(rarity.name, maxLines = 1)
@@ -702,7 +723,7 @@ fun AddItemToCharacterDialog(
                         OutlinedButton(
                             onClick = { slotExpanded = true },
                             modifier = Modifier.fillMaxWidth().height(56.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = MaterialTheme.shapes.medium
                         ) {
                             Text(slot?.name ?: "None", maxLines = 1)
                         }
@@ -719,14 +740,14 @@ fun AddItemToCharacterDialog(
                     value = itemDescription, 
                     onValueChange = { itemDescription = it }, 
                     label = { Text("Description") },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = itemImageUrl, 
                     onValueChange = { itemImageUrl = it }, 
                     label = { Text("Image URL") },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -746,8 +767,8 @@ fun AddItemToCharacterDialog(
                     onDismiss()
                 },
                 enabled = itemName.isNotBlank() && selectedCharacterId.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = ItemColor),
-                shape = RoundedCornerShape(10.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = LocalDndColors.current.item),
+                shape = MaterialTheme.shapes.small
             ) {
                 Text("Create")
             }
@@ -758,6 +779,7 @@ fun AddItemToCharacterDialog(
     )
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun ItemLibraryCard(
     item: Item,
@@ -767,10 +789,16 @@ private fun ItemLibraryCard(
 ) {
     val rarityColor = item.rarity.toColor()
     val icon = itemToIcon(item)
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .hoverable(interactionSource)
+            .scale(scale),
+        shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = BorderStroke(1.dp, rarityColor.copy(alpha = 0.5f))
     ) {
@@ -826,7 +854,7 @@ private fun ItemLibraryCard(
                 Surface(
                     modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
                     color = rarityColor,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = MaterialTheme.shapes.small
                 ) {
                     Text(
                         item.rarity.name,
@@ -865,10 +893,10 @@ private fun LocationGrid(
     onEdit: (Location) -> Unit
 ) {
     Column {
-        CategoryHeader("Locations", LocationColor, Icons.Default.Explore, onCreateNew)
+        CategoryHeader("Locations", LocalDndColors.current.location, Icons.Default.Explore, onCreateNew)
         
         if (locations.isEmpty()) {
-            EmptyLibraryState("No locations found", LocationColor)
+            EmptyLibraryState("No locations found", LocalDndColors.current.location)
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 300.dp),
@@ -888,6 +916,7 @@ private fun LocationGrid(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun LocationLibraryCard(
     location: Location,
@@ -895,9 +924,17 @@ private fun LocationLibraryCard(
     onDelete: () -> Unit,
     onEdit: () -> Unit
 ) {
+    val locationColor = LocalDndColors.current.location
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .hoverable(interactionSource)
+            .scale(scale),
+        shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
@@ -918,8 +955,8 @@ private fun LocationLibraryCard(
                         }
                     }
                 } else {
-                    Box(modifier = Modifier.fillMaxSize().background(LocationColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Map, null, modifier = Modifier.size(64.dp), tint = LocationColor.copy(alpha = 0.3f))
+                    Box(modifier = Modifier.fillMaxSize().background(locationColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Map, null, modifier = Modifier.size(64.dp), tint = locationColor.copy(alpha = 0.3f))
                     }
                 }
                 
@@ -949,7 +986,7 @@ private fun LocationLibraryCard(
                     )
                 }
                 Spacer(Modifier.height(12.dp))
-                LibraryCardActions(onEdit, onDelete, onPresent, LocationColor)
+                LibraryCardActions(onEdit, onDelete, onPresent, locationColor)
             }
         }
     }
@@ -979,7 +1016,7 @@ private fun TemplateLibraryGrid(
     }
 
     Column {
-        CategoryHeader("Generic Templates", ItemColor, Icons.Default.AutoAwesome, {})
+        CategoryHeader("Generic Templates", LocalDndColors.current.item, Icons.Default.AutoAwesome, {})
         
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 240.dp),
@@ -993,18 +1030,27 @@ private fun TemplateLibraryGrid(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun TemplateCard(template: Item, onClick: () -> Unit) {
     val rarityColor = template.rarity.toColor()
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
+
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .hoverable(interactionSource)
+            .clickable(onClick = onClick)
+            .scale(scale),
+        shape = MaterialTheme.shapes.large,
         border = BorderStroke(1.dp, rarityColor.copy(alpha = 0.3f))
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 modifier = Modifier.size(48.dp),
-                shape = RoundedCornerShape(10.dp),
+                shape = MaterialTheme.shapes.small,
                 color = rarityColor.copy(alpha = 0.1f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
