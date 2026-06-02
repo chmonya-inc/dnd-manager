@@ -30,6 +30,7 @@ object DatabaseFactory {
             SchemaUtils.createMissingTablesAndColumns(
                 Characters,
                 Locations,
+                Battlefields,
                 Monsters,
                 Npcs,
                 Music,

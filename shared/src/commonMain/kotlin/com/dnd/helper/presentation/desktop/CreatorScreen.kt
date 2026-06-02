@@ -109,6 +109,7 @@ sealed class CreatorType(val title: String, val icon: ImageVector) {
     data class Monster(val existingMonster: com.dnd.helper.domain.model.Monster? = null) : CreatorType("Monster", Icons.Default.BugReport)
     data class Npc(val existingNpc: com.dnd.helper.domain.model.Npc? = null) : CreatorType("NPC", Icons.Default.EmojiPeople)
     data class Location(val existingLocation: com.dnd.helper.domain.model.Location? = null) : CreatorType("Location", Icons.Default.Explore)
+    data class Battlefield(val existingBattlefield: com.dnd.helper.domain.model.Battlefield? = null) : CreatorType("Battlefield", Icons.Default.Map)
 }
 
 @Composable
@@ -120,6 +121,7 @@ fun CreatorType.themeColor(): Color {
         is CreatorType.Monster -> colors.monster
         is CreatorType.Npc -> colors.npc
         is CreatorType.Location -> colors.location
+        is CreatorType.Battlefield -> colors.location
     }
 }
 
@@ -139,6 +141,7 @@ fun CreatorScreen(
             is CreatorType.Monster -> t.existingMonster != null
             is CreatorType.Npc -> t.existingNpc != null
             is CreatorType.Location -> t.existingLocation != null
+            is CreatorType.Battlefield -> t.existingBattlefield != null
             else -> false
         }
 
@@ -196,6 +199,17 @@ fun CreatorScreen(
                     )
                     is CreatorType.Location -> LocationCreateForm(
                         existing = type.existingLocation,
+                        onBackClick = { 
+                            selectedType = null
+                            onBack()
+                        },
+                        onCreated = { 
+                            selectedType = null
+                            onCreated()
+                        }
+                    )
+                    is CreatorType.Battlefield -> BattlefieldCreateForm(
+                        existing = type.existingBattlefield,
                         onBackClick = { 
                             selectedType = null
                             onBack()
@@ -757,7 +771,6 @@ private fun LocationCreateForm(
     onCreated: () -> Unit
 ) {
     val repository: CharacterRepository = koinInject()
-    val editingRepository: EditingRepository = koinInject()
     val scope = rememberCoroutineScope()
 
     val locationId = remember { existing?.id ?: "loc-${Random.nextLong(1000000, 9999999)}" }
@@ -768,12 +781,6 @@ private fun LocationCreateForm(
     var aiWidth by remember { mutableStateOf("2048") }
     var aiHeight by remember { mutableStateOf("2048") }
     var isSaving by remember { mutableStateOf(false) }
-
-    DisposableEffect(locationId) {
-        onDispose {
-            editingRepository.cancelGenerationForEntity(locationId)
-        }
-    }
 
     LaunchedEffect(name, description) {
         customPrompt = PromptGenerator.getFullPrompt("$name. $description".trim(), GenerationType.LOCATION)
@@ -862,7 +869,8 @@ private fun CreatorSelection(onSelect: (CreatorType) -> Unit) {
         CreatorType.Item(),
         CreatorType.Monster(),
         CreatorType.Npc(),
-        CreatorType.Location()
+        CreatorType.Location(),
+        CreatorType.Battlefield()
     )
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -940,5 +948,102 @@ private fun CreatorCard(type: CreatorType, onClick: () -> Unit) {
                 color = type.themeColor().copy(alpha = 0.6f)
             )
         }
+    }
+}
+
+@Composable
+private fun BattlefieldCreateForm(
+    existing: Battlefield? = null,
+    onBackClick: () -> Unit,
+    onCreated: () -> Unit
+) {
+    val repository: CharacterRepository = koinInject()
+    val scope = rememberCoroutineScope()
+
+    val battlefieldId = remember { existing?.id ?: "bf-${Random.nextLong(1000000, 9999999)}" }
+    var name by remember { mutableStateOf(existing?.name ?: "") }
+    var description by remember { mutableStateOf(existing?.description ?: "") }
+    var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
+    var customPrompt by remember { mutableStateOf(existing?.let { PromptGenerator.getFullPrompt("${it.name}. ${it.description}", GenerationType.BATTLEFIELD) } ?: "") }
+    var aiWidth by remember { mutableStateOf("2048") }
+    var aiHeight by remember { mutableStateOf("2048") }
+    var isSaving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(name, description) {
+        customPrompt = PromptGenerator.getFullPrompt("$name. $description".trim(), GenerationType.BATTLEFIELD)
+    }
+
+    val colors = LocalDndColors.current
+    CreatorFormLayout(
+        accentColor = colors.location, // Share color with Location
+        isSaving = isSaving,
+        saveButtonText = if (existing != null) "Update Battlefield" else "Create Battlefield",
+        saveEnabled = name.isNotBlank(),
+        onSave = {
+            isSaving = true
+            scope.launch {
+                val battlefield = Battlefield(
+                    id = battlefieldId,
+                    name = name,
+                    description = description,
+                    imageUrl = imageUrl
+                )
+                repository.saveBattlefield(battlefield)
+                isSaving = false
+                onCreated()
+            }
+        }
+    ) {
+        SectionHeader(Icons.Default.Map, "Identity", colors.location)
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Battlefield Name *") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.medium
+        )
+        
+        SectionHeader(Icons.Default.Image, "Media", colors.location)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = imageUrl,
+                onValueChange = { imageUrl = it },
+                label = { Text("Image URL") },
+                modifier = Modifier.weight(1f),
+                shape = MaterialTheme.shapes.medium,
+                placeholder = { Text("https://...") }
+            )
+            OutlinedTextField(value = aiWidth, onValueChange = { aiWidth = it }, label = { Text("W") }, modifier = Modifier.width(70.dp), shape = MaterialTheme.shapes.small, singleLine = true)
+            OutlinedTextField(value = aiHeight, onValueChange = { aiHeight = it }, label = { Text("H") }, modifier = Modifier.width(70.dp), shape = MaterialTheme.shapes.small, singleLine = true)
+            ImageGenerationButton(
+                prompt = customPrompt.ifBlank { "Battlefield: $name. $description" },
+                onImageUrlGenerated = { imageUrl = it },
+                accentColor = colors.location,
+                entityId = battlefieldId,
+                entityType = "battlefield",
+                width = aiWidth.toIntOrNull(),
+                height = aiHeight.toIntOrNull()
+            )
+        }
+        
+        SectionHeader(Icons.AutoMirrored.Filled.Notes, "Description", colors.location)
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            label = { Text("Tactical features, hazards, atmosphere...") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 8,
+            shape = MaterialTheme.shapes.medium
+        )
+
+        SectionHeader(Icons.Default.AutoFixHigh, "AI Image Generation Prompt", colors.location)
+        OutlinedTextField(
+            value = customPrompt,
+            onValueChange = { customPrompt = it },
+            label = { Text("Prompt (Edit to customize generation)") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            shape = MaterialTheme.shapes.medium
+        )
     }
 }

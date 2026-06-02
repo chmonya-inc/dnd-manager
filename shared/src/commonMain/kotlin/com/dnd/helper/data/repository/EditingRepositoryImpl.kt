@@ -33,8 +33,6 @@ class EditingRepositoryImpl(
         width: Int,
         height: Int
     ): String {
-        val width = 124
-        val height = 124
         val taskId = Random.nextLong(1000000, 9999999).toString()
         val mockUrl = "generating:$taskId"
 
@@ -180,6 +178,18 @@ class EditingRepositoryImpl(
                     if (entity != null) {
                         val saveResult =
                             characterRepository.saveLocation(entity.copy(imageUrl = url))
+                        saveResult is Result.Success
+                    } else false
+                } else false
+            }
+
+            "battlefield" -> {
+                val result = characterRepository.getBattlefields()
+                if (result is Result.Success) {
+                    val entity = result.data.find { it.id == entityId }
+                    if (entity != null) {
+                        val saveResult =
+                            characterRepository.saveBattlefield(entity.copy(imageUrl = url))
                         saveResult is Result.Success
                     } else false
                 } else false

@@ -30,6 +30,9 @@ class PresentationViewModel(
     private val _locations = MutableStateFlow<List<com.dnd.helper.domain.model.Location>>(emptyList())
     val locations = _locations.asStateFlow()
 
+    private val _battlefields = MutableStateFlow<List<com.dnd.helper.domain.model.Battlefield>>(emptyList())
+    val battlefields = _battlefields.asStateFlow()
+
     private val _events = MutableStateFlow<List<com.dnd.helper.domain.model.GameEvent>>(emptyList())
     val events = _events.asStateFlow()
 
@@ -47,7 +50,7 @@ class PresentationViewModel(
             repository.remoteUpdates.collect { updateType ->
                 println("[Presentation] Remote update received via WebSocket: $updateType")
                 // We reload everything on any relevant update for simplicity in Presentation mode
-                if (updateType in listOf("characters", "monsters", "npcs", "locations", "events")) {
+                if (updateType in listOf("characters", "monsters", "npcs", "locations", "battlefields", "events")) {
                     refreshAll(force = true)
                 }
             }
@@ -74,6 +77,9 @@ class PresentationViewModel(
             
             val lResult = repository.getLocations(forceRefresh = force)
             if (lResult is com.dnd.helper.domain.common.Result.Success) _locations.value = lResult.data
+
+            val bResult = repository.getBattlefields(forceRefresh = force)
+            if (bResult is com.dnd.helper.domain.common.Result.Success) _battlefields.value = bResult.data
 
             val eResult = repository.getEvents(forceRefresh = force)
             if (eResult is com.dnd.helper.domain.common.Result.Success) _events.value = eResult.data

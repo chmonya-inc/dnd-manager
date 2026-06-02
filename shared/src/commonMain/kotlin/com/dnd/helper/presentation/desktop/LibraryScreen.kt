@@ -62,6 +62,7 @@ fun LibraryScreen(
         LibraryType.Mobs -> dndColors.monster
         LibraryType.Npcs -> dndColors.npc
         LibraryType.Locations -> dndColors.location
+        LibraryType.Battlefields -> dndColors.location
         LibraryType.Templates -> dndColors.item
     }
 
@@ -72,24 +73,76 @@ fun LibraryScreen(
     val characterBounds = remember { mutableStateMapOf<String, androidx.compose.ui.layout.LayoutCoordinates>() }
     
     var showGenerateAllDialog by remember { mutableStateOf(false) }
+    var forceRegenerate by remember { mutableStateOf(false) }
+    var customWidthStr by remember { mutableStateOf("1024") }
+    var customHeightStr by remember { mutableStateOf("1024") }
 
     if (showGenerateAllDialog) {
         AlertDialog(
-            onDismissRequest = { showGenerateAllDialog = false },
+            onDismissRequest = { 
+                showGenerateAllDialog = false 
+                forceRegenerate = false
+                customWidthStr = "1024"
+                customHeightStr = "1024"
+            },
             title = { Text("Generate Missing Images") },
-            text = { Text("Are you sure you want to generate images for all entities in the library that do not currently have one? This will not overwrite existing images.") },
+            text = { 
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text("Are you sure you want to generate images for all entities in the library that do not currently have one? This will not overwrite existing images unless you check the box below.")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().clickable { forceRegenerate = !forceRegenerate }
+                    ) {
+                        Checkbox(
+                            checked = forceRegenerate,
+                            onCheckedChange = { forceRegenerate = it }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Force Regenerate All (Overwrite existing images)")
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = customWidthStr,
+                            onValueChange = { customWidthStr = it.filter { char -> char.isDigit() } },
+                            label = { Text("Width") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = customHeightStr,
+                            onValueChange = { customHeightStr = it.filter { char -> char.isDigit() } },
+                            label = { Text("Height") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+                    }
+                }
+            },
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.generateMissingImages()
+                        val w = customWidthStr.toIntOrNull()?.coerceIn(256, 4096)
+                        val h = customHeightStr.toIntOrNull()?.coerceIn(256, 4096)
+                        viewModel.generateMissingImages(force = forceRegenerate, customWidth = w, customHeight = h)
                         showGenerateAllDialog = false
+                        forceRegenerate = false
+                        customWidthStr = "1024"
+                        customHeightStr = "1024"
                     }
                 ) {
                     Text("Generate")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showGenerateAllDialog = false }) {
+                TextButton(onClick = { 
+                    showGenerateAllDialog = false 
+                    forceRegenerate = false
+                    customWidthStr = "1024"
+                    customHeightStr = "1024"
+                }) {
                     Text("Cancel")
                 }
             }
@@ -116,6 +169,7 @@ fun LibraryScreen(
                             Triple(LibraryType.Mobs, dndColors.monster, Icons.Default.BugReport),
                             Triple(LibraryType.Npcs, dndColors.npc, Icons.Default.EmojiPeople),
                             Triple(LibraryType.Locations, dndColors.location, Icons.Default.Explore),
+                            Triple(LibraryType.Battlefields, dndColors.location, Icons.Default.Map),
                             Triple(LibraryType.Templates, dndColors.item, Icons.Default.AutoAwesome)
                         )
                         
@@ -215,6 +269,13 @@ fun LibraryScreen(
                             onDelete = viewModel::deleteLocation,
                             onCreateNew = { onNavigateToCreator(CreatorType.Location()) },
                             onEdit = { location -> onNavigateToCreator(CreatorType.Location(location)) }
+                        )
+                        LibraryType.Battlefields -> BattlefieldGrid(
+                            battlefields = state.battlefields,
+                            presentationViewModel = presentationViewModel,
+                            onDelete = viewModel::deleteBattlefield,
+                            onCreateNew = { onNavigateToCreator(CreatorType.Battlefield()) },
+                            onEdit = { battlefield -> onNavigateToCreator(CreatorType.Battlefield(battlefield)) }
                         )
                         LibraryType.Templates -> TemplateLibraryGrid(
                             characters = state.characters,
@@ -1007,6 +1068,115 @@ private fun LocationLibraryCard(
                 if (location.description.isNotBlank()) {
                     Text(
                         location.description, 
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                LibraryCardActions(onEdit, onDelete, onPresent, locationColor)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BattlefieldGrid(
+    battlefields: List<Battlefield>,
+    presentationViewModel: PresentationViewModel,
+    onDelete: (String) -> Unit,
+    onCreateNew: () -> Unit,
+    onEdit: (Battlefield) -> Unit
+) {
+    Column {
+        CategoryHeader("Battlefields", LocalDndColors.current.location, Icons.Default.Map, onCreateNew)
+        
+        if (battlefields.isEmpty()) {
+            EmptyLibraryState("No battlefields found", LocalDndColors.current.location)
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 260.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(battlefields, key = { it.id }) { bf ->
+                    BattlefieldLibraryCard(
+                        battlefield = bf,
+                        onPresent = { presentationViewModel.addItem(bf.name, type = "Battlefield", imageUrl = bf.displayImageUrl, isBackground = true) },
+                        onDelete = { onDelete(bf.id) },
+                        onEdit = { onEdit(bf) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun BattlefieldLibraryCard(
+    battlefield: Battlefield,
+    onPresent: () -> Unit,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
+) {
+    val locationColor = LocalDndColors.current.location
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .hoverable(interactionSource)
+            .scale(scale),
+        shape = MaterialTheme.shapes.large,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column {
+            Box(modifier = Modifier.fillMaxWidth().height(180.dp)) {
+                val imageUrl = battlefield.displayImageUrl
+                val isGenerating = imageUrl?.startsWith("generating:") == true
+
+                if (!imageUrl.isNullOrBlank()) {
+                    if (isGenerating) {
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        }
+                    } else {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = battlefield.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                } else {
+                    Box(modifier = Modifier.fillMaxSize().background(locationColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Map, null, modifier = Modifier.size(64.dp), tint = locationColor.copy(alpha = 0.3f))
+                    }
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))))
+                )
+                
+                Text(
+                    battlefield.name, 
+                    modifier = Modifier.align(Alignment.BottomStart).padding(20.dp),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+            
+            Column(modifier = Modifier.padding(16.dp)) {
+                if (battlefield.description.isNotBlank()) {
+                    Text(
+                        battlefield.description, 
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 3,

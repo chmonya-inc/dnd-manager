@@ -57,6 +57,7 @@ import com.dnd.helper.theme.LocalDndColors
 private val MonsterColor: Color @Composable get() = LocalDndColors.current.monster
 private val NpcColor: Color @Composable get() = LocalDndColors.current.npc
 private val LocationColor: Color @Composable get() = LocalDndColors.current.location
+private val BattlefieldColor: Color @Composable get() = LocalDndColors.current.battlefield
 private val ItemColor: Color @Composable get() = LocalDndColors.current.item
 private val CharacterColor: Color @Composable get() = LocalDndColors.current.character
 
@@ -76,6 +77,7 @@ fun PresentationScreen(
     val monsters by viewModel.monsters.collectAsState()
     val npcs by viewModel.npcs.collectAsState()
     val locations by viewModel.locations.collectAsState()
+    val battlefields by viewModel.battlefields.collectAsState()
     val events by viewModel.events.collectAsState()
     val activeEvent by viewModel.activeEvent.collectAsState()
 
@@ -423,7 +425,21 @@ fun PresentationScreen(
 
                     Spacer(Modifier.height(8.dp))
 
-                    // 5. Events Section
+                    // 5. Battlefields Section
+                    val filteredBattlefields = battlefields.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                    FoldableSection(title = "Battlefields", count = filteredBattlefields.size, icon = Icons.Default.Map, color = BattlefieldColor) {
+                        LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                            items(filteredBattlefields) { battlefield ->
+                                PresenterSidebarRow(battlefield.name, BattlefieldColor, icon = Icons.Default.Map, onClick = {
+                                    viewModel.addItem(battlefield.name, "Battlefield", imageUrl = battlefield.displayImageUrl, isBackground = true)
+                                })
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // 6. Events Section
                     val filteredEvents = events.filter { it.name.contains(searchQuery, ignoreCase = true) }
                     FoldableSection(title = "Saved Events", count = filteredEvents.size, icon = Icons.Default.AutoFixHigh, color = MaterialTheme.colorScheme.secondary) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
@@ -451,7 +467,7 @@ fun PresentationScreen(
 
                     Spacer(Modifier.height(8.dp))
 
-                    // 6. Items Section
+                    // 7. Items Section
                     val allItems = distinctChars.flatMap { c -> c.items.map { Triple(it, c.id, c.name) } }
                         .filter { it.first.name.contains(searchQuery, ignoreCase = true) }
                     FoldableSection(title = "Inventory", count = allItems.size, icon = Icons.Default.ShoppingBag, color = ItemColor) {
@@ -744,6 +760,7 @@ fun WorkspaceContainer(
                     "monster" -> MonsterColor
                     "npc" -> NpcColor
                     "location" -> LocationColor
+                    "battlefield" -> BattlefieldColor
                     "item" -> ItemColor
                     "character" -> CharacterColor
                     else -> Color.White
@@ -927,7 +944,7 @@ fun PresentationItem(
                 if (isDM) {
                     Modifier
                         .onKeyEvent { keyEvent ->
-                            if (item.type.lowercase() == "location" && keyEvent.type == KeyEventType.KeyDown) {
+                            if ((item.type.lowercase() == "location" || item.type.lowercase() == "battlefield") && keyEvent.type == KeyEventType.KeyDown) {
                                 when (keyEvent.key) {
                                     Key.Equals, Key.NumPadAdd -> { onZoomChange(0.1f); true }
                                     Key.Minus, Key.NumPadSubtract -> { onZoomChange(-0.1f); true }
@@ -947,7 +964,7 @@ fun PresentationItem(
                                     val event = awaitPointerEvent()
                                     
                                     // 1. Scroll Zoom
-                                    if (item.type.lowercase() == "location" && event.type == PointerEventType.Scroll) {
+                                    if ((item.type.lowercase() == "location" || item.type.lowercase() == "battlefield") && event.type == PointerEventType.Scroll) {
                                         val delta = event.changes.first().scrollDelta.y
                                         if (delta != 0f) {
                                             val zoomDelta = if (delta > 0) -0.1f else 0.1f
@@ -964,7 +981,7 @@ fun PresentationItem(
                                             
                                             if (dragAmount != androidx.compose.ui.geometry.Offset.Zero) {
                                                 change.consume()
-                                                if (item.type.lowercase() == "location" && isRightClick) {
+                                                if ((item.type.lowercase() == "location" || item.type.lowercase() == "battlefield") && isRightClick) {
                                                     onOffsetChange(dragAmount.x / 400f, dragAmount.y / 400f)
                                                 } else if (!isRightClick) {
                                                     val logicalDeltaX = dragAmount.x / pixelScale

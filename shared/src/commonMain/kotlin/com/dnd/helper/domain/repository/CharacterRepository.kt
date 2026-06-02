@@ -26,6 +26,11 @@ interface CharacterRepository {
     val locationUpdates: Flow<String>
 
     /**
+     * Emits the ID of a battlefield whenever it is successfully saved locally.
+     */
+    val battlefieldUpdates: Flow<String>
+
+    /**
      * Emits the type of update (e.g., "characters", "monsters") whenever the server notifies via WebSocket.
      */
     val remoteUpdates: Flow<String>
@@ -39,6 +44,10 @@ interface CharacterRepository {
     suspend fun getLocations(forceRefresh: Boolean = false): Result<List<Location>>
     suspend fun saveLocation(location: Location): Result<Unit>
     suspend fun deleteLocation(id: String): Result<Unit>
+
+    suspend fun getBattlefields(forceRefresh: Boolean = false): Result<List<Battlefield>>
+    suspend fun saveBattlefield(battlefield: Battlefield): Result<Unit>
+    suspend fun deleteBattlefield(id: String): Result<Unit>
 
     suspend fun getMonsters(forceRefresh: Boolean = false): Result<List<Monster>>
     suspend fun saveMonster(monster: Monster): Result<Unit>

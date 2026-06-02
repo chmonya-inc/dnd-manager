@@ -37,6 +37,7 @@ enum class GenerationType {
     NPC,
     MONSTER,
     LOCATION,
+    BATTLEFIELD,
     SKILL,
     ITEM
 }
@@ -47,9 +48,13 @@ object PromptGenerator {
             GenerationType.CHARACTER, GenerationType.NPC ->
                 "A high-resolution, ultra-detailed professional character portrait for a D&D RPG. A $text character in a realistic oil painting style. Bust shot from chest up. Sharp focus on facial features and textures. Intricate armor or clothing details. Dramatic atmospheric lighting, cinematic composition. Realistic skin textures, fine hair detail. Dark moody background. Flux model, 8k, masterpiece."
             GenerationType.MONSTER ->
-                "A high-resolution, ultra-detailed professional creature concept art for a D&D RPG. A spooky and terrifying $text monster in a realistic painting style. Menacing pose, sharp details on scales, fur, or teeth. Glowing eyes, eerie atmosphere with fog and shadows. Dramatic rim lighting. Sharp focus on the creature's features. Micro-details, octane render style, fantasy horror aesthetic. Dynamic pose."
+                "An epic, wide-angle cinematic dark fantasy illustration capturing an overwhelming sense of cosmic horror and cataclysmic scale. A colossal, titanic $text rises majestically out of a raging, violent turquoise ocean, its massive form towering into the clouds and blotting out the sky. \n" +
+                        "\n" +
+                        "In the lower foreground, a small, fragile wooden ship is helplessly tossed around by massive crashing waves and churning sea foam, dramatically emphasizing the unfathomable, god-like size of the creature. Sharp, jagged dark rock spires and ancient obsidian monoliths jut out from the turbulent water. The sky is chaotic, filled with rolling dark storm clouds and dense fog, shattered by brilliant flashes of jagged teal and yellow lightning that vividly illuminate the creature's colossal silhouette. Masterpiece digital art, dynamic environmental movement, intense cinematic lighting, atmospheric perspective, grimdark mythic fantasy style."
             GenerationType.LOCATION ->
                 "A high-resolution, ultra-detailed wide-angle landscape painting of a $text, a legendary D&D RPG location. Breathtaking scenery, epic scale, intricate architectural details or natural formations. Magical atmosphere, volumetric lighting, god rays. Rich color palette, deep textures. Cinematic composition, sharp focus. 8k resolution, flux model, digital masterpiece."
+            GenerationType.BATTLEFIELD ->
+                "A top-down 2D tactical fantasy RPG battle map of a $text. High-quality digital painting style, detailed textures, vibrant colors, clear layout with pathways, structures, and tactical elements. Overlayed with a subtle, clean square grid. Bird's-eye view, perfectly flat overhead perspective, ideal for a D&D game."
             GenerationType.SKILL, GenerationType.ITEM ->
                 "A high-resolution, ultra-detailed square RPG inventory icon of $text, D&D style. Intricate materials, polished textures, magical energy effects. Dramatic studio lighting, sharp focus on micro-details. Clean dark moody vignette background. Fantasy game asset, octane render style."
         }
@@ -62,7 +67,6 @@ class AiImageService(
     private val storage: com.dnd.helper.domain.storage.CharacterStorage
 ) {
     private val serverAddress: String get() = storage.getComfyUiAddress() ?: "127.0.0.1:8000"
-    private val clientId = Random.nextLong().toString()
     private val imgbbApiKey = GeneratedConfig.IMGBB_API_KEY
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -177,11 +181,13 @@ class AiImageService(
         customHeight: Int? = null,
         onRemoteIdGenerated: ((String) -> Unit)? = null
     ): String? {
+        val requestClientId = Random.nextLong().toString()
         try {
             val (defaultWidth, defaultHeight) = when (type) {
                 GenerationType.CHARACTER, GenerationType.NPC -> Pair(1024, 1024)
                 GenerationType.MONSTER -> Pair(1024, 1024)
                 GenerationType.LOCATION -> Pair(2048, 2048)
+                GenerationType.BATTLEFIELD -> Pair(2048, 2048)
                 GenerationType.SKILL, GenerationType.ITEM -> Pair(256, 256)
             }
             
@@ -257,7 +263,7 @@ class AiImageService(
                 contentType(ContentType.Application.Json)
                 setBody(buildJsonObject {
                     put("prompt", JsonObject(workflow))
-                    put("client_id", clientId)
+                    put("client_id", requestClientId)
                 })
             }
             
@@ -266,7 +272,7 @@ class AiImageService(
             
             // 2. Wait for completion via WebSocket
             var completed = false
-            httpClient.webSocket("ws://${serverAddress}/ws?clientId=${clientId}") {
+            httpClient.webSocket("ws://${serverAddress}/ws?clientId=${requestClientId}") {
                 while (!completed) {
                     val frame = incoming.receive()
                     if (frame is Frame.Text) {

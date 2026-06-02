@@ -55,6 +55,15 @@ object Locations : Table("locations") {
     override val primaryKey = PrimaryKey(id, sessionId)
 }
 
+object Battlefields : Table("battlefields") {
+    val id = varchar("id", 50)
+    val sessionId = varchar("session_id", 50)
+    val name = varchar("name", 100)
+    val description = text("description")
+    val imageUrl = varchar("image_url", 500).nullable()
+    override val primaryKey = PrimaryKey(id, sessionId)
+}
+
 object Monsters : Table("monsters") {
     val id = varchar("id", 50)
     val sessionId = varchar("session_id", 50)

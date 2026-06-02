@@ -9,5 +9,6 @@ enum class LibraryType(val title: String, val icon: ImageVector) {
     Mobs("Monsters", Icons.Default.BugReport),
     Npcs("NPCs", Icons.Default.EmojiPeople),
     Locations("Locations", Icons.Default.Map),
+    Battlefields("Battlefields", Icons.Default.Map),
     Templates("Templates", Icons.Default.AutoAwesome)
 }

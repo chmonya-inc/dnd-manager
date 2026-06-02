@@ -18,6 +18,7 @@ import com.dnd.helper.data.remote.GenerationType
 data class LibraryState(
     val selectedType: LibraryType = LibraryType.Items,
     val locations: List<Location> = emptyList(),
+    val battlefields: List<Battlefield> = emptyList(),
     val monsters: List<Monster> = emptyList(),
     val npcs: List<Npc> = emptyList(),
     val characters: List<Character> = emptyList(),
@@ -75,6 +76,13 @@ class LibraryViewModel(
                                     _state.value = currentState.copy(locations = currentState.locations.map { if (it.id == loc.id) updatedLoc else it })
                                 }
                             }
+                            "battlefield" -> {
+                                val bf = currentState.battlefields.find { it.id == task.entityId }
+                                if (bf != null) {
+                                    val updatedBf = bf.copy(imageUrl = resultUrl)
+                                    _state.value = currentState.copy(battlefields = currentState.battlefields.map { if (it.id == bf.id) updatedBf else it })
+                                }
+                            }
                             "character" -> {
                                 val char = currentState.characters.find { it.id == task.entityId }
                                 if (char != null) {
@@ -113,6 +121,7 @@ class LibraryViewModel(
                 val shouldReload = when (updateType) {
                     "characters" -> currentType == LibraryType.Items || currentType == LibraryType.Templates
                     "locations" -> currentType == LibraryType.Locations
+                    "battlefields" -> currentType == LibraryType.Battlefields
                     "monsters" -> currentType == LibraryType.Mobs
                     "npcs" -> currentType == LibraryType.Npcs
                     else -> false
@@ -136,6 +145,9 @@ class LibraryViewModel(
             repository.locationUpdates.collect { refreshData(force = true) }
         }
         viewModelScope.launch {
+            repository.battlefieldUpdates.collect { refreshData(force = true) }
+        }
+        viewModelScope.launch {
             repository.characterUpdates.collect { refreshData(force = true) }
         }
     }
@@ -155,6 +167,10 @@ class LibraryViewModel(
                 LibraryType.Locations -> {
                     val result = repository.getLocations(forceRefresh = force)
                     if (result is Result.Success) _state.value = _state.value.copy(locations = result.data, isLoading = false)
+                }
+                LibraryType.Battlefields -> {
+                    val result = repository.getBattlefields(forceRefresh = force)
+                    if (result is Result.Success) _state.value = _state.value.copy(battlefields = result.data, isLoading = false)
                 }
                 LibraryType.Mobs -> {
                     val result = repository.getMonsters(forceRefresh = force)
@@ -217,6 +233,20 @@ class LibraryViewModel(
             repository.saveLog(LogEntry(
                 action = "Delete Location: ${location?.name ?: id}",
                 details = "Location deleted from library",
+                success = true
+            ))
+        }
+    }
+    
+    fun deleteBattlefield(id: String) {
+        viewModelScope.launch {
+            val battlefield = _state.value.battlefields.find { it.id == id }
+            repository.deleteBattlefield(id)
+            _state.value = _state.value.copy(battlefields = _state.value.battlefields.filter { it.id != id })
+            
+            repository.saveLog(LogEntry(
+                action = "Delete Battlefield: ${battlefield?.name ?: id}",
+                details = "Battlefield deleted from library",
                 success = true
             ))
         }
@@ -309,7 +339,7 @@ class LibraryViewModel(
         }
     }
 
-    fun generateMissingImages() {
+    fun generateMissingImages(force: Boolean = false, customWidth: Int? = null, customHeight: Int? = null) {
         viewModelScope.launch {
             var generatedCount = 0
             val activeTaskIds = editingRepository.activeTasks.value.map { it.id }.toSet()
@@ -317,9 +347,9 @@ class LibraryViewModel(
             val npcsResult = repository.getNpcs(forceRefresh = false)
             if (npcsResult is Result.Success) {
                 npcsResult.data.forEach { npc ->
-                    if (npc.imageUrl.needsImageGeneration(activeTaskIds)) {
+                    if (force || npc.imageUrl.needsImageGeneration(activeTaskIds)) {
                         val prompt = PromptGenerator.getFullPrompt("${npc.name}. ${npc.description}. ${npc.background}", GenerationType.NPC)
-                        val mockUrl = editingRepository.startGeneration(npc.id, "npc", prompt, GenerationType.NPC)
+                        val mockUrl = editingRepository.startGeneration(npc.id, "npc", prompt, GenerationType.NPC, customWidth ?: 1024, customHeight ?: 1024)
                         val updatedNpc = npc.copy(imageUrl = mockUrl)
                         _state.update { it.copy(npcs = it.npcs.map { n -> if (n.id == npc.id) updatedNpc else n }) }
                         launch { repository.saveNpc(updatedNpc) }
@@ -331,9 +361,9 @@ class LibraryViewModel(
             val monstersResult = repository.getMonsters(forceRefresh = false)
             if (monstersResult is Result.Success) {
                 monstersResult.data.forEach { monster ->
-                    if (monster.imageUrl.needsImageGeneration(activeTaskIds)) {
+                    if (force || monster.imageUrl.needsImageGeneration(activeTaskIds)) {
                         val prompt = PromptGenerator.getFullPrompt("${monster.name}, ${monster.type}. ${monster.description}", GenerationType.MONSTER)
-                        val mockUrl = editingRepository.startGeneration(monster.id, "monster", prompt, GenerationType.MONSTER)
+                        val mockUrl = editingRepository.startGeneration(monster.id, "monster", prompt, GenerationType.MONSTER, customWidth ?: 1024, customHeight ?: 1024)
                         val updatedMonster = monster.copy(imageUrl = mockUrl)
                         _state.update { it.copy(monsters = it.monsters.map { m -> if (m.id == monster.id) updatedMonster else m }) }
                         launch { repository.saveMonster(updatedMonster) }
@@ -345,12 +375,26 @@ class LibraryViewModel(
             val locationsResult = repository.getLocations(forceRefresh = false)
             if (locationsResult is Result.Success) {
                 locationsResult.data.forEach { loc ->
-                    if (loc.imageUrl.needsImageGeneration(activeTaskIds)) {
+                    if (force || loc.imageUrl.needsImageGeneration(activeTaskIds)) {
                         val prompt = PromptGenerator.getFullPrompt("${loc.name}. ${loc.description}", GenerationType.LOCATION)
-                        val mockUrl = editingRepository.startGeneration(loc.id, "location", prompt, GenerationType.LOCATION, 1024, 576)
+                        val mockUrl = editingRepository.startGeneration(loc.id, "location", prompt, GenerationType.LOCATION, customWidth ?: 2048, customHeight ?: 2048)
                         val updatedLoc = loc.copy(imageUrl = mockUrl)
                         _state.update { it.copy(locations = it.locations.map { l -> if (l.id == loc.id) updatedLoc else l }) }
                         launch { repository.saveLocation(updatedLoc) }
+                        generatedCount++
+                    }
+                }
+            }
+
+            val battlefieldsResult = repository.getBattlefields(forceRefresh = false)
+            if (battlefieldsResult is Result.Success) {
+                battlefieldsResult.data.forEach { bf ->
+                    if (force || bf.imageUrl.needsImageGeneration(activeTaskIds)) {
+                        val prompt = PromptGenerator.getFullPrompt("${bf.name}. ${bf.description}", GenerationType.BATTLEFIELD)
+                        val mockUrl = editingRepository.startGeneration(bf.id, "battlefield", prompt, GenerationType.BATTLEFIELD, customWidth ?: 2048, customHeight ?: 2048)
+                        val updatedBf = bf.copy(imageUrl = mockUrl)
+                        _state.update { it.copy(battlefields = it.battlefields.map { b -> if (b.id == bf.id) updatedBf else b }) }
+                        launch { repository.saveBattlefield(updatedBf) }
                         generatedCount++
                     }
                 }
@@ -362,17 +406,17 @@ class LibraryViewModel(
                     var charModified = false
                     var newCharImageUrl = char.imageUrl
 
-                    if (char.imageUrl.needsImageGeneration(activeTaskIds)) {
+                    if (force || char.imageUrl.needsImageGeneration(activeTaskIds)) {
                         val prompt = PromptGenerator.getFullPrompt("${char.name}, ${char.race} ${char.characterClass}. ${char.description}", GenerationType.CHARACTER)
-                        newCharImageUrl = editingRepository.startGeneration(char.id, "character", prompt, GenerationType.CHARACTER)
+                        newCharImageUrl = editingRepository.startGeneration(char.id, "character", prompt, GenerationType.CHARACTER, customWidth ?: 1024, customHeight ?: 1024)
                         charModified = true
                         generatedCount++
                     }
 
                     val updatedItems = char.items.map { item ->
-                        if (item.imageUrl.needsImageGeneration(activeTaskIds) && item.name.isNotBlank()) {
+                        if ((force || item.imageUrl.needsImageGeneration(activeTaskIds)) && item.name.isNotBlank()) {
                             val prompt = PromptGenerator.getFullPrompt("${item.name}, ${item.rarity}. ${item.description}", GenerationType.ITEM)
-                            val mockUrl = editingRepository.startGeneration("${char.id}:${item.id}", "item", prompt, GenerationType.ITEM)
+                            val mockUrl = editingRepository.startGeneration("${char.id}:${item.id}", "item", prompt, GenerationType.ITEM, customWidth ?: 1024, customHeight ?: 1024)
                             charModified = true
                             generatedCount++
                             item.copy(imageUrl = mockUrl)

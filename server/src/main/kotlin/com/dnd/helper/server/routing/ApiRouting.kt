@@ -80,6 +80,27 @@ fun Route.configureApiRouting() {
             }
         }
 
+        route("/battlefields") {
+            get {
+                val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                call.respond(handleGetBattlefields(sessionId))
+            }
+            post {
+                val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                val bf = call.receive<Battlefield>()
+                handleSaveBattlefield(bf, sessionId)
+                SessionManager.notifyUpdate(sessionId, "battlefields")
+                call.respond(HttpStatusCode.OK)
+            }
+            delete("/{id}") {
+                val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                handleDeleteBattlefield(id, sessionId)
+                SessionManager.notifyUpdate(sessionId, "battlefields")
+                call.respond(HttpStatusCode.OK)
+            }
+        }
+
         route("/monsters") {
             get {
                 val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
@@ -184,6 +205,7 @@ private suspend fun handleGetInitialData(sessionId: String): InitialData {
     return InitialData(
         characters = handleGetCharacters(sessionId),
         locations = handleGetLocations(sessionId),
+        battlefields = handleGetBattlefields(sessionId),
         monsters = handleGetMonsters(sessionId),
         npcs = handleGetNpcs(sessionId),
         music = handleGetMusic(sessionId),
@@ -260,6 +282,28 @@ private suspend fun handleSaveLocation(loc: Location?, sessionId: String) = dbQu
 private suspend fun handleDeleteLocation(id: String?, sessionId: String) = dbQuery {
     if (id == null) return@dbQuery
     Locations.deleteWhere { (Locations.id eq id) and (Locations.sessionId eq sessionId) }
+}
+
+private suspend fun handleGetBattlefields(sessionId: String): List<Battlefield> = dbQuery {
+    Battlefields.selectAll().where { Battlefields.sessionId eq sessionId }.map {
+        Battlefield(it[Battlefields.id], it[Battlefields.name], it[Battlefields.description], it[Battlefields.imageUrl])
+    }
+}
+
+private suspend fun handleSaveBattlefield(bf: Battlefield?, sessionId: String) = dbQuery {
+    if (bf == null) return@dbQuery
+    Battlefields.upsert {
+        it[id] = bf.id
+        it[Battlefields.sessionId] = sessionId
+        it[name] = bf.name
+        it[description] = bf.description
+        it[imageUrl] = bf.imageUrl
+    }
+}
+
+private suspend fun handleDeleteBattlefield(id: String?, sessionId: String) = dbQuery {
+    if (id == null) return@dbQuery
+    Battlefields.deleteWhere { (Battlefields.id eq id) and (Battlefields.sessionId eq sessionId) }
 }
 
 private suspend fun handleGetMonsters(sessionId: String): List<Monster> = dbQuery {

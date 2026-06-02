@@ -35,12 +35,16 @@ class CharacterRepositoryImpl(
     private val _locationUpdates = MutableSharedFlow<String>(extraBufferCapacity = 1)
     override val locationUpdates: SharedFlow<String> = _locationUpdates.asSharedFlow()
 
+    private val _battlefieldUpdates = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    override val battlefieldUpdates: SharedFlow<String> = _battlefieldUpdates.asSharedFlow()
+
     override val remoteUpdates: Flow<String> = dataSource.observeUpdates()
 
     // Simple in-memory caches to make UI instant
     private var charactersCache: List<Character>? = null
     private val heavyCharacterCache = mutableMapOf<String, Character>()
     private var locationsCache: List<Location>? = null
+    private var battlefieldsCache: List<Battlefield>? = null
     private var monstersCache: List<Monster>? = null
     private var npcsCache: List<Npc>? = null
     private var musicCache: List<MusicTrack>? = null
@@ -57,6 +61,7 @@ class CharacterRepositoryImpl(
             charactersCache = null
             heavyCharacterCache.clear()
             locationsCache = null
+            battlefieldsCache = null
             monstersCache = null
             npcsCache = null
             true
@@ -75,6 +80,7 @@ class CharacterRepositoryImpl(
             val filteredChars = data.characters.filter { it.id != "ID" }
             charactersCache = filteredChars
             locationsCache = data.locations
+            battlefieldsCache = data.battlefields
             monstersCache = data.monsters
             npcsCache = data.npcs
             musicCache = data.music
@@ -204,6 +210,31 @@ class CharacterRepositoryImpl(
     override suspend fun deleteLocation(id: String): Result<Unit> {
         val result = dataSource.deleteLocation(id)
         if (result is Result.Success) locationsCache = null
+        return result
+    }
+
+    override suspend fun getBattlefields(forceRefresh: Boolean): Result<List<Battlefield>> {
+        val tableChanged = checkTableIdChanged()
+        if (!forceRefresh && !tableChanged) {
+            battlefieldsCache?.let { return Result.Success(it) }
+        }
+        val result = dataSource.getBattlefields()
+        if (result is Result.Success) battlefieldsCache = result.data
+        return result
+    }
+
+    override suspend fun saveBattlefield(battlefield: Battlefield): Result<Unit> {
+        val result = dataSource.saveBattlefield(battlefield)
+        if (result is Result.Success) {
+            battlefieldsCache = null
+            _battlefieldUpdates.tryEmit(battlefield.id)
+        }
+        return result
+    }
+
+    override suspend fun deleteBattlefield(id: String): Result<Unit> {
+        val result = dataSource.deleteBattlefield(id)
+        if (result is Result.Success) battlefieldsCache = null
         return result
     }
 

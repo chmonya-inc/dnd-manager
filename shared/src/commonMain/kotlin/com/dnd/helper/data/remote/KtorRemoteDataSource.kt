@@ -105,6 +105,20 @@ class KtorRemoteDataSource(
     suspend fun deleteLocation(id: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/locations/$id") }
 
+    suspend fun getBattlefields(): Result<List<Battlefield>> =
+        safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/battlefields") }
+
+    suspend fun saveBattlefield(battlefield: Battlefield): Result<Unit> =
+        safeApiCall {
+            httpClient.post("${baseUrl()}/api/${sessionId()}/battlefields") {
+                contentType(ContentType.Application.Json)
+                setBody(battlefield)
+            }
+        }
+
+    suspend fun deleteBattlefield(id: String): Result<Unit> =
+        safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/battlefields/$id") }
+
     suspend fun getMonsters(): Result<List<Monster>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/monsters") }
 

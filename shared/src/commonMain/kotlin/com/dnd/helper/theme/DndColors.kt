@@ -19,6 +19,7 @@ data class DndColors(
     val monster: Color,
     val npc: Color,
     val location: Color,
+    val battlefield: Color,
     val item: Color,
 
     // --- Section Colors (MasterCharacterDetail) ---
@@ -62,6 +63,7 @@ val DungeonDndColors = DndColors(
     monster = Color(0xFFEF5350),
     npc = Color(0xFF66BB6A),
     location = Color(0xFF42A5F5),
+    battlefield = Color(0xFF009688),
     item = Color(0xFFFFA726),
     // Sections
     stats = Color(0xFFEF5350),
@@ -98,6 +100,7 @@ val ParchmentDndColors = DungeonDndColors.copy(
     monster = Color(0xFFC62828),
     npc = Color(0xFF2E7D32),
     location = Color(0xFF1565C0),
+    battlefield = Color(0xFF00695C),
     item = Color(0xFFEF6C00),
     stats = Color(0xFFC62828),
     skills = Color(0xFF2E7D32),
