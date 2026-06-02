@@ -40,5 +40,9 @@ data class PresentedItem(
     val armorClass: Int? = null,
     val stats: CharacterStats? = null,
     val subInfo: String? = null, // e.g. "CR 1/2", "Humanoid"
-    val description: String? = null
+    val description: String? = null,
+    // Zoom and Pan for background locations
+    val zoom: Float = 1.0f,
+    val offsetX: Float = 0f,
+    val offsetY: Float = 0f
 )

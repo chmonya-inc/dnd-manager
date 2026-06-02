@@ -215,6 +215,29 @@ class PresentationViewModel(
         }
     }
 
+    fun updateZoom(id: String, delta: Float) {
+        val index = activeItems.indexOfFirst { it.id == id }
+        if (index != -1) {
+            val item = activeItems[index]
+            activeItems[index] = item.copy(
+                zoom = (item.zoom + delta).coerceIn(1.0f, 10.0f)
+            )
+        }
+    }
+
+    fun updateOffset(id: String, dx: Float, dy: Float) {
+        val index = activeItems.indexOfFirst { it.id == id }
+        if (index != -1) {
+            val item = activeItems[index]
+            // We coerce the offset to keep the image content within bounds as much as possible
+            // 0.5f is a heuristic for max pan
+            activeItems[index] = item.copy(
+                offsetX = (item.offsetX + dx).coerceIn(-1f, 1f),
+                offsetY = (item.offsetY + dy).coerceIn(-1f, 1f)
+            )
+        }
+    }
+
     fun updateHp(id: String, delta: Int) {
         val index = activeItems.indexOfFirst { it.id == id }
         if (index != -1) {

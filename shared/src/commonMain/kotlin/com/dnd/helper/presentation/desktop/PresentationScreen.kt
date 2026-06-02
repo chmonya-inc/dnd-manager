@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -21,13 +22,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.*
+import androidx.compose.foundation.gestures.*
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -238,6 +244,8 @@ fun PresentationScreen(
                         onItemSizeChange = viewModel::updateSize,
                         onItemRemove = viewModel::removeItem,
                         onItemHpChange = viewModel::updateHp,
+                        onItemZoomChange = viewModel::updateZoom,
+                        onItemOffsetChange = viewModel::updateOffset,
                         showStats = true, // DM always sees stats in workspace
                         isDM = true
                     )
@@ -708,6 +716,8 @@ fun WorkspaceContainer(
     onItemSizeChange: (String, Float, Float) -> Unit = { _, _, _ -> },
     onItemRemove: (String) -> Unit = {},
     onItemHpChange: (String, Int) -> Unit = { _, _ -> },
+    onItemZoomChange: (String, Float) -> Unit = { _, _ -> },
+    onItemOffsetChange: (String, Float, Float) -> Unit = { _, _, _ -> },
     showStats: Boolean = true,
     isDM: Boolean = false
 ) {
@@ -776,6 +786,8 @@ fun WorkspaceContainer(
                             onSizeChange = { w, h -> onItemSizeChange(item.id, w, h) },
                             onRemove = { onItemRemove(item.id) },
                             onHpChange = { delta -> onItemHpChange(item.id, delta) },
+                            onZoomChange = { delta -> onItemZoomChange(item.id, delta) },
+                            onOffsetChange = { dx, dy -> onItemOffsetChange(item.id, dx, dy) },
                             showStats = showStats,
                             isDM = isDM,
                             onToggleDetails = { showDetails = !showDetails }
@@ -843,6 +855,7 @@ fun WorkspaceContainer(
     }
 }
 
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun PresentationItem(
     item: PresentedItem,
@@ -853,6 +866,8 @@ fun PresentationItem(
     onSizeChange: (Float, Float) -> Unit = { _, _ -> },
     onRemove: () -> Unit = {},
     onHpChange: (Int) -> Unit = {},
+    onZoomChange: (Float) -> Unit = {},
+    onOffsetChange: (Float, Float) -> Unit = { _, _ -> },
     showStats: Boolean = true,
     isDM: Boolean = false,
     onToggleDetails: () -> Unit = {}
@@ -870,6 +885,8 @@ fun PresentationItem(
 
     val currentOnPositionChange by rememberUpdatedState(onPositionChange)
     val currentOnSizeChange by rememberUpdatedState(onSizeChange)
+    
+    val focusRequester = remember { FocusRequester() }
 
     // Shake animation for "fighting" state
     val infiniteTransition = rememberInfiniteTransition(label = "shake")
@@ -906,16 +923,65 @@ fun PresentationItem(
             )
             .then(
                 if (isDM) {
-                    Modifier.pointerInput(item.id) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            val logicalDeltaX = dragAmount.x / pixelScale
-                            val logicalDeltaY = dragAmount.y / pixelScale
-                            localX = (localX + logicalDeltaX).coerceIn(0f, LOGICAL_CANVAS_SIZE - localW)
-                            localY = (localY + logicalDeltaY).coerceIn(0f, LOGICAL_CANVAS_SIZE - localH)
-                            currentOnPositionChange(localX, localY)
+                    Modifier
+                        .onKeyEvent { keyEvent ->
+                            if (item.type.lowercase() == "location" && keyEvent.type == KeyEventType.KeyDown) {
+                                when (keyEvent.key) {
+                                    Key.Equals, Key.NumPadAdd -> { onZoomChange(0.1f); true }
+                                    Key.Minus, Key.NumPadSubtract -> { onZoomChange(-0.1f); true }
+                                    Key.W -> { onOffsetChange(0f, 0.05f); true }
+                                    Key.S -> { onOffsetChange(0f, -0.05f); true }
+                                    Key.A -> { onOffsetChange(0.05f, 0f); true }
+                                    Key.D -> { onOffsetChange(-0.05f, 0f); true }
+                                    else -> false
+                                }
+                            } else false
                         }
-                    }
+                        .focusRequester(focusRequester)
+                        .focusable()
+                        .pointerInput(item.id) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    
+                                    // 1. Scroll Zoom
+                                    if (item.type.lowercase() == "location" && event.type == PointerEventType.Scroll) {
+                                        val delta = event.changes.first().scrollDelta.y
+                                        if (delta != 0f) {
+                                            val zoomDelta = if (delta > 0) -0.1f else 0.1f
+                                            onZoomChange(zoomDelta)
+                                        }
+                                    }
+
+                                    // 2. Drag / Pan (Move while pressed)
+                                    if (event.type == PointerEventType.Move) {
+                                        val change = event.changes.firstOrNull()
+                                        if (change != null && change.pressed) {
+                                            val isRightClick = event.buttons.isSecondaryPressed
+                                            val dragAmount = change.positionChange()
+                                            
+                                            if (dragAmount != androidx.compose.ui.geometry.Offset.Zero) {
+                                                change.consume()
+                                                if (item.type.lowercase() == "location" && isRightClick) {
+                                                    onOffsetChange(dragAmount.x / 400f, dragAmount.y / 400f)
+                                                } else if (!isRightClick) {
+                                                    val logicalDeltaX = dragAmount.x / pixelScale
+                                                    val logicalDeltaY = dragAmount.y / pixelScale
+                                                    localX = (localX + logicalDeltaX).coerceIn(0f, LOGICAL_CANVAS_SIZE - localW)
+                                                    localY = (localY + logicalDeltaY).coerceIn(0f, LOGICAL_CANVAS_SIZE - localH)
+                                                    currentOnPositionChange(localX, localY)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // 3. Focus on press
+                                    if (event.type == PointerEventType.Press) {
+                                        focusRequester.requestFocus()
+                                    }
+                                }
+                            }
+                        }
                 } else Modifier
             )
     ) {
@@ -931,7 +997,7 @@ fun PresentationItem(
         }
 
         if (item.isBackground) {
-            LocationCard(item.title, item.imageUrl, isDM, onRemove)
+            LocationCard(item, isDM, onRemove)
         } else {
             PlayerCard(item, categoryColor, isDM, onRemove, onHpChange, showStats, onToggleDetails)
             
@@ -1239,19 +1305,29 @@ private fun StatPill(label: String, value: Int) {
 }
 
 @Composable
-fun LocationCard(title: String, imageUrl: String? = null, isDM: Boolean = false, onRemove: () -> Unit = {}) {
+fun LocationCard(item: PresentedItem, isDM: Boolean = false, onRemove: () -> Unit = {}) {
+    val title = item.title
+    val imageUrl = item.imageUrl
+    
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Color(0xFF121212),
         shape = RoundedCornerShape(4.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color.DarkGray)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().clipToBounds()) {
             if (!imageUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = imageUrl,
                     contentDescription = title,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            scaleX = item.zoom
+                            scaleY = item.zoom
+                            translationX = item.offsetX * size.width
+                            translationY = item.offsetY * size.height
+                        },
                     contentScale = ContentScale.Crop
                 )
                 
