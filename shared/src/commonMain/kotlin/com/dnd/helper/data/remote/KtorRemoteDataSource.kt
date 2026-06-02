@@ -10,8 +10,8 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.websocket.Frame
-import io.ktor.websocket.readText
+import io.ktor.websocket.*
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
@@ -42,6 +42,18 @@ class KtorRemoteDataSource(
             try {
                 val url = "${wsUrl()}/api/${sessionId()}/ws"
                 httpClient.webSocket(url) {
+                    // Send a "check" message every 1 second to trigger update notifications
+                    val pinger = launch {
+                        while (isActive) {
+                            try {
+                                send("check")
+                                delay(1000)
+                            } catch (e: Exception) {
+                                break
+                            }
+                        }
+                    }
+
                     for (frame in incoming) {
                         if (frame is Frame.Text) {
                             val text = frame.readText()
@@ -50,11 +62,12 @@ class KtorRemoteDataSource(
                             }
                         }
                     }
+                    pinger.cancel()
                 }
             } catch (e: Exception) {
                 println("[KtorRemoteDataSource] WS Error: ${e.message}")
             }
-            kotlinx.coroutines.delay(5000) // Reconnect delay
+            delay(5000) // Reconnect delay
         }
     }
 
