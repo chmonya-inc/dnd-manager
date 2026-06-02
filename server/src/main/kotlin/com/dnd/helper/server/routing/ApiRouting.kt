@@ -47,14 +47,14 @@ fun Route.configureApiRouting() {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
                 val char = call.receive<Character>()
                 handleSaveCharacter(char, sessionId)
-                SessionManager.notifyUpdate(sessionId, "characters")
+                SessionManager.notifyUpdate(sessionId, "characters", char.id)
                 call.respond(HttpStatusCode.OK)
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteCharacter(id, sessionId)
-                SessionManager.notifyUpdate(sessionId, "characters")
+                SessionManager.notifyUpdate(sessionId, "characters", id)
                 call.respond(HttpStatusCode.OK)
             }
         }
@@ -68,14 +68,14 @@ fun Route.configureApiRouting() {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
                 val loc = call.receive<Location>()
                 handleSaveLocation(loc, sessionId)
-                SessionManager.notifyUpdate(sessionId, "locations")
+                SessionManager.notifyUpdate(sessionId, "locations", loc.id)
                 call.respond(HttpStatusCode.OK)
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteLocation(id, sessionId)
-                SessionManager.notifyUpdate(sessionId, "locations")
+                SessionManager.notifyUpdate(sessionId, "locations", id)
                 call.respond(HttpStatusCode.OK)
             }
         }
@@ -89,14 +89,14 @@ fun Route.configureApiRouting() {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
                 val bf = call.receive<Battlefield>()
                 handleSaveBattlefield(bf, sessionId)
-                SessionManager.notifyUpdate(sessionId, "battlefields")
+                SessionManager.notifyUpdate(sessionId, "battlefields", bf.id)
                 call.respond(HttpStatusCode.OK)
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteBattlefield(id, sessionId)
-                SessionManager.notifyUpdate(sessionId, "battlefields")
+                SessionManager.notifyUpdate(sessionId, "battlefields", id)
                 call.respond(HttpStatusCode.OK)
             }
         }
@@ -110,14 +110,14 @@ fun Route.configureApiRouting() {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
                 val monster = call.receive<Monster>()
                 handleSaveMonster(monster, sessionId)
-                SessionManager.notifyUpdate(sessionId, "monsters")
+                SessionManager.notifyUpdate(sessionId, "monsters", monster.id)
                 call.respond(HttpStatusCode.OK)
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteMonster(id, sessionId)
-                SessionManager.notifyUpdate(sessionId, "monsters")
+                SessionManager.notifyUpdate(sessionId, "monsters", id)
                 call.respond(HttpStatusCode.OK)
             }
         }
@@ -131,14 +131,14 @@ fun Route.configureApiRouting() {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
                 val npc = call.receive<Npc>()
                 handleSaveNpc(npc, sessionId)
-                SessionManager.notifyUpdate(sessionId, "npcs")
+                SessionManager.notifyUpdate(sessionId, "npcs", npc.id)
                 call.respond(HttpStatusCode.OK)
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteNpc(id, sessionId)
-                SessionManager.notifyUpdate(sessionId, "npcs")
+                SessionManager.notifyUpdate(sessionId, "npcs", id)
                 call.respond(HttpStatusCode.OK)
             }
         }

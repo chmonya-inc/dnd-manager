@@ -42,17 +42,117 @@ class PresentationViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
+    private val pendingSaveJobs = mutableMapOf<String, Job>()
+
     init {
         refreshAll()
 
         // Listen for remote updates via WebSocket
         viewModelScope.launch {
-            repository.remoteUpdates.collect { updateType ->
-                println("[Presentation] Remote update received via WebSocket: $updateType")
-                // We reload everything on any relevant update for simplicity in Presentation mode
-                if (updateType in listOf("characters", "monsters", "npcs", "locations", "battlefields", "events")) {
-                    refreshAll(force = true)
+            repository.remoteUpdates.collect { updateMessage ->
+                println("[Presentation] Remote update received via WebSocket: $updateMessage")
+                val parts = updateMessage.split(":")
+                val updateType = parts[0]
+                val entityId = if (parts.size > 1) parts[1] else null
+
+                if (entityId != null) {
+                    // Selective refresh for specific entity
+                    refreshSingleEntity(updateType, entityId)
+                } else {
+                    // Fallback to full refresh if no ID provided
+                    if (updateType in listOf("characters", "monsters", "npcs", "locations", "battlefields", "events")) {
+                        refreshAll(force = true)
+                    }
                 }
+            }
+        }
+    }
+
+    private suspend fun refreshSingleEntity(type: String, id: String) {
+        if (pendingSaveJobs.containsKey(id)) {
+            println("[Presentation] Skipping remote update for $id (pending local save)")
+            return
+        }
+
+        when (type) {
+            "characters" -> {
+                // 1. Refresh in sidebar list is handled by characterListViewModel if it uses same character source
+                
+                // 2. Refresh in workspace
+                val result = repository.getCharacter(id)
+                if (result is com.dnd.helper.domain.common.Result.Success) {
+                    val char = result.data
+                    activeItems.forEachIndexed { index, item ->
+                        if (item.type.lowercase() == "character" && item.sourceId == id) {
+                            activeItems[index] = item.copy(
+                                currentHp = char.currentHp,
+                                maxHp = char.maxHp,
+                                armorClass = char.combat.armorClass,
+                                stats = char.stats,
+                                title = char.name,
+                                imageUrl = char.displayImageUrl,
+                                description = char.description
+                            )
+                        }
+                    }
+                }
+            }
+            "monsters" -> {
+                // Refresh monsters list in sidebar
+                val mResult = repository.getMonsters(forceRefresh = true)
+                if (mResult is com.dnd.helper.domain.common.Result.Success) {
+                    _monsters.value = mResult.data
+                    val monster = mResult.data.find { it.id == id }
+                    
+                    // Refresh in workspace
+                    if (monster != null) {
+                        activeItems.forEachIndexed { index, item ->
+                            if (item.type.lowercase() == "monster" && item.sourceId == id) {
+                                activeItems[index] = item.copy(
+                                    currentHp = monster.currentHp,
+                                    maxHp = monster.maxHp,
+                                    armorClass = monster.armorClass,
+                                    stats = monster.stats,
+                                    title = monster.name,
+                                    imageUrl = monster.displayImageUrl,
+                                    description = monster.description,
+                                    subInfo = "${monster.size} ${monster.type} · CR ${monster.challengeRating}"
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            "npcs" -> {
+                val nResult = repository.getNpcs(forceRefresh = true)
+                if (nResult is com.dnd.helper.domain.common.Result.Success) {
+                    _npcs.value = nResult.data
+                    val npc = nResult.data.find { it.id == id }
+                    if (npc != null) {
+                        activeItems.forEachIndexed { index, item ->
+                            if (item.type.lowercase() == "npc" && item.sourceId == id) {
+                                activeItems[index] = item.copy(
+                                    title = npc.name,
+                                    imageUrl = npc.displayImageUrl,
+                                    description = npc.description,
+                                    subInfo = npc.background
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            "locations" -> {
+                val lResult = repository.getLocations(forceRefresh = true)
+                if (lResult is com.dnd.helper.domain.common.Result.Success) _locations.value = lResult.data
+            }
+            "battlefields" -> {
+                val bResult = repository.getBattlefields(forceRefresh = true)
+                if (bResult is com.dnd.helper.domain.common.Result.Success) _battlefields.value = bResult.data
+            }
+            "events" -> {
+                val eResult = repository.getEvents(forceRefresh = true)
+                if (eResult is com.dnd.helper.domain.common.Result.Success) _events.value = eResult.data
             }
         }
     }
@@ -91,13 +191,17 @@ class PresentationViewModel(
 
     private suspend fun refreshActiveItems() {
         // Only refresh characters and monsters since they have dynamic stats
-        activeItems.forEachIndexed { index, item ->
-            val sourceId = item.sourceId ?: return@forEachIndexed
-            when (item.type.lowercase()) {
-                "character" -> {
-                    val result = repository.getCharacter(sourceId)
-                    if (result is com.dnd.helper.domain.common.Result.Success) {
-                        val char = result.data
+        val uniqueCharIds = activeItems.filter { it.type.lowercase() == "character" }.mapNotNull { it.sourceId }.distinct()
+        val uniqueMonsterIds = activeItems.filter { it.type.lowercase() == "monster" }.mapNotNull { it.sourceId }.distinct()
+        val uniqueNpcIds = activeItems.filter { it.type.lowercase() == "npc" }.mapNotNull { it.sourceId }.distinct()
+
+        // 1. Refresh Characters
+        uniqueCharIds.forEach { id ->
+            val result = repository.getCharacter(id)
+            if (result is com.dnd.helper.domain.common.Result.Success) {
+                val char = result.data
+                activeItems.forEachIndexed { index, item ->
+                    if (item.type.lowercase() == "character" && item.sourceId == id) {
                         activeItems[index] = item.copy(
                             currentHp = char.currentHp,
                             maxHp = char.maxHp,
@@ -109,35 +213,51 @@ class PresentationViewModel(
                         )
                     }
                 }
-                "monster" -> {
-                    val result = repository.getMonsters(forceRefresh = true)
-                    if (result is com.dnd.helper.domain.common.Result.Success) {
-                        val monster = result.data.find { it.id == sourceId }
-                        if (monster != null) {
-                            activeItems[index] = item.copy(
-                                currentHp = monster.currentHp,
-                                maxHp = monster.maxHp,
-                                armorClass = monster.armorClass,
-                                stats = monster.stats,
-                                title = monster.name,
-                                imageUrl = monster.displayImageUrl,
-                                description = monster.description,
-                                subInfo = "${monster.size} ${monster.type} · CR ${monster.challengeRating}"
-                            )
+            }
+        }
+
+        // 2. Refresh Monsters
+        if (uniqueMonsterIds.isNotEmpty()) {
+            val result = repository.getMonsters(forceRefresh = true)
+            if (result is com.dnd.helper.domain.common.Result.Success) {
+                uniqueMonsterIds.forEach { id ->
+                    val monster = result.data.find { it.id == id }
+                    if (monster != null) {
+                        activeItems.forEachIndexed { index, item ->
+                            if (item.type.lowercase() == "monster" && item.sourceId == id) {
+                                activeItems[index] = item.copy(
+                                    currentHp = monster.currentHp,
+                                    maxHp = monster.maxHp,
+                                    armorClass = monster.armorClass,
+                                    stats = monster.stats,
+                                    title = monster.name,
+                                    imageUrl = monster.displayImageUrl,
+                                    description = monster.description,
+                                    subInfo = "${monster.size} ${monster.type} · CR ${monster.challengeRating}"
+                                )
+                            }
                         }
                     }
                 }
-                "npc" -> {
-                    val result = repository.getNpcs(forceRefresh = true)
-                    if (result is com.dnd.helper.domain.common.Result.Success) {
-                        val npc = result.data.find { it.id == sourceId }
-                        if (npc != null) {
-                            activeItems[index] = item.copy(
-                                title = npc.name,
-                                imageUrl = npc.displayImageUrl,
-                                description = npc.description,
-                                subInfo = npc.background
-                            )
+            }
+        }
+
+        // 3. Refresh NPCs
+        if (uniqueNpcIds.isNotEmpty()) {
+            val result = repository.getNpcs(forceRefresh = true)
+            if (result is com.dnd.helper.domain.common.Result.Success) {
+                uniqueNpcIds.forEach { id ->
+                    val npc = result.data.find { it.id == id }
+                    if (npc != null) {
+                        activeItems.forEachIndexed { index, item ->
+                            if (item.type.lowercase() == "npc" && item.sourceId == id) {
+                                activeItems[index] = item.copy(
+                                    title = npc.name,
+                                    imageUrl = npc.displayImageUrl,
+                                    description = npc.description,
+                                    subInfo = npc.background
+                                )
+                            }
                         }
                     }
                 }
@@ -254,16 +374,23 @@ class PresentationViewModel(
             
             val sourceId = item.sourceId ?: return
             
-            viewModelScope.launch {
+            // Debounced save to server
+            pendingSaveJobs[sourceId]?.cancel()
+            pendingSaveJobs[sourceId] = viewModelScope.launch {
+                delay(1000)
                 when (item.type.lowercase()) {
                     "character" -> {
                         val result = repository.getCharacter(sourceId)
                         if (result is com.dnd.helper.domain.common.Result.Success) {
-                            repository.saveCharacter(result.data.copy(currentHp = newHp))
+                            val updatedChar = result.data.copy(currentHp = newHp)
+                            // Optimistic update for other local observers
+                            repository.optimisticUpdate(updatedChar)
+                            // Actual save
+                            repository.saveCharacter(updatedChar)
                         }
                     }
                     "monster" -> {
-                        val result = repository.getMonsters()
+                        val result = repository.getMonsters(forceRefresh = true)
                         if (result is com.dnd.helper.domain.common.Result.Success) {
                             val monster = result.data.find { it.id == sourceId }
                             if (monster != null) {
@@ -272,6 +399,7 @@ class PresentationViewModel(
                         }
                     }
                 }
+                pendingSaveJobs.remove(sourceId)
             }
         }
     }

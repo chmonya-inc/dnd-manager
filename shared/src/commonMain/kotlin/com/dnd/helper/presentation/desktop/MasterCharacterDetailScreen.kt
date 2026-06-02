@@ -113,7 +113,7 @@ fun MasterCharacterDetailScreen(
                         }
                         val presentationViewModel: PresentationViewModel = koinViewModel()
                         IconButton(onClick = { 
-                            state.character?.let { presentationViewModel.addItem(it.name, type = "Character", imageUrl = it.displayImageUrl) }
+                            state.character?.let { presentationViewModel.addItem(it.name, type = "Character", imageUrl = it.displayImageUrl, sourceId = it.id) }
                         }) {
                             Icon(imageVector = Icons.Default.Tv, contentDescription = "Present")
                         }

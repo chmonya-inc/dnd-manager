@@ -368,7 +368,7 @@ private fun NpcGrid(
                 items(sortedNpcs, key = { it.id }) { npc ->
                     NpcLibraryCard(
                         npc = npc,
-                        onPresent = { presentationViewModel.addItem(npc.name, type = "NPC", imageUrl = npc.displayImageUrl) },
+                        onPresent = { presentationViewModel.addItem(npc.name, type = "NPC", imageUrl = npc.displayImageUrl, sourceId = npc.id, description = npc.description, subInfo = npc.background) },
                         onDelete = { onDelete(npc.id) },
                         onEdit = { onEdit(npc) }
                     )
@@ -521,7 +521,20 @@ private fun MonsterGrid(
                 items(sortedMonsters, key = { it.id }) { monster ->
                     MonsterLibraryCard(
                         monster = monster,
-                        onPresent = { presentationViewModel.addItem(monster.name, type = "Monster", imageUrl = monster.displayImageUrl) },
+                        onPresent = { 
+                            presentationViewModel.addItem(
+                                title = monster.name, 
+                                type = "Monster", 
+                                imageUrl = monster.displayImageUrl,
+                                currentHp = monster.currentHp,
+                                maxHp = monster.maxHp,
+                                armorClass = monster.armorClass,
+                                stats = monster.stats,
+                                subInfo = "${monster.size} ${monster.type} · CR ${monster.challengeRating}",
+                                sourceId = monster.id,
+                                description = monster.description
+                            )
+                        },
                         onDelete = { onDelete(monster.id) },
                         onEdit = { onEdit(monster) }
                     )
@@ -723,7 +736,16 @@ private fun ItemLibraryGrid(
                                     ) {
                                         ItemLibraryCard(
                                             item = item,
-                                            onPresent = { presentationViewModel.addItem(item.name, type = "Item", imageUrl = item.imageUrl) },
+                                            onPresent = { 
+                                                presentationViewModel.addItem(
+                                                    title = item.name, 
+                                                    type = "Item", 
+                                                    imageUrl = item.imageUrl,
+                                                    subInfo = "${item.rarity.name} · Owned by ${character.name}",
+                                                    description = item.description,
+                                                    sourceId = item.id
+                                                ) 
+                                            },
                                             onDelete = { onDeleteItem(character.id, item.id) },
                                             onEdit = { onEdit(item, character.id) }
                                         )
@@ -994,7 +1016,7 @@ private fun LocationGrid(
                 items(sortedLocations, key = { it.id }) { location ->
                     LocationLibraryCard(
                         location = location,
-                        onPresent = { presentationViewModel.addItem(location.name, type = "Location", imageUrl = location.displayImageUrl, isBackground = true) },
+                        onPresent = { presentationViewModel.addItem(location.name, type = "Location", imageUrl = location.displayImageUrl, isBackground = true, sourceId = location.id, description = location.description) },
                         onDelete = { onDelete(location.id) },
                         onEdit = { onEdit(location) }
                     )
@@ -1103,7 +1125,7 @@ private fun BattlefieldGrid(
                 items(battlefields, key = { it.id }) { bf ->
                     BattlefieldLibraryCard(
                         battlefield = bf,
-                        onPresent = { presentationViewModel.addItem(bf.name, type = "Battlefield", imageUrl = bf.displayImageUrl, isBackground = true) },
+                        onPresent = { presentationViewModel.addItem(bf.name, type = "Battlefield", imageUrl = bf.displayImageUrl, isBackground = true, sourceId = bf.id, description = bf.description) },
                         onDelete = { onDelete(bf.id) },
                         onEdit = { onEdit(bf) }
                     )

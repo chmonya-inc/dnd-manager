@@ -57,12 +57,16 @@ class CharacterListViewModel(
 
         // Listen for remote updates via WebSocket
         viewModelScope.launch {
-            repository.remoteUpdates.collect { updateType ->
+            repository.remoteUpdates.collect { updateMessage ->
+                val parts = updateMessage.split(":")
+                val updateType = parts[0]
+                val entityId = if (parts.size > 1) parts[1] else null
+
                 if (updateType == "characters") {
                     if (pendingSaveCount > 0) {
                         println("[CharacterList] Remote update received but we have $pendingSaveCount pending saves — skipping reload.")
                     } else {
-                        println("[CharacterList] Remote update received via WebSocket, reloading characters...")
+                        println("[CharacterList] Remote update received via WebSocket for $entityId, reloading characters...")
                         loadCharacters(forceRefresh = true)
                     }
                 }

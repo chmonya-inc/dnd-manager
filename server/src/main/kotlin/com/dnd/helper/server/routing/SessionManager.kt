@@ -18,11 +18,12 @@ object SessionManager {
         }
     }
 
-    suspend fun notifyUpdate(sessionId: String, updateType: String) {
+    suspend fun notifyUpdate(sessionId: String, updateType: String, entityId: String? = null) {
         val clients = sessions[sessionId] ?: return
+        val message = if (entityId != null) "update:$updateType:$entityId" else "update:$updateType"
         clients.forEach { client ->
             try {
-                client.send(Frame.Text("update:$updateType"))
+                client.send(Frame.Text(message))
             } catch (e: Exception) {
                 // Client might be disconnected
             }

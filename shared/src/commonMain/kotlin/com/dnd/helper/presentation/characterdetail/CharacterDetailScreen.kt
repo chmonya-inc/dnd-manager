@@ -177,7 +177,7 @@ fun CharacterDetailScreen(
                     if (isDesktop) {
                         val presentationViewModel: com.dnd.helper.presentation.desktop.PresentationViewModel = koinViewModel()
                         IconButton(onClick = {
-                            state.character?.let { presentationViewModel.addItem(it.name, type = "Character", imageUrl = it.displayImageUrl) }
+                            state.character?.let { presentationViewModel.addItem(it.name, type = "Character", imageUrl = it.displayImageUrl, sourceId = it.id) }
                         }) {
                             Icon(imageVector = Icons.Default.Tv, contentDescription = "Present")
                         }

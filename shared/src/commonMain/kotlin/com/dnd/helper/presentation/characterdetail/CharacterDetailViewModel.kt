@@ -111,14 +111,24 @@ class CharacterDetailViewModel(
 
         // Listen for remote updates via WebSocket
         viewModelScope.launch {
-            repository.remoteUpdates.collect { updateType ->
+            repository.remoteUpdates.collect { updateMessage ->
+                val parts = updateMessage.split(":")
+                val updateType = parts[0]
+                val entityId = if (parts.size > 1) parts[1] else null
+
                 if (updateType == "characters") {
                     val state = _state.value
+                    
+                    // If we have a specific ID, only update if it matches our character
+                    if (entityId != null && entityId != characterId) {
+                        return@collect
+                    }
+
                     // If we are editing, we don't want to fully reload (and lose changes)
                     // but we might want to pick up some remote changes?
                     // For now, only reload if NOT editing and NOT saving
                     if (!state.isEditing && !state.hasUnsavedChanges && !isRecentlySaved) {
-                        println("[CharacterDetail] Remote update received via WebSocket, reloading character...")
+                        println("[CharacterDetail] Remote update received via WebSocket for $characterId, reloading character...")
                         loadCharacter(fromAutoRefresh = true)
                     } else {
                         println("[CharacterDetail] Remote update received but skipped (editing/saving)")
