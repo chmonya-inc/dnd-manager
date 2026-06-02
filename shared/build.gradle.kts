@@ -20,7 +20,8 @@ val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localPropertiesFile.inputStream().use { localProperties.load(it) }
 }
-val appsScriptUrl: String = localProperties.getProperty("apps.script.url", "")
+val appsScriptUrlAndroid: String = localProperties.getProperty("apps.script.url.android", "")
+val appsScriptUrlDesktop: String = localProperties.getProperty("apps.script.url.desktop", "")
 
 // ── Generate config class from local.properties ────────────────────
 val generateAppConfig = tasks.register("generateAppConfig") {
@@ -35,7 +36,8 @@ val generateAppConfig = tasks.register("generateAppConfig") {
             package com.dnd.helper.data.config
 
             object GeneratedConfig {
-                const val WEB_APP_URL = "$appsScriptUrl"
+                const val WEB_APP_URL_ANDROID = "$appsScriptUrlAndroid"
+                const val WEB_APP_URL_DESKTOP = "$appsScriptUrlDesktop"
             }
             """.trimIndent()
         )
@@ -89,6 +91,7 @@ kotlin {
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.content.negotiation)
                 implementation(libs.ktor.client.logging)
+                implementation(libs.ktor.client.websockets)
                 implementation(libs.ktor.serialization.kotlinx.json)
 
                 implementation(libs.koin.core)
@@ -117,6 +120,8 @@ kotlin {
                 implementation(libs.ktor.client.java)
                 implementation(libs.kotlinx.coroutines.swing)
                 implementation(libs.jlayer)
+                implementation(libs.poi)
+                implementation(libs.poi.ooxml)
             }
         }
 

@@ -81,16 +81,7 @@ fun PresentationScreen(
     val characterBounds = remember { mutableStateMapOf<String, androidx.compose.ui.layout.LayoutCoordinates>() }
 
     LaunchedEffect(Unit) {
-        characterListViewModel.startAutoRefresh()
-        viewModel.startPolling()
         viewModel.refreshAll()
-    }
-
-    DisposableEffect(characterListViewModel, viewModel) {
-        onDispose { 
-            characterListViewModel.stopAutoRefresh()
-            viewModel.stopPolling()
-        }
     }
 
     ExternalWindow(

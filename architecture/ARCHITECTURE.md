@@ -17,10 +17,10 @@ D&D Helper is a Kotlin Multiplatform (KMP) application for Dungeons & Dragons 5t
 - **Game Mode** — live session: show players locations, manage combat, quick item creation
 
 ### Backend
-- **Google Sheets** — single shared spreadsheet per campaign, editable by anyone with link
-- **Google Apps Script** — deployed as a Web App that proxies read/write requests to Google Sheets
-- **No OAuth** — Apps Script Web App handles all Google authentication server-side
-- **No local database** — all data fetched from Google Sheets via Apps Script
+- **Ktor Server** — Kotlin-based backend running Netty.
+- **SQLite Database** — local persistent storage using Exposed ORM.
+- **REST API** — resource-based API for all D&D entities.
+- **WebSockets** — real-time updates across all connected clients in a session.
 
 ## High-Level Architecture
 
@@ -34,6 +34,10 @@ We follow **Clean Architecture** with **MVVM** presentation pattern.
 ├── androidMain             ← Android-specific platform bindings (SharedPreferences)
 ├── desktopMain             ← Desktop-specific platform bindings (java.util.prefs)
 └── wasmJsMain              ← Web-specific platform bindings (localStorage)
+
+:server                     ← Ktor server module (JVM)
+├── database                ← Exposed tables and factory
+└── routing                 ← REST and WebSocket endpoints
 
 :app                        ← Android application module
 ├── MainActivity.kt         ← Entry point, calls shared App()
@@ -49,8 +53,6 @@ We follow **Clean Architecture** with **MVVM** presentation pattern.
 └── index.html              ← Full-screen canvas, no phone frame
 ```
 
-**Why not feature-vertical modules yet?** The project is small. We keep everything in `:shared` initially. When it grows, extract `:feature:*` modules from `:shared/commonMain`.
-
 ## Tech Stack
 
 | Layer | Technology |
@@ -59,244 +61,48 @@ We follow **Clean Architecture** with **MVVM** presentation pattern.
 | State Management | ViewModel + StateFlow |
 | DI | Koin (KMP-compatible) |
 | Network | Ktor client + kotlinx.serialization |
-| Backend | Google Apps Script Web App (Ktor GET with query parameter) |
+| Real-time | Ktor WebSockets |
+| Backend | Ktor server + Exposed + SQLite |
 | Navigation | navigation-compose 2.8+ (type-safe routes via `@Serializable`) |
 | Image Loading | Coil 3 (Compose Multiplatform) |
 | Platform Storage | `expect`/`actual` `CharacterStorage` interface |
 | Build | Gradle with version catalogs (.kts) |
 
-## Navigation
+## Key Architectural Decisions
 
-Type-safe navigation using `@Serializable` route objects (Navigation Compose 2.8+):
+### 1. Koin over Hilt
+- Koin is pure Kotlin, works in `commonMain`, and supports KMP.
 
-```kotlin
-@Serializable object Start
-@Serializable object CharacterList
-@Serializable object CharacterCreate
-@Serializable data class CharacterDetail(val id: String)
-```
+### 2. Ktor over Retrofit
+- Ktor client is multiplatform by design.
 
-### Navigation Graph
+### 3. Type-Safe Navigation
+- Navigation Compose 2.8+ supports `@Serializable` route objects.
 
-**Mobile & Web (Linear)**
-```
-Start (mobile/web) ──Load Character──→ CharacterDetail(id)
-                                         ↑
-CharacterList ────────Click──────────────┘
-    │
-    └──Click (+)──→ CharacterCreate
-```
+### 4. Real-Time Sync (WebSockets)
+- **No more polling** — clients connect to a WebSocket endpoint `/api/{sessionId}/ws`.
+- **Session isolation** — the server tracks connections by `sessionId` and broadcasts updates only to relevant clients.
+- **Instant updates** — whenever data is modified via POST/DELETE, the server sends a tiny notification frame (e.g., `update:characters`), triggering clients to reload specific data.
 
-**Desktop (Sidebar + Split-Pane)**
-```
-MainDesktopScreen (Sidebar)
-├── Characters ──→ [List | Detail/Editor] (Split-Pane)
-├── Library    ──→ [Items | Mobs | Locations]
-├── Creator    ──→ [New Entity Hub]
-└── Presenter  ──→ [Manage Secondary Window]
-```
-
-- **Android & Web**: Start at `Start` screen (character ID input).
-- **Desktop**: Starts at `MainDesktopScreen` with Sidebar navigation.
-- `CharacterDetail` supports viewing, inline stat/HP/level editing, and full character edit mode.
-- **DM Mode (Desktop)**: Extended capabilities for full entity management and player presentation.
+### 5. Platform-Specific Start Destination
+- Desktop (`isDesktop = true`) skips the `Start` screen and opens directly to `CharacterList`.
+- Android and Web (`isDesktop = false`) show the `Start` screen first for character ID input.
 
 ## Data Flow
 
 ```
-Compose Screen → ViewModel → Repository → GoogleAppsScriptDataSource (Ktor GET)
+Compose Screen → ViewModel → Repository → KtorRemoteDataSource (HTTP / WS)
                     ↑                                              |
                     └──────── StateFlow ← Result ←──────────────────┘
 ```
-
-## Module Dependencies
-
-```
-:app
-└── :shared (androidMain artifacts)
-
-:desktop
-└── :shared (desktopMain artifacts)
-
-:web
-└── :shared (wasmJsMain artifacts)
-
-:shared
-├── commonMain: Koin, Compose, Navigation, Ktor, kotlinx.serialization, Coil 3
-├── androidMain: Android-specific platform bindings, SharedPreferences storage
-├── desktopMain: Desktop-specific platform bindings, java.util.prefs storage
-└── wasmJsMain: Web-specific platform bindings, localStorage, ktor-client-js
-```
-
-## Key Architectural Decisions
-
-### 1. Koin over Hilt
-- Hilt is Android-only and requires kapt (incompatible with AGP 9 built-in Kotlin).
-- Koin is pure Kotlin, works in `commonMain`, and supports KMP.
-
-### 2. Google Sheets as Backend (no local DB)
-- User explicitly chose **no SQLDelight** — all data lives in Google Sheets.
-- Simpler stack, single source of truth.
-- Trade-off: no offline support, network latency on every operation.
-
-### 3. Ktor over Retrofit
-- Ktor client is multiplatform by design.
-- Retrofit is Android/JVM-only and cannot exist in shared modules.
-
-### 4. Type-Safe Navigation
-- Navigation Compose 2.8+ supports `@Serializable` route objects.
-- No string-based routes — compile-time safety.
-- Three routes: `Start` (object), `CharacterList` (object), `CharacterDetail(id: String)` (data class).
-
-### 5. Single `:shared` Module (for now)
-- All UI, domain, and data code starts in `:shared/commonMain`.
-- When the codebase grows, extract `:feature:*` modules.
-- This avoids premature modularization and speeds up initial development.
-
-### 6. Google Apps Script Backend
-- **No OAuth in the app** — authentication is handled server-side by the Apps Script Web App.
-- **Ktor GET requests** — the app sends JSON-encoded requests as a `?request=` query parameter to the Apps Script Web App URL (GET avoids 302 redirect issues with POST).
-- **Apps Script handles Sheets API** — all Google Sheets read/write operations happen in the Apps Script code, not in the Kotlin app.
-- **Per-character sheets** — each character gets its own sheet (tab) named by character ID. Character data lives in rows 1-2, items in rows 4+.
-- **Build-time URL injection** — the Web App URL is read from `local.properties` (`apps.script.url`) and injected at compile time into `GeneratedConfig.kt`. Never committed to Git.
-
-### 7. Platform-Specific Storage (`expect`/`actual`)
-- `CharacterStorage` interface provides `saveCharacterId(id)` and `getCharacterId()`.
-- **Android actual**: `SharedPreferences` via `androidContext()`.
-- **Desktop actual**: `java.util.prefs.Preferences`.
-- **Web actual**: `kotlinx.browser.localStorage`.
-- Used by `StartViewModel` to persist the last entered character ID.
-
-### 8. Platform-Specific Start Destination
-- Desktop (`isDesktop = true`) skips the `Start` screen and opens directly to `CharacterList`.
-- Android and Web (`isDesktop = false`) show the `Start` screen first for character ID input.
-
-### 9. Auto-Update / Real-Time Sync (Polling with Timestamp)
-- **No WebSockets** — Google Apps Script doesn't support persistent connections.
-- **Global timestamp** — A `Metadata` sheet stores a single `lastModified` ISO timestamp. Every write (`saveCharacter`, `deleteCharacter`) updates it.
-- **Lightweight polling** — `getLastModified()` returns just the timestamp string. ViewModels poll every 4s via `viewModelScope` + `delay()`.
-- **Screen-lifecycle bound** — `DisposableEffect` in Compose starts polling when the screen is visible and stops when the user navigates away.
-- **Edit-aware** — `CharacterDetailViewModel` skips auto-refresh while `isEditing` to avoid overwriting the user's in-progress changes.
-- **Trade-off**: polling consumes quota (2,880 requests/day per active screen at 30s intervals). Acceptable for a small-party D&D app.
-
-### 10. Never use `Modifier.weight`
-- `Modifier.weight` requires `androidx.compose.foundation.layout.weight` import, which is easy to miss and causes confusing "Unresolved reference" build errors.
-- **Alternative for Rows**: use `horizontalArrangement = Arrangement.spacedBy` or `Arrangement.SpaceBetween` combined with `Modifier.fillMaxWidth(fraction)` (e.g. `fillMaxWidth(0.5f)` for two equal columns).
-- **Alternative for Columns**: use `Modifier.fillMaxHeight(fraction)` instead of `weight` to split vertical space.
-- For "fill remaining space" patterns, prefer restructuring the layout to use `Arrangement.SpaceBetween` on the parent Row/Column rather than relying on weight.
 
 ## Error Handling Strategy
 
 We use a sealed `Result<T>` class across all layers:
 
-- **Data sources**: Throw platform exceptions (`IOException`, `HttpException`, etc.).
-- **Repositories**: Catch platform exceptions, map to domain error types (`AppError`).
-- **Use cases**: Return `Result<T>` with domain errors.
-- **ViewModels**: Handle `Result<T>`, map to UI state (loading/success/error).
-
 ```kotlin
-// :shared/commonMain
 sealed interface Result<out T> {
     data class Success<T>(val data: T) : Result<T>
     data class Error(val error: AppError) : Result<Nothing>
 }
-
-sealed interface AppError {
-    data object Network : AppError
-    data object Unauthorized : AppError
-    data object NotFound : AppError
-    data class Unknown(val message: String) : AppError
-}
 ```
-
-## Platform Boundaries (KMP)
-
-| Capability | Boundary Shape | Location |
-|-----------|---------------|----------|
-| Network | Ktor (common) | `:shared/commonMain` |
-| Network | Ktor client GET to Apps Script Web App | `:shared/commonMain` |
-| Preferences | `expect`/`actual` `CharacterStorage` | `:shared/commonMain` + platform source sets |
-| Platform UI (if any) | `expect` composable leaf | `:shared/commonMain` |
-
-## App Entry Points
-
-### Android (`:app`)
-```kotlin
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            App()
-        }
-    }
-}
-```
-
-### Desktop (`:desktop`)
-```kotlin
-fun main() = application {
-    Window(onCloseRequest = ::exitApplication, title = "D&D Helper") {
-        App()
-    }
-}
-```
-
-### Web Browser (`:web`)
-```kotlin
-@OptIn(ExperimentalComposeUiApi::class)
-fun main() {
-    CanvasBasedWindow("D&D Helper", canvasElementId = "ComposeTarget") {
-        App()
-    }
-}
-```
-
-### Shared (`:shared`)
-```kotlin
-@Composable
-fun App(koinConfiguration: KoinAppDeclaration = {}) {
-    // KoinApplication with appModule + platformModule
-    // NavHost with Start / CharacterList / CharacterDetail routes
-    // Desktop starts at CharacterList; Mobile/Web starts at Start
-}
-```
-
-## Presentation Screens
-
-### Start Screen
-- Character ID input with persistence via `CharacterStorage`
-- "Load Character" button navigates to `CharacterDetail(id)`
-- Shown on Android and Web; skipped on Desktop
-
-### Character List Screen
-- LazyColumn of character cards
-- Pull-to-refresh (`PullToRefreshBox`) on Android
-- Refresh button + F5 keyboard shortcut in `TopAppBar` on Desktop
-- Click navigates to `CharacterDetail(id)`
-
-### Character Detail Screen
-- Full character sheet: image (Coil 3 `AsyncImage`), name, race/class/level, HP bar, stats grid (2×3), biography
-- **View mode**: displays all fields, stat/HP/level increment/decrement with inline amount input
-- **Edit mode**: full form editing (name, race, class, level, HP, all stats, player name, image URL, description)
-- Optimistic updates with rollback on save failure
-- TopAppBar actions: Edit ✓/✕, Refresh ↻
-
-## Build Configuration
-
-- **AGP**: 8.13.2
-- **Kotlin**: 2.1.0
-- **Compose Multiplatform**: 1.7.3
-- **Min SDK**: 29
-- **Target SDK**: 36
-- **Java/Kotlin target**: 21
-- **Web target**: Kotlin/Wasm (wasmJs) with Canvas-based rendering
-
-## Open Questions / Future Decisions
-
-- [ ] Whether to add iOS target (pending Apple Developer account)
-- [ ] When to extract `:feature:*` modules from `:shared`
-- [x] Backend approach: Google Apps Script Web App (no in-app OAuth)
-- [ ] Desktop window management (single window vs multiple windows for DM)
-- [ ] Image storage: Google Sheets cell images vs external hosting vs Google Drive
-- [ ] Real-time sync: polling Google Sheets vs push notifications (not possible with Sheets API)

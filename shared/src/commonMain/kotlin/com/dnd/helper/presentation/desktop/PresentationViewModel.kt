@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.*
 import kotlin.random.Random
 
 import com.dnd.helper.domain.model.PresentedItem
-import kotlinx.coroutines.*
 
 class PresentationViewModel(
     private val repository: com.dnd.helper.domain.repository.CharacterRepository
@@ -40,22 +39,27 @@ class PresentationViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
-    private var lastKnownTimestamp: String? = null
-    private var pollingJob: kotlinx.coroutines.Job? = null
+    init {
+        refreshAll()
 
-    fun startPolling(intervalMs: Long = 1_000L) {
-        if (pollingJob?.isActive == true) return
-        pollingJob = viewModelScope.launch {
-            while (isActive) {
-                kotlinx.coroutines.delay(intervalMs)
-                checkForUpdates()
+        // Listen for remote updates via WebSocket
+        viewModelScope.launch {
+            repository.remoteUpdates.collect { updateType ->
+                println("[Presentation] Remote update received via WebSocket: $updateType")
+                // We reload everything on any relevant update for simplicity in Presentation mode
+                if (updateType in listOf("characters", "monsters", "npcs", "locations", "events")) {
+                    refreshAll(force = true)
+                }
             }
         }
     }
 
+    /** No-op for WebSocket version */
+    fun startPolling(intervalMs: Long = 1_000L) {
+    }
+
+    /** No-op for WebSocket version */
     fun stopPolling() {
-        pollingJob?.cancel()
-        pollingJob = null
     }
 
     fun refreshAll(force: Boolean = false) {
@@ -76,20 +80,6 @@ class PresentationViewModel(
             
             refreshActiveItems()
             _isLoading.value = false
-        }
-    }
-
-    private suspend fun checkForUpdates() {
-        when (val result = repository.getLastModified()) {
-            is com.dnd.helper.domain.common.Result.Success -> {
-                val serverTimestamp = result.data
-                if (lastKnownTimestamp != null && lastKnownTimestamp != serverTimestamp) {
-                    println("[Presentation] Data changed on server ($lastKnownTimestamp → $serverTimestamp), refreshing all...")
-                    refreshAll(force = true)
-                }
-                lastKnownTimestamp = serverTimestamp
-            }
-            is com.dnd.helper.domain.common.Result.Error -> { }
         }
     }
 

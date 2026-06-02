@@ -1,18 +1,21 @@
 package com.dnd.helper.domain.repository
 
 import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.model.Character
-import com.dnd.helper.domain.model.Location
+import com.dnd.helper.domain.model.*
 import kotlinx.coroutines.flow.Flow
 
 interface CharacterRepository {
     /**
-     * Emits the ID of a character whenever it is successfully saved.
-     * Useful for cross-screen immediate refresh.
+     * Emits the ID of a character whenever it is successfully saved locally.
      */
     val characterUpdates: Flow<String>
 
-    suspend fun getInitialData(): Result<com.dnd.helper.domain.model.InitialData>
+    /**
+     * Emits the type of update (e.g., "characters", "monsters") whenever the server notifies via WebSocket.
+     */
+    val remoteUpdates: Flow<String>
+
+    suspend fun getInitialData(): Result<InitialData>
     suspend fun getCharacters(forceRefresh: Boolean = false): Result<List<Character>>
     suspend fun getCharacter(id: String): Result<Character>
     suspend fun saveCharacter(character: Character): Result<Unit>
@@ -22,35 +25,28 @@ interface CharacterRepository {
     suspend fun saveLocation(location: Location): Result<Unit>
     suspend fun deleteLocation(id: String): Result<Unit>
 
-    suspend fun getMonsters(forceRefresh: Boolean = false): Result<List<com.dnd.helper.domain.model.Monster>>
-    suspend fun saveMonster(monster: com.dnd.helper.domain.model.Monster): Result<Unit>
+    suspend fun getMonsters(forceRefresh: Boolean = false): Result<List<Monster>>
+    suspend fun saveMonster(monster: Monster): Result<Unit>
     suspend fun deleteMonster(id: String): Result<Unit>
 
-    suspend fun getNpcs(forceRefresh: Boolean = false): Result<List<com.dnd.helper.domain.model.Npc>>
-    suspend fun saveNpc(npc: com.dnd.helper.domain.model.Npc): Result<Unit>
+    suspend fun getNpcs(forceRefresh: Boolean = false): Result<List<Npc>>
+    suspend fun saveNpc(npc: Npc): Result<Unit>
     suspend fun deleteNpc(id: String): Result<Unit>
 
-    suspend fun getMusic(forceRefresh: Boolean = false): Result<List<com.dnd.helper.domain.model.MusicTrack>>
-    suspend fun saveMusic(music: com.dnd.helper.domain.model.MusicTrack): Result<Unit>
+    suspend fun getMusic(forceRefresh: Boolean = false): Result<List<MusicTrack>>
+    suspend fun saveMusic(music: MusicTrack): Result<Unit>
     suspend fun deleteMusic(id: String): Result<Unit>
 
-    suspend fun getLogs(): Result<List<com.dnd.helper.domain.model.LogEntry>>
-    suspend fun saveLog(log: com.dnd.helper.domain.model.LogEntry): Result<Unit>
+    suspend fun getLogs(): Result<List<LogEntry>>
+    suspend fun saveLog(log: LogEntry): Result<Unit>
 
-    suspend fun getEvents(forceRefresh: Boolean = false): Result<List<com.dnd.helper.domain.model.GameEvent>>
-    suspend fun saveEvent(event: com.dnd.helper.domain.model.GameEvent): Result<Unit>
+    suspend fun getEvents(forceRefresh: Boolean = false): Result<List<GameEvent>>
+    suspend fun saveEvent(event: GameEvent): Result<Unit>
     suspend fun deleteEvent(id: String): Result<Unit>
 
     /**
-     * Returns the server's last-modified timestamp (ISO-8601 string).
-     * Lightweight — used for auto-refresh polling.
-     */
-    suspend fun getLastModified(): Result<String>
-
-    /**
      * Updates the in-memory cache with the given character and notifies observers.
-     * Use this for optimistic UI updates that should be visible immediately
-     * across screens before the server save completes.
+     * Use this for optimistic UI updates.
      */
     fun optimisticUpdate(character: Character)
 }

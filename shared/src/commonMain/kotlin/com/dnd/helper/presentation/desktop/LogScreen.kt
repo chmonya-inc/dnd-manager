@@ -35,11 +35,6 @@ fun LogScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    DisposableEffect(viewModel) {
-        viewModel.startPolling()
-        onDispose { viewModel.stopPolling() }
-    }
-
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),

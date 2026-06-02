@@ -67,6 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dnd.helper.domain.model.EquipmentSlot
 import com.dnd.helper.domain.model.ItemRarity
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.random.Random
 
 // Ability score colors
 private val StrColor = Color(0xFFEF5350)
@@ -82,7 +83,10 @@ fun CharacterCreateScreen(
     onBackClick: () -> Unit,
     onCharacterCreated: () -> Unit,
 ) {
-    val viewModel: CharacterCreateViewModel = koinViewModel()
+    // Generate a unique key for each "session" of creating a character 
+    // to ensure Koin/ViewModelStore gives us a fresh ViewModel every time.
+    val viewModelKey = remember { Random.nextLong().toString() }
+    val viewModel: CharacterCreateViewModel = koinViewModel(key = viewModelKey)
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     if (state.isSaved) {

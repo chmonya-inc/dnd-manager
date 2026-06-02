@@ -11,7 +11,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class CharacterListViewModel(
@@ -22,24 +21,32 @@ class CharacterListViewModel(
     private val _state = MutableStateFlow(CharacterListState())
     val state: StateFlow<CharacterListState> = _state.asStateFlow()
 
-    /** Tracks the server's last-modified timestamp to detect external changes. */
-    private var lastKnownTimestamp: String? = null
-
-    /** Active polling job; null when not polling. */
-    private var pollingJob: Job? = null
-
     /** Counter of active background saves. Suppresses polling reloads while > 0. */
     private var pendingSaveCount = 0
     private val saveJobs = mutableMapOf<String, Job>()
 
     init {
         loadInitialData()
-        // Immediately reload the character list whenever any character is saved
-        // (e.g. from the detail screen) so cross-screen changes are visible right away.
+        
+        // Listen for local updates (immediate refresh for cross-screen changes)
         viewModelScope.launch {
             repository.characterUpdates.collect { updatedId ->
-                println("[CharacterList] Received update for $updatedId — reloading list immediately")
+                println("[CharacterList] Received local update for $updatedId — reloading list")
                 loadCharacters(fromAutoRefresh = true)
+            }
+        }
+
+        // Listen for remote updates via WebSocket
+        viewModelScope.launch {
+            repository.remoteUpdates.collect { updateType ->
+                if (updateType == "characters") {
+                    if (pendingSaveCount > 0) {
+                        println("[CharacterList] Remote update received but we have $pendingSaveCount pending saves — skipping reload.")
+                    } else {
+                        println("[CharacterList] Remote update received via WebSocket, reloading characters...")
+                        loadCharacters(fromAutoRefresh = true)
+                    }
+                }
             }
         }
     }
@@ -53,7 +60,6 @@ class CharacterListViewModel(
                         characters = result.data.characters,
                         isLoading = false,
                     )
-                    lastKnownTimestamp = result.data.lastModified
                 }
                 is Result.Error -> {
                     // Fallback to separate loading if bulk loading fails
@@ -127,42 +133,14 @@ class CharacterListViewModel(
         }
     }
 
-    /** Starts auto-refresh polling. Call from DisposableEffect/onResume. */
+    /** No-op for WebSocket version (kept for source compatibility if screens still call it) */
     fun startAutoRefresh(intervalMs: Long = 1_000L) {
-        if (pollingJob?.isActive == true) return
-        pollingJob = viewModelScope.launch {
-            while (isActive) {
-                delay(intervalMs)
-                checkForUpdates()
-            }
-        }
+        // WebSocket logic handles this in init
     }
 
-    /** Stops auto-refresh polling. Call from DisposableEffect/onDispose/onPause. */
+    /** No-op for WebSocket version */
     fun stopAutoRefresh() {
-        pollingJob?.cancel()
-        pollingJob = null
-    }
-
-    private suspend fun checkForUpdates() {
-        when (val result = repository.getLastModified()) {
-            is Result.Success -> {
-                val serverTimestamp = result.data
-                if (lastKnownTimestamp != null && lastKnownTimestamp != serverTimestamp) {
-                    if (pendingSaveCount > 0) {
-                        println("[AutoRefresh] Timestamp changed but we have $pendingSaveCount pending saves — skipping reload.")
-                    } else {
-                        println("[AutoRefresh] Character list changed on server ($lastKnownTimestamp → $serverTimestamp), reloading...")
-                        loadCharacters(fromAutoRefresh = true)
-                    }
-                }
-                lastKnownTimestamp = serverTimestamp
-            }
-            is Result.Error -> {
-                // Silently ignore polling errors so the UI isn't noisy.
-                println("[AutoRefresh] Polling error: ${result.error}")
-            }
-        }
+        // WebSocket logic handles this via viewModelScope
     }
 
     private fun loadCharacters(fromAutoRefresh: Boolean = false) {
@@ -178,10 +156,12 @@ class CharacterListViewModel(
                     )
                 }
                 is Result.Error -> {
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        error = result.error.toUserMessage(),
-                    )
+                    if (!fromAutoRefresh) {
+                        _state.value = _state.value.copy(
+                            isLoading = false,
+                            error = result.error.toUserMessage(),
+                        )
+                    }
                 }
             }
         }

@@ -1,24 +1,24 @@
 package com.dnd.helper.data.repository
 
-import com.dnd.helper.data.remote.GoogleAppsScriptDataSource
+import com.dnd.helper.data.remote.KtorRemoteDataSource
 import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.model.Character
-import com.dnd.helper.domain.model.Location
-import com.dnd.helper.domain.model.Monster
-import com.dnd.helper.domain.model.Npc
+import com.dnd.helper.domain.model.*
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 class CharacterRepositoryImpl(
-    private val dataSource: GoogleAppsScriptDataSource,
+    private val dataSource: KtorRemoteDataSource,
     private val storage: CharacterStorage,
 ) : CharacterRepository {
 
     private val _characterUpdates = MutableSharedFlow<String>(extraBufferCapacity = 1)
     override val characterUpdates: SharedFlow<String> = _characterUpdates.asSharedFlow()
+
+    override val remoteUpdates: Flow<String> = dataSource.observeUpdates()
 
     // Simple in-memory caches to make UI instant
     private var charactersCache: List<Character>? = null
@@ -26,8 +26,8 @@ class CharacterRepositoryImpl(
     private var locationsCache: List<Location>? = null
     private var monstersCache: List<Monster>? = null
     private var npcsCache: List<Npc>? = null
-    private var musicCache: List<com.dnd.helper.domain.model.MusicTrack>? = null
-    private var eventsCache: List<com.dnd.helper.domain.model.GameEvent>? = null
+    private var musicCache: List<MusicTrack>? = null
+    private var eventsCache: List<GameEvent>? = null
 
     /** Tracks the last table ID we fetched from; used to auto-invalidate caches on session switch. */
     private var lastTableId: String? = null
@@ -48,7 +48,7 @@ class CharacterRepositoryImpl(
         }
     }
 
-    override suspend fun getInitialData(): Result<com.dnd.helper.domain.model.InitialData> {
+    override suspend fun getInitialData(): Result<InitialData> {
         checkTableIdChanged()
         val result = dataSource.getInitialData()
         if (result is Result.Success) {
@@ -129,8 +129,15 @@ class CharacterRepositoryImpl(
         if (result is Result.Success) {
             // Update heavy cache
             heavyCharacterCache[character.id] = character
-            // Optimistically update list cache
-            charactersCache = charactersCache?.map { if (it.id == character.id) character else it }
+            
+            // Update list cache: replace if exists, or append if new
+            val currentList = charactersCache ?: emptyList()
+            if (currentList.any { it.id == character.id }) {
+                charactersCache = currentList.map { if (it.id == character.id) character else it }
+            } else {
+                charactersCache = currentList + character
+            }
+            
             // Notify observers so other screens can refresh immediately
             _characterUpdates.tryEmit(character.id)
         }
@@ -139,7 +146,14 @@ class CharacterRepositoryImpl(
 
     override fun optimisticUpdate(character: Character) {
         heavyCharacterCache[character.id] = character
-        charactersCache = charactersCache?.map { if (it.id == character.id) character else it }
+        
+        val currentList = charactersCache ?: emptyList()
+        if (currentList.any { it.id == character.id }) {
+            charactersCache = currentList.map { if (it.id == character.id) character else it }
+        } else {
+            charactersCache = currentList + character
+        }
+
         _characterUpdates.tryEmit(character.id)
     }
 
@@ -217,7 +231,7 @@ class CharacterRepositoryImpl(
         return result
     }
 
-    override suspend fun getMusic(forceRefresh: Boolean): Result<List<com.dnd.helper.domain.model.MusicTrack>> {
+    override suspend fun getMusic(forceRefresh: Boolean): Result<List<MusicTrack>> {
         val tableChanged = checkTableIdChanged()
         if (!forceRefresh && !tableChanged) {
             musicCache?.let { return Result.Success(it) }
@@ -227,7 +241,7 @@ class CharacterRepositoryImpl(
         return result
     }
 
-    override suspend fun saveMusic(music: com.dnd.helper.domain.model.MusicTrack): Result<Unit> {
+    override suspend fun saveMusic(music: MusicTrack): Result<Unit> {
         val result = dataSource.saveMusic(music)
         if (result is Result.Success) musicCache = null
         return result
@@ -239,15 +253,15 @@ class CharacterRepositoryImpl(
         return result
     }
 
-    override suspend fun getLogs(): Result<List<com.dnd.helper.domain.model.LogEntry>> {
+    override suspend fun getLogs(): Result<List<LogEntry>> {
         return dataSource.getLogs()
     }
 
-    override suspend fun saveLog(log: com.dnd.helper.domain.model.LogEntry): Result<Unit> {
+    override suspend fun saveLog(log: LogEntry): Result<Unit> {
         return dataSource.saveLog(log)
     }
 
-    override suspend fun getEvents(forceRefresh: Boolean): Result<List<com.dnd.helper.domain.model.GameEvent>> {
+    override suspend fun getEvents(forceRefresh: Boolean): Result<List<GameEvent>> {
         val tableChanged = checkTableIdChanged()
         if (!forceRefresh && !tableChanged) {
             eventsCache?.let { return Result.Success(it) }
@@ -257,7 +271,7 @@ class CharacterRepositoryImpl(
         return result
     }
 
-    override suspend fun saveEvent(event: com.dnd.helper.domain.model.GameEvent): Result<Unit> {
+    override suspend fun saveEvent(event: GameEvent): Result<Unit> {
         val result = dataSource.saveEvent(event)
         if (result is Result.Success) eventsCache = null
         return result
@@ -267,9 +281,5 @@ class CharacterRepositoryImpl(
         val result = dataSource.deleteEvent(id)
         if (result is Result.Success) eventsCache = null
         return result
-    }
-
-    override suspend fun getLastModified(): Result<String> {
-        return dataSource.getLastModified()
     }
 }

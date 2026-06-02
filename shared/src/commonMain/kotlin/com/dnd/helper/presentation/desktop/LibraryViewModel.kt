@@ -10,11 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
 
 data class LibraryState(
     val selectedType: LibraryType = LibraryType.Items,
@@ -33,9 +29,6 @@ class LibraryViewModel(
     private val _state = MutableStateFlow(LibraryState())
     val state: StateFlow<LibraryState> = _state.asStateFlow()
 
-    private var lastKnownTimestamp: String? = null
-    private var pollingJob: Job? = null
-    
     /** 
      * Counter of active background saves. 
      * While > 0, we suppress polling reloads to avoid seeing partial/stale data.
@@ -45,6 +38,30 @@ class LibraryViewModel(
 
     init {
         refreshData()
+
+        // Listen for remote updates via WebSocket
+        viewModelScope.launch {
+            repository.remoteUpdates.collect { updateType ->
+                if (pendingSaveCount > 0) {
+                    println("[Library] Remote update received but we have $pendingSaveCount pending saves — skipping reload.")
+                    return@collect
+                }
+
+                val currentType = _state.value.selectedType
+                val shouldReload = when (updateType) {
+                    "characters" -> currentType == LibraryType.Items || currentType == LibraryType.Templates
+                    "locations" -> currentType == LibraryType.Locations
+                    "monsters" -> currentType == LibraryType.Mobs
+                    "npcs" -> currentType == LibraryType.Npcs
+                    else -> false
+                }
+
+                if (shouldReload) {
+                    println("[Library] Remote update received via WebSocket for $updateType, reloading...")
+                    refreshData(force = true)
+                }
+            }
+        }
     }
 
     fun onTypeSelected(type: LibraryType) {
@@ -79,36 +96,12 @@ class LibraryViewModel(
         }
     }
 
+    /** No-op for WebSocket version */
     fun startPolling(intervalMs: Long = 1_000L) {
-        if (pollingJob?.isActive == true) return
-        pollingJob = viewModelScope.launch {
-            while (isActive) {
-                delay(intervalMs)
-                checkForUpdates()
-            }
-        }
     }
 
+    /** No-op for WebSocket version */
     fun stopPolling() {
-        pollingJob?.cancel()
-        pollingJob = null
-    }
-
-    private suspend fun checkForUpdates() {
-        when (val result = repository.getLastModified()) {
-            is Result.Success -> {
-                val serverTimestamp = result.data
-                if (lastKnownTimestamp != null && lastKnownTimestamp != serverTimestamp) {
-                    if (pendingSaveCount > 0) {
-                        println("[Library] Timestamp changed but we have $pendingSaveCount pending saves — skipping reload.")
-                    } else {
-                        refreshData(force = true)
-                    }
-                }
-                lastKnownTimestamp = serverTimestamp
-            }
-            is Result.Error -> {}
-        }
     }
 
     fun deleteMonster(id: String) {

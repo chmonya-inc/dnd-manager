@@ -9,7 +9,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
@@ -21,19 +20,6 @@ class CharacterDetailViewModel(
 
     private val _state = MutableStateFlow(CharacterDetailState())
     val state: StateFlow<CharacterDetailState> = _state.asStateFlow()
-
-    /** Tracks the server's last-modified timestamp to detect external changes. */
-    private var lastKnownTimestamp: String? = null
-
-    /** Active polling job; null when not polling. */
-    private var pollingJob: Job? = null
-
-    /**
-     * Set to `true` right before a local save so the next auto-refresh cycle
-     * knows this app caused the timestamp change and can skip the redundant reload.
-     * Cleared after the skip happens or on save error.
-     */
-    private var hasPendingLocalChange: Boolean = false
 
     /**
      * Active debounced save job. When the user rapidly edits stats/HP/level,
@@ -62,6 +48,21 @@ class CharacterDetailViewModel(
 
     init {
         loadCharacter()
+
+        // Listen for remote updates via WebSocket
+        viewModelScope.launch {
+            repository.remoteUpdates.collect { updateType ->
+                if (updateType == "characters") {
+                    val state = _state.value
+                    if (!state.isEditing && !state.hasUnsavedChanges && !isRecentlySaved) {
+                        println("[CharacterDetail] Remote update received via WebSocket, reloading character...")
+                        loadCharacter(fromAutoRefresh = true)
+                    } else {
+                        println("[CharacterDetail] Remote update received but skipped (editing/saving)")
+                    }
+                }
+            }
+        }
     }
 
     fun onEvent(event: CharacterDetailEvent) {
@@ -176,27 +177,12 @@ class CharacterDetailViewModel(
         scheduleDebouncedSave(updatedCharacter)
     }
 
-    /** Starts auto-refresh polling. Call from DisposableEffect/onResume. */
+    /** No-op for WebSocket version */
     fun startAutoRefresh(intervalMs: Long = 1_000L) {
-        if (pollingJob?.isActive == true) return
-        pollingJob = viewModelScope.launch {
-            while (isActive) {
-                delay(intervalMs)
-                
-                val state = _state.value
-                // Stop polling while there is unsaved events (isEditing or hasUnsavedChanges)
-                // and for a short period after a successful save.
-                if (!state.isEditing && !state.hasUnsavedChanges && !isRecentlySaved) {
-                    checkForUpdates()
-                }
-            }
-        }
     }
 
-    /** Stops auto-refresh polling. Call from DisposableEffect/onDispose/onPause. */
+    /** No-op for WebSocket version */
     fun stopAutoRefresh() {
-        pollingJob?.cancel()
-        pollingJob = null
     }
 
     /**
@@ -213,36 +199,6 @@ class CharacterDetailViewModel(
             performSave(character)
         }
         _state.value = _state.value.copy(hasUnsavedChanges = false)
-    }
-
-    private suspend fun checkForUpdates() {
-        when (val result = repository.getLastModified()) {
-            is Result.Success -> {
-                val serverTimestamp = result.data
-                if (lastKnownTimestamp != null && lastKnownTimestamp != serverTimestamp) {
-                    // Skip reload while the user has pending debounced changes or a save is in flight.
-                    // This prevents the server from overwriting optimistic UI updates.
-                    if (hasPendingLocalChange || _state.value.hasUnsavedChanges) {
-                        println("[AutoRefresh] Timestamp changed but we have unsaved local changes — skipping reload.")
-                        hasPendingLocalChange = false
-                        // Deliberately do NOT update lastKnownTimestamp here.
-                        // If an external change happened at the same time, the next
-                        // poll will still see the timestamp difference and reload.
-                    } else {
-                        println("[AutoRefresh] Character data changed on server ($lastKnownTimestamp → $serverTimestamp), reloading...")
-                        loadCharacter(fromAutoRefresh = true)
-                    }
-                } else {
-                    // Timestamp matches — clear any stale flag so we don't skip
-                    // a legitimate external change on the next cycle.
-                    hasPendingLocalChange = false
-                }
-                lastKnownTimestamp = serverTimestamp
-            }
-            is Result.Error -> {
-                println("[AutoRefresh] Polling error: ${result.error}")
-            }
-        }
     }
 
     private fun saveChanges() {
@@ -397,7 +353,6 @@ class CharacterDetailViewModel(
      */
     private fun performSave(character: com.dnd.helper.domain.model.Character) {
         val previousUICharacter = _state.value.character
-        hasPendingLocalChange = true
         _state.value = _state.value.copy(isSaving = true)
 
         // For logs, use the state BEFORE any edits in this cycle
@@ -419,7 +374,7 @@ class CharacterDetailViewModel(
                         hasUnsavedChanges = false,
                     )
                     
-                    // Pause polling for 1 second after a successful save
+                    // Pause polling (skip remote updates) for 1 second after a successful save
                     isRecentlySaved = true
                     viewModelScope.launch {
                         delay(1000)
@@ -439,7 +394,6 @@ class CharacterDetailViewModel(
                     ))
                 }
                 is Result.Error -> {
-                    hasPendingLocalChange = false
                     // Rollback UI on error
                     _state.value = _state.value.copy(
                         character = previousUICharacter,
@@ -532,10 +486,12 @@ class CharacterDetailViewModel(
                     originalCharacter = result.data
                 }
                 is Result.Error -> {
-                    _state.value = _state.value.copy(
-                        error = result.error.toString(),
-                        isLoading = false,
-                    )
+                    if (!fromAutoRefresh) {
+                        _state.value = _state.value.copy(
+                            error = result.error.toString(),
+                            isLoading = false,
+                        )
+                    }
                 }
             }
         }

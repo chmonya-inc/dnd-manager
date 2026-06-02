@@ -20,12 +20,16 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.dnd.helper.data.import.SessionImporter
 import com.dnd.helper.domain.common.IdUtils
+import com.dnd.helper.domain.common.Result
+import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
 import com.dnd.helper.theme.AppTheme
 import com.dnd.helper.theme.ThemeViewModel
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
@@ -294,8 +298,10 @@ private fun SessionsDialog(
     onDismiss: () -> Unit,
     onSessionSelected: (String) -> Unit,
     storage: CharacterStorage = org.koin.compose.koinInject(),
+    repository: CharacterRepository = org.koin.compose.koinInject(),
 ) {
     val clipboardManager = LocalClipboardManager.current
+    val scope = rememberCoroutineScope()
     var sessions by remember {
         mutableStateOf(
             loadSessions(storage)
@@ -304,6 +310,8 @@ private fun SessionsDialog(
     var activeTableId by remember { mutableStateOf(storage.getTableId() ?: "") }
     var newName by remember { mutableStateOf("") }
     var newId by remember { mutableStateOf("") }
+    var isImporting by remember { mutableStateOf(false) }
+    var importError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -388,19 +396,24 @@ private fun SessionsDialog(
                 OutlinedTextField(
                     value = newId,
                     onValueChange = { newId = it },
-                    label = { Text("Spreadsheet ID or Game ID") },
+                    label = { Text("Join Existing Session ID (Optional)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
                 Spacer(Modifier.height(8.dp))
                 Button(
                     onClick = {
-                        if (newName.isNotBlank() && newId.isNotBlank()) {
-                            val decodedId = IdUtils.decode(newId)
+                        if (newName.isNotBlank()) {
+                            val finalId = if (newId.isNotBlank()) {
+                                IdUtils.decode(newId)
+                            } else {
+                                IdUtils.generateSessionId()
+                            }
+                            
                             val updated = sessions.toMutableList()
                             // Replace if same ID exists
-                            updated.removeAll { it.id == decodedId }
-                            updated.add(Session(id = decodedId, name = newName))
+                            updated.removeAll { it.id == finalId }
+                            updated.add(Session(id = finalId, name = newName))
                             sessions = updated
                             storage.saveSessions(sessionsJson.encodeToString(sessions))
                             newName = ""
@@ -408,9 +421,49 @@ private fun SessionsDialog(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = newName.isNotBlank() && newId.isNotBlank(),
+                    enabled = newName.isNotBlank(),
                 ) {
-                    Text("Add Session")
+                    Text(if (newId.isNotBlank()) "Join Session" else "Create Session")
+                }
+
+                if (activeTableId.isNotBlank()) {
+                    Spacer(Modifier.height(16.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "Import Data to Active Session",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                isImporting = true
+                                importError = null
+                                when (val res = SessionImporter.import(repository)) {
+                                    is Result.Error -> importError = "Import failed: ${res.error}"
+                                    is Result.Success -> { /* Success */ }
+                                }
+                                isImporting = false
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isImporting
+                    ) {
+                        if (isImporting) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Importing...")
+                        } else {
+                            Icon(Icons.Default.UploadFile, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Import from XLSX")
+                        }
+                    }
+                    importError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         },

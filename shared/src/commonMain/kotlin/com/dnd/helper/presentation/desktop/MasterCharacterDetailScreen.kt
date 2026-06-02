@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Notes
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -59,10 +60,8 @@ fun MasterCharacterDetailScreen(
     val state by viewModel.state.collectAsState()
 
     DisposableEffect(viewModel) {
-        viewModel.startAutoRefresh()
         onDispose {
             viewModel.flushPendingSave()
-            viewModel.stopAutoRefresh()
         }
     }
 
@@ -193,20 +192,37 @@ private fun MasterContent(
                 EditFields(edited, viewModel)
             }
         } else {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 // Left Column: Avatar and Basic Info
-                Column(modifier = Modifier.width(300.dp)) {
-                    if (!character.imageUrl.isNullOrBlank()) {
+                Column(modifier = Modifier.width(260.dp)) {
+                    Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
                         AsyncImage(
                             model = character.displayImageUrl,
                             contentDescription = character.name,
-                            modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(16.dp)),
+                            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
                             contentScale = ContentScale.Crop
                         )
-                        Spacer(Modifier.height(16.dp))
+                        
+                        if (state.isEditing) {
+                            Surface(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(8.dp)
+                                    .size(36.dp)
+                                    .clickable { /* Handled via TextField in EditFields for now, or could add dialog */ },
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                tonalElevation = 4.dp
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(20.dp), tint = Color.White)
+                                }
+                            }
+                        }
                     }
+                    Spacer(Modifier.height(12.dp))
                     MasterHeader(character, viewModel)
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(16.dp))
                     MasterHealthSection(character, viewModel)
                     if (character.currentHp <= 0) {
                         Spacer(Modifier.height(12.dp))
@@ -215,14 +231,14 @@ private fun MasterContent(
                 }
 
                 // Middle Column: Stats and Skills
-                Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.weight(1.2f)) {
                     ExpandableSection(title = "Core Stats", icon = Icons.Default.FitnessCenter, color = StatsColor, initialExpanded = true) {
                         MasterStatsGrid(character, viewModel)
                     }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(12.dp))
                     ExpandableSection(title = "Skills & Proficiencies", icon = Icons.Default.AutoFixHigh, color = SkillsColor, initialExpanded = true) {
                         // Constrain height to avoid infinity constraint crash with nested LazyVerticalGrid
-                        Box(modifier = Modifier.heightIn(max = 500.dp)) {
+                        Box(modifier = Modifier.heightIn(max = 450.dp)) {
                             SkillsTab(character, viewModel::onEvent, isMasterMode = state.isMasterMode)
                         }
                     }
@@ -232,33 +248,33 @@ private fun MasterContent(
                 Column(modifier = Modifier.weight(1f)) {
                     ExpandableSection(title = "Combat Status", icon = Icons.Default.SportsMartialArts, color = CombatColor, initialExpanded = false) {
                         // CombatTab internally uses a verticalScroll. 
-                        Box(modifier = Modifier.heightIn(max = 500.dp)) {
+                        Box(modifier = Modifier.heightIn(max = 450.dp)) {
                             CombatTab(character, isMasterMode = state.isMasterMode, isScrollable = false)
                         }
                     }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(12.dp))
                     ExpandableSection(title = "Equipment & Items", icon = Icons.Default.ShoppingBag, color = InventoryColor, initialExpanded = true) {
                         // Constrain height to avoid infinity constraint crash with nested LazyVerticalGrid
-                        Box(modifier = Modifier.heightIn(max = 500.dp)) {
+                        Box(modifier = Modifier.heightIn(max = 450.dp)) {
                             InventoryTab(items = character.items, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
                         }
                     }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(12.dp))
                     ExpandableSection(title = "Features & Traits", icon = Icons.Default.Star, color = FeaturesColor, initialExpanded = false) {
                         // FeaturesTab internally uses a verticalScroll. 
-                        Box(modifier = Modifier.heightIn(max = 600.dp)) {
+                        Box(modifier = Modifier.heightIn(max = 500.dp)) {
                             FeaturesTab(character, isMasterMode = state.isMasterMode)
                         }
                     }
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
             ExpandableSection(title = "Personal Notes", icon = Icons.Default.Description, color = NotesColor, initialExpanded = true) {
                 MasterNotesSection(notes = character.notes, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
             ExpandableSection(title = "Biography & Notes", icon = Icons.AutoMirrored.Filled.Notes, color = MaterialTheme.colorScheme.secondary, initialExpanded = false) {
                 if (state.isMasterMode) {
                     OutlinedTextField(
@@ -294,39 +310,40 @@ private fun ExpandableSection(
     var expanded by remember { mutableStateOf(initialExpanded) }
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (expanded) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+            containerColor = if (expanded) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (expanded) 2.dp else 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (expanded) 1.dp else 0.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(10.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(4.dp),
+                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        modifier = Modifier.size(32.dp),
-                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.size(28.dp),
+                        shape = RoundedCornerShape(6.dp),
                         color = color.copy(alpha = 0.1f)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(icon, null, modifier = Modifier.size(18.dp), tint = color)
+                            Icon(icon, null, modifier = Modifier.size(16.dp), tint = color)
                         }
                     }
-                    Spacer(Modifier.width(12.dp))
-                    Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(10.dp))
+                    Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, 
                     contentDescription = null,
+                    modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             if (expanded) {
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
                 content()
             }
         }
@@ -366,6 +383,13 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
     }
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(
+        value = edited.imageUrl ?: "",
+        onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(imageUrl = it.ifBlank { null }))) },
+        label = { Text("Image URL") },
+        modifier = Modifier.fillMaxWidth()
+    )
     Spacer(modifier = Modifier.height(16.dp))
     OutlinedTextField(
         value = edited.description,
@@ -383,7 +407,7 @@ private fun MasterHeader(character: com.dnd.helper.domain.model.Character, viewM
 
     Text(
         text = character.name,
-        style = MaterialTheme.typography.headlineLarge,
+        style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.ExtraBold
     )
     Row(
@@ -392,42 +416,42 @@ private fun MasterHeader(character: com.dnd.helper.domain.model.Character, viewM
     ) {
         Text(
             text = "${character.race} ${character.characterClass}",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary
         )
         Surface(
             color = MaterialTheme.colorScheme.secondaryContainer,
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(12.dp)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     text = "LVL ${character.level}",
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold
                 )
                 IconButton(
                     onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateLevel(-amount)) },
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 ) {
-                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(12.dp))
+                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(10.dp))
                 }
                 
                 Box(
                     modifier = Modifier
-                        .width(44.dp)
-                        .height(28.dp)
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f), RoundedCornerShape(6.dp)),
+                        .width(36.dp)
+                        .height(24.dp)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f), RoundedCornerShape(4.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     BasicTextField(
                         value = amountText,
                         onValueChange = { if (it.all { it.isDigit() } && it.length < 3) amountText = it },
                         modifier = Modifier.fillMaxWidth(),
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        textStyle = MaterialTheme.typography.labelLarge.copy(
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
                             fontWeight = FontWeight.Bold
@@ -439,9 +463,9 @@ private fun MasterHeader(character: com.dnd.helper.domain.model.Character, viewM
 
                 IconButton(
                     onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateLevel(amount)) },
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 ) {
-                    Icon(Icons.Default.Add, null, modifier = Modifier.size(12.dp))
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(10.dp))
                 }
             }
         }
@@ -457,10 +481,10 @@ private fun MasterHealthSection(character: com.dnd.helper.domain.model.Character
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = hpColor.copy(alpha = 0.12f)),
-        shape = RoundedCornerShape(16.dp)
+        colors = CardDefaults.cardColors(containerColor = hpColor.copy(alpha = 0.08f)),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -468,7 +492,7 @@ private fun MasterHealthSection(character: com.dnd.helper.domain.model.Character
             ) {
                 Text(
                     text = "Hit Points",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = hpColor
                 )
@@ -481,50 +505,51 @@ private fun MasterHealthSection(character: com.dnd.helper.domain.model.Character
                     )
                     Text(
                         text = "/",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                        modifier = Modifier.padding(horizontal = 2.dp)
                     )
                     Text(
                         text = "${character.maxHp}",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
                         onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateMaxHp(-amount)) },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     ) {
-                        Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Remove, null, modifier = Modifier.size(14.dp))
                     }
                     IconButton(
                         onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateMaxHp(amount)) },
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     ) {
-                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, null, modifier = Modifier.size(14.dp))
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { hpRatio },
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
                 color = hpColor,
                 trackColor = hpColor.copy(alpha = 0.2f)
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateHp(-amount)) }) { Icon(Icons.Default.Remove, null) }
+                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateHp(-amount)) }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(18.dp)) }
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { if (it.all { it.isDigit() } && it.length < 4) amountText = it },
-                    modifier = Modifier.width(60.dp),
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = TextAlign.Center),
+                    modifier = Modifier.width(54.dp).height(44.dp),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.Center),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(8.dp)
                 )
-                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateHp(amount)) }) { Icon(Icons.Default.Add, null) }
+                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateHp(amount)) }, modifier = Modifier.size(28.dp)) { Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp)) }
             }
         }
     }
@@ -766,40 +791,109 @@ private fun DeathSaveDiamond(filled: Boolean, color: Color) {
 
 @Composable
 private fun MasterStatsGrid(character: com.dnd.helper.domain.model.Character, viewModel: CharacterDetailViewModel) {
-    // Correct mapping of short labels to the property names expected by CharacterDetailViewModel
     val stats = listOf(
-        Triple("STR", character.stats.strength, "strength"),
-        Triple("DEX", character.stats.dexterity, "dexterity"),
-        Triple("CON", character.stats.constitution, "constitution"),
-        Triple("INT", character.stats.intelligence, "intelligence"),
-        Triple("WIS", character.stats.wisdom, "wisdom"),
-        Triple("CHA", character.stats.charisma, "charisma")
+        MasterStatData("STR", character.stats.strength, "strength", Color(0xFFE53935), Icons.Default.FitnessCenter),
+        MasterStatData("DEX", character.stats.dexterity, "dexterity", Color(0xFF43A047), Icons.AutoMirrored.Filled.DirectionsRun),
+        MasterStatData("CON", character.stats.constitution, "constitution", Color(0xFFFB8C00), Icons.Default.Favorite),
+        MasterStatData("INT", character.stats.intelligence, "intelligence", Color(0xFF1E88E5), Icons.Default.Psychology),
+        MasterStatData("WIS", character.stats.wisdom, "wisdom", Color(0xFF8E24AA), Icons.Default.Visibility),
+        MasterStatData("CHA", character.stats.charisma, "charisma", Color(0xFFFDD835), Icons.Default.Star)
     )
     
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         for (i in stats.indices step 2) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 repeat(2) { j ->
                     if (i + j < stats.size) {
-                        val (label, value, key) = stats[i + j]
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(label, style = MaterialTheme.typography.labelSmall)
-                                Text(value.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                                Row {
-                                    IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateStat(key, -1)) }, modifier = Modifier.size(24.dp)) { 
-                                        Icon(Icons.Default.Remove, null, modifier = Modifier.size(14.dp)) 
-                                    }
-                                    IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateStat(key, 1)) }, modifier = Modifier.size(24.dp)) { 
-                                        Icon(Icons.Default.Add, null, modifier = Modifier.size(14.dp)) 
-                                    }
-                                }
-                            }
-                        }
+                        MasterStatCard(stats[i + j], viewModel, Modifier.weight(1f))
                     }
+                }
+            }
+        }
+    }
+}
+
+private data class MasterStatData(
+    val label: String,
+    val value: Int,
+    val key: String,
+    val color: Color,
+    val icon: ImageVector
+)
+
+@Composable
+private fun MasterStatCard(
+    stat: MasterStatData,
+    viewModel: CharacterDetailViewModel,
+    modifier: Modifier = Modifier
+) {
+    var amountText by remember { mutableStateOf("1") }
+    val amount = amountText.toIntOrNull() ?: 1
+    val modifierVal = (stat.value - 10) / 2
+    val modifierSign = if (modifierVal >= 0) "+" else ""
+
+    Card(
+        modifier = modifier,
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Icon(stat.icon, null, modifier = Modifier.size(12.dp), tint = stat.color)
+                Text(stat.label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = stat.color)
+            }
+            
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = stat.value.toString(),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Surface(
+                    color = stat.color.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = "$modifierSign$modifierVal",
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = stat.color
+                    )
+                }
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateStat(stat.key, -amount)) }, modifier = Modifier.size(22.dp)) { 
+                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(12.dp)) 
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .width(32.dp)
+                        .height(20.dp)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), RoundedCornerShape(4.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BasicTextField(
+                        value = amountText,
+                        onValueChange = { if (it.all { it.isDigit() } && it.length < 3) amountText = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = MaterialTheme.typography.labelSmall.copy(
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                }
+
+                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateStat(stat.key, amount)) }, modifier = Modifier.size(22.dp)) { 
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(12.dp))
                 }
             }
         }

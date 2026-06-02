@@ -254,3 +254,4 @@ local.properties
 /server/build/tmp/jar/MANIFEST.MF
 /kotlin-js-store/wasm/yarn.lock
 /server/database.db
+/server/build/

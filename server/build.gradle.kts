@@ -16,6 +16,8 @@ dependencies {
     implementation(libs.ktor.server.contentnegotiation)
     implementation(libs.ktor.server.cors)
     implementation(libs.ktor.server.calllogging)
+    implementation(libs.ktor.server.websockets)
+    implementation(libs.ktor.server.statuspages)
     implementation(libs.ktor.serialization.kotlinx.json)
     
     implementation(libs.exposed.core)
@@ -26,7 +28,12 @@ dependencies {
     implementation(libs.logback)
     
     testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.ktor.client.content.negotiation)
     testImplementation("org.jetbrains.kotlin:kotlin-test")
+}
+
+tasks.withType<Copy>().configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 kotlin {

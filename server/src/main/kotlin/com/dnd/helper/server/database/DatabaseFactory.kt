@@ -10,20 +10,18 @@ import java.io.File
 object DatabaseFactory {
     fun init() {
         val databasePath = "database.db"
-        val dbFile = File(databasePath)
         
         Database.connect("jdbc:sqlite:$databasePath", "org.sqlite.JDBC")
         
         transaction {
-            SchemaUtils.create(
+            SchemaUtils.createMissingTablesAndColumns(
                 Characters,
                 Locations,
                 Monsters,
                 Npcs,
                 Music,
                 Events,
-                Logs,
-                Metadata
+                Logs
             )
         }
     }

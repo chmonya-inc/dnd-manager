@@ -122,16 +122,11 @@ fun CharacterDetailScreen(
     val state by viewModel.state.collectAsState()
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    // Start auto-refresh polling when the screen is visible.
-    // Stops automatically when the user navigates away.
-    // Also skips refresh while the user is editing (handled inside the ViewModel).
+    // Ensures any pending debounced save is flushed before leaving the screen
+    // so the user doesn't lose rapid stat/HP/level clicks.
     DisposableEffect(viewModel) {
-        viewModel.startAutoRefresh()
         onDispose {
-            // Force-flush any pending debounced save before leaving the screen
-            // so the user doesn't lose rapid stat/HP/level clicks.
             viewModel.flushPendingSave()
-            viewModel.stopAutoRefresh()
         }
     }
 

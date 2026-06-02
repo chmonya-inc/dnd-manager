@@ -37,6 +37,16 @@ class MusicViewModel(
 
     init {
         refreshMusic()
+
+        // Listen for remote updates via WebSocket
+        viewModelScope.launch {
+            repository.remoteUpdates.collect { updateType ->
+                if (updateType == "music") {
+                    println("[Music] Remote update received via WebSocket, reloading tracks...")
+                    refreshMusic()
+                }
+            }
+        }
     }
 
     private fun startProgressPolling() {

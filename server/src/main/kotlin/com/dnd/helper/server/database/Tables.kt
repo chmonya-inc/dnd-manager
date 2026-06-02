@@ -13,6 +13,7 @@ val json = Json {
 
 object Characters : Table("characters") {
     val id = varchar("id", 50)
+    val sessionId = varchar("session_id", 50)
     val name = varchar("name", 100)
     val playerName = varchar("player_name", 100)
     val race = varchar("race", 50)
@@ -42,19 +43,21 @@ object Characters : Table("characters") {
     val items = json<List<com.dnd.helper.domain.model.Item>>("items", json)
     val notes = json<List<com.dnd.helper.domain.model.Note>>("notes", json)
 
-    override val primaryKey = PrimaryKey(id)
+    override val primaryKey = PrimaryKey(id, sessionId)
 }
 
 object Locations : Table("locations") {
     val id = varchar("id", 50)
+    val sessionId = varchar("session_id", 50)
     val name = varchar("name", 100)
     val description = text("description")
     val imageUrl = varchar("image_url", 500).nullable()
-    override val primaryKey = PrimaryKey(id)
+    override val primaryKey = PrimaryKey(id, sessionId)
 }
 
 object Monsters : Table("monsters") {
     val id = varchar("id", 50)
+    val sessionId = varchar("session_id", 50)
     val name = varchar("name", 100)
     val description = text("description")
     val imageUrl = varchar("image_url", 500).nullable()
@@ -67,43 +70,41 @@ object Monsters : Table("monsters") {
     val type = varchar("type", 50)
     val alignment = varchar("alignment", 50)
     val size = varchar("size", 20)
-    override val primaryKey = PrimaryKey(id)
+    override val primaryKey = PrimaryKey(id, sessionId)
 }
 
 object Npcs : Table("npcs") {
     val id = varchar("id", 50)
+    val sessionId = varchar("session_id", 50)
     val name = varchar("name", 100)
     val description = text("description")
     val imageUrl = varchar("image_url", 500).nullable()
     val background = text("background")
-    override val primaryKey = PrimaryKey(id)
+    override val primaryKey = PrimaryKey(id, sessionId)
 }
 
 object Music : Table("music") {
     val id = varchar("id", 50)
+    val sessionId = varchar("session_id", 50)
     val name = varchar("name", 100)
     val url = varchar("url", 500)
-    override val primaryKey = PrimaryKey(id)
+    override val primaryKey = PrimaryKey(id, sessionId)
 }
 
 object Events : Table("events") {
     val id = varchar("id", 50)
+    val sessionId = varchar("session_id", 50)
     val name = varchar("name", 100)
     val items = json<List<com.dnd.helper.domain.model.PresentedItem>>("items", json)
-    override val primaryKey = PrimaryKey(id)
+    override val primaryKey = PrimaryKey(id, sessionId)
 }
 
 object Logs : Table("logs") {
+    val sessionId = varchar("session_id", 50)
     val timestamp = varchar("timestamp", 50)
     val action = varchar("action", 100)
     val details = text("details")
     val initialState = text("initial_state")
     val endState = text("end_state")
     val success = bool("success")
-}
-
-object Metadata : Table("metadata") {
-    val key = varchar("key", 50)
-    val value = varchar("value", 100)
-    override val primaryKey = PrimaryKey(key)
 }

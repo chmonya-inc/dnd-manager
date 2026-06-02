@@ -21,4 +21,11 @@ object IdUtils {
         }
         return trimmed
     }
+
+    fun generateSessionId(): String {
+        val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
+        return (1..8)
+            .map { allowedChars.random() }
+            .joinToString("")
+    }
 }

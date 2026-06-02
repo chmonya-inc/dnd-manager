@@ -1,19 +1,26 @@
 package com.dnd.helper.server
 
-import com.dnd.helper.data.remote.AppsScriptRequest
-import com.dnd.helper.data.remote.AppsScriptResponse
 import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.InitialData
 import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.testing.*
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.test.*
 
 class ServerTest {
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+        isLenient = true
+        encodeDefaults = true
+    }
 
     @Test
     fun testRoot() = testApplication {
@@ -31,13 +38,11 @@ class ServerTest {
             module()
         }
         
-        val response = client.get("/exec?request={\"action\":\"getInitialData\"}")
+        val response = client.get("/api/test-session/initial-data")
         assertEquals(HttpStatusCode.OK, response.status)
         
-        val bodyText = response.bodyAsText()
-        val body = Json.decodeFromString<AppsScriptResponse<InitialData>>(bodyText)
-        assertTrue(body.success)
-        assertNotNull(body.data)
+        val body = json.decodeFromString<InitialData>(response.bodyAsText())
+        assertNotNull(body)
     }
 
     @Test
@@ -59,19 +64,67 @@ class ServerTest {
         )
 
         // Save
-        val saveResponse = client.post("/exec") {
+        val saveResponse = client.post("/api/test-session/characters") {
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            setBody(Json.encodeToString(AppsScriptRequest.serializer(), AppsScriptRequest(action = "saveCharacter", character = character)))
+            setBody(json.encodeToString(character))
         }
         assertEquals(HttpStatusCode.OK, saveResponse.status)
-        val saveBody = Json.decodeFromString<AppsScriptResponse<Unit>>(saveResponse.bodyAsText())
-        assertTrue(saveBody.success)
 
         // Get
-        val getResponse = client.get("/exec?request={\"action\":\"getCharacter\",\"id\":\"test-char\"}")
+        val getResponse = client.get("/api/test-session/characters/test-char")
         assertEquals(HttpStatusCode.OK, getResponse.status)
-        val getBody = Json.decodeFromString<AppsScriptResponse<Character>>(getResponse.bodyAsText())
-        assertTrue(getBody.success)
-        assertEquals("Test Hero", getBody.data?.name)
+        val body = json.decodeFromString<Character>(getResponse.bodyAsText())
+        assertEquals("Test Hero", body.name)
+    }
+
+    @Test
+    fun testSessionIsolation() = testApplication {
+        application {
+            module()
+        }
+
+        val charA = Character(
+            id = "char-1",
+            name = "Hero A",
+            playerName = "P1",
+            race = "R1",
+            characterClass = "C1",
+            level = 1,
+            description = "D1",
+            maxHp = 10,
+            currentHp = 10
+        )
+
+        val charB = Character(
+            id = "char-1", // Same ID but different session
+            name = "Hero B",
+            playerName = "P2",
+            race = "R2",
+            characterClass = "C2",
+            level = 1,
+            description = "D2",
+            maxHp = 10,
+            currentHp = 10
+        )
+
+        // Save to Session A
+        client.post("/api/session-a/characters") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(json.encodeToString(charA))
+        }
+
+        // Save to Session B
+        client.post("/api/session-b/characters") {
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(json.encodeToString(charB))
+        }
+
+        // Get from Session A
+        val getAResponse = client.get("/api/session-a/characters/char-1")
+        assertEquals("Hero A", json.decodeFromString<Character>(getAResponse.bodyAsText()).name)
+
+        // Get from Session B
+        val getBResponse = client.get("/api/session-b/characters/char-1")
+        assertEquals("Hero B", json.decodeFromString<Character>(getBResponse.bodyAsText()).name)
     }
 }

@@ -231,8 +231,8 @@ class CharacterCreateViewModel(
     private fun parseLineList(input: String): List<String> =
         input.lines().map { it.trim() }.filter { it.isNotBlank() }
 
-    private fun getRandomId(): Int {
-        return Random.nextInt()
+    private fun getRandomId(): String {
+        return Random.nextInt(100000, 999999).toString()
     }
     private fun saveCharacter() {
         val s = _state.value

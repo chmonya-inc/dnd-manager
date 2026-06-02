@@ -11,7 +11,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
@@ -28,11 +27,18 @@ class LogViewModel(
     private val _state = MutableStateFlow(LogState())
     val state: StateFlow<LogState> = _state.asStateFlow()
 
-    private var lastKnownTimestamp: String? = null
-    private var pollingJob: Job? = null
-
     init {
         refreshLogs()
+
+        // Listen for remote updates via WebSocket
+        viewModelScope.launch {
+            repository.remoteUpdates.collect { updateType ->
+                if (updateType == "logs") {
+                    println("[Logs] Remote update received via WebSocket, reloading logs...")
+                    refreshLogs(force = true)
+                }
+            }
+        }
     }
 
     fun refreshLogs(force: Boolean = false) {
@@ -47,32 +53,12 @@ class LogViewModel(
         }
     }
 
+    /** No-op for WebSocket version */
     fun startPolling(intervalMs: Long = 1_000L) {
-        if (pollingJob?.isActive == true) return
-        pollingJob = viewModelScope.launch {
-            while (isActive) {
-                delay(intervalMs)
-                checkForUpdates()
-            }
-        }
     }
 
+    /** No-op for WebSocket version */
     fun stopPolling() {
-        pollingJob?.cancel()
-        pollingJob = null
-    }
-
-    private suspend fun checkForUpdates() {
-        when (val result = repository.getLastModified()) {
-            is Result.Success -> {
-                val serverTimestamp = result.data
-                if (lastKnownTimestamp != null && lastKnownTimestamp != serverTimestamp) {
-                    refreshLogs(force = true)
-                }
-                lastKnownTimestamp = serverTimestamp
-            }
-            is Result.Error -> {}
-        }
     }
 
     fun undoLog(log: LogEntry) {

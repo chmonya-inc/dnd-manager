@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Person
@@ -67,13 +68,6 @@ fun CharacterListScreen(
     viewModel: CharacterListViewModel = org.koin.compose.viewmodel.koinViewModel(key = sessionKey),
 ) {
     val state by viewModel.state.collectAsState()
-
-    // Start auto-refresh polling when the screen is visible,
-    // stop when the user navigates away.
-    DisposableEffect(viewModel) {
-        viewModel.startAutoRefresh()
-        onDispose { viewModel.stopAutoRefresh() }
-    }
 
     CharacterListContent(
         state = state,
@@ -279,6 +273,7 @@ private fun SimpleCharacterCard(
     modifier: Modifier = Modifier,
 ) {
     val raceColor = getRaceColor(character.race)
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
 
     Card(
         onClick = onClick,
@@ -341,6 +336,19 @@ private fun SimpleCharacterCard(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                         )
+                        IconButton(
+                            onClick = { 
+                                clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(character.id))
+                            },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = "Copy ID",
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
+                        }
                         Spacer(Modifier.width(8.dp))
                         Surface(
                             color = MaterialTheme.colorScheme.secondaryContainer,
@@ -401,6 +409,7 @@ private fun SummaryCharacterCard(
     val isDying = character.currentHp <= 0 && character.combat.deathSaveFailures < 3
     val isDead = character.currentHp <= 0 && character.combat.deathSaveFailures >= 3
     val raceColor = getRaceColor(character.race)
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
 
     Card(
         onClick = onClick,
@@ -454,11 +463,28 @@ private fun SummaryCharacterCard(
                     }
 
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = character.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = character.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                            IconButton(
+                                onClick = { 
+                                    clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(character.id))
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Copy ID",
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                )
+                            }
+                        }
                         Text(
                             text = "${character.race} ${character.characterClass}",
                             style = MaterialTheme.typography.bodySmall,

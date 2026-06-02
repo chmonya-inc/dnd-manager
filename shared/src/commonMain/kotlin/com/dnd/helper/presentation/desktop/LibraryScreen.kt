@@ -63,11 +63,6 @@ fun LibraryScreen(
         LibraryType.Templates -> ItemColor
     }
 
-    DisposableEffect(viewModel) {
-        viewModel.startPolling()
-        onDispose { viewModel.stopPolling() }
-    }
-
     // Drag and Drop State
     var draggedItemInfo by remember { mutableStateOf<Triple<Item, String, String>?>(null) } // Item, fromId, fromName
     var mousePosition by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
