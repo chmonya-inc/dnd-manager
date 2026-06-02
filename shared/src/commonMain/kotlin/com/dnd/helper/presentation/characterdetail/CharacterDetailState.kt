@@ -15,6 +15,6 @@ data class CharacterDetailState(
     /** The result of the most recent death saving throw roll (d20). */
     val lastDeathSaveRoll: Int? = null,
     val aiPrompt: String = "",
-    val aiWidth: Int = 512,
-    val aiHeight: Int = 512,
+    val aiWidth: Int = 1024,
+    val aiHeight: Int = 1024,
 )

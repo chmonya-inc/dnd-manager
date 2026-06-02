@@ -8,6 +8,9 @@ object ImageUrlHelper {
     fun process(url: String?): String? {
         if (url.isNullOrBlank()) return null
         
+        // Handle mock generating URLs
+        if (url.startsWith("generating:")) return url
+
         // Already a direct link or not a Google Drive link
         if (url.contains("googleusercontent")) return url
         

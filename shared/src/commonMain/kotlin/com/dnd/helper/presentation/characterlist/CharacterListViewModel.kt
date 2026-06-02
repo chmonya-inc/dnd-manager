@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 
 class CharacterListViewModel(
     private val repository: CharacterRepository,
+    private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
     private val storage: CharacterStorage
 ) : ViewModel() {
 
@@ -28,11 +29,29 @@ class CharacterListViewModel(
     init {
         loadInitialData()
         
+        // Listen for background image generation completion
+        viewModelScope.launch {
+            editingRepository.activeTasks.collect { tasks ->
+                tasks.filter { it.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED && it.resultUrl != null }
+                    .forEach { task ->
+                        val currentState = _state.value
+                        val resultUrl = task.resultUrl ?: return@forEach
+                        
+                        if (task.entityType == "character") {
+                            if (currentState.characters.any { it.id == task.entityId && it.imageUrl == "generating:${task.id}" }) {
+                                val newChars = currentState.characters.map { if (it.id == task.entityId) it.copy(imageUrl = resultUrl) else it }
+                                _state.value = currentState.copy(characters = newChars)
+                            }
+                        }
+                    }
+            }
+        }
+
         // Listen for local updates (immediate refresh for cross-screen changes)
         viewModelScope.launch {
             repository.characterUpdates.collect { updatedId ->
                 println("[CharacterList] Received local update for $updatedId — reloading list")
-                loadCharacters(fromAutoRefresh = true)
+                loadCharacters(forceRefresh = true)
             }
         }
 
@@ -44,7 +63,7 @@ class CharacterListViewModel(
                         println("[CharacterList] Remote update received but we have $pendingSaveCount pending saves — skipping reload.")
                     } else {
                         println("[CharacterList] Remote update received via WebSocket, reloading characters...")
-                        loadCharacters(fromAutoRefresh = true)
+                        loadCharacters(forceRefresh = true)
                     }
                 }
             }
@@ -143,12 +162,12 @@ class CharacterListViewModel(
         // WebSocket logic handles this via viewModelScope
     }
 
-    private fun loadCharacters(fromAutoRefresh: Boolean = false) {
+    private fun loadCharacters(forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            if (!fromAutoRefresh) {
+            if (!forceRefresh) {
                 _state.value = _state.value.copy(isLoading = true, error = null)
             }
-            when (val result = repository.getCharacters()) {
+            when (val result = repository.getCharacters(forceRefresh = forceRefresh)) {
                 is Result.Success -> {
                     _state.value = _state.value.copy(
                         characters = result.data,
@@ -156,7 +175,7 @@ class CharacterListViewModel(
                     )
                 }
                 is Result.Error -> {
-                    if (!fromAutoRefresh) {
+                    if (!forceRefresh) {
                         _state.value = _state.value.copy(
                             isLoading = false,
                             error = result.error.toUserMessage(),

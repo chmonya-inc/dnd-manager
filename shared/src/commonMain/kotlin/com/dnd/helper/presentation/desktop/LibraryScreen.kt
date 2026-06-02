@@ -347,13 +347,21 @@ private fun NpcLibraryCard(
     ) {
         Column {
             Box(modifier = Modifier.fillMaxWidth().height(160.dp)) {
-                if (npc.displayImageUrl?.isNotBlank() ?: false) {
+                val imageUrl = npc.displayImageUrl
+                val isGenerating = imageUrl?.startsWith("generating:") == true
+
+                if (!imageUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = npc.displayImageUrl,
+                        model = if (isGenerating) null else imageUrl,
                         contentDescription = npc.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
+                    if (isGenerating) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    }
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(NpcColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.EmojiPeople, null, modifier = Modifier.size(64.dp), tint = NpcColor.copy(alpha = 0.3f))
@@ -442,13 +450,21 @@ private fun MonsterLibraryCard(
     ) {
         Column {
             Box(modifier = Modifier.fillMaxWidth().height(160.dp)) {
-                if (monster.displayImageUrl?.isNotBlank() ?: false) {
+                val imageUrl = monster.displayImageUrl
+                val isGenerating = imageUrl?.startsWith("generating:") == true
+
+                if (!imageUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = monster.displayImageUrl,
+                        model = if (isGenerating) null else imageUrl,
                         contentDescription = monster.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
+                    if (isGenerating) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    }
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(MonsterColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.BugReport, null, modifier = Modifier.size(64.dp), tint = MonsterColor.copy(alpha = 0.3f))
@@ -760,13 +776,21 @@ private fun ItemLibraryCard(
     ) {
         Column {
             Box(modifier = Modifier.fillMaxWidth().height(140.dp)) {
-                if (!item.displayImageUrl.isNullOrBlank()) {
+                val imageUrl = item.displayImageUrl
+                val isGenerating = imageUrl?.startsWith("generating:") == true
+
+                if (!imageUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = item.displayImageUrl,
+                        model = if (isGenerating) null else imageUrl,
                         contentDescription = item.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
+                    if (isGenerating) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    }
                 } else {
                     Box(
                         modifier = Modifier
@@ -878,13 +902,21 @@ private fun LocationLibraryCard(
     ) {
         Column {
             Box(modifier = Modifier.fillMaxWidth().height(180.dp)) {
-                if (location.displayImageUrl?.isNotBlank() ?: false) {
+                val imageUrl = location.displayImageUrl
+                val isGenerating = imageUrl?.startsWith("generating:") == true
+
+                if (!imageUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = location.displayImageUrl,
+                        model = if (isGenerating) null else imageUrl,
                         contentDescription = location.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
+                    if (isGenerating) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    }
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(LocationColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
                         Icon(Icons.Default.Map, null, modifier = Modifier.size(64.dp), tint = LocationColor.copy(alpha = 0.3f))

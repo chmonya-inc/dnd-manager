@@ -97,14 +97,15 @@ val appModule = module {
 
     single { KtorRemoteDataSource(get(), get()) }
     single { com.dnd.helper.data.remote.AiImageService(get(), get()) }
-    single<CharacterRepository> { CharacterRepositoryImpl(get(), get(), get()) }
-    factory { CharacterListViewModel(get(), get()) }
+    single<com.dnd.helper.domain.repository.EditingRepository> { com.dnd.helper.data.repository.EditingRepositoryImpl(get(), get()) }
+    single<CharacterRepository> { CharacterRepositoryImpl(get(), get()) }
+    factory { CharacterListViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>(), get<com.dnd.helper.domain.storage.CharacterStorage>()) }
     factory { StartViewModel(get()) }
-    factory { CharacterCreateViewModel(get(), get()) }
+    factory { CharacterCreateViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>()) }
     factory { (characterId: String) ->
-        CharacterDetailViewModel(get(), get(), characterId)
+        CharacterDetailViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>(), characterId)
     }
-    factory { LibraryViewModel(get()) }
+    factory { LibraryViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>()) }
     factory { LogViewModel(get()) }
     factory { MusicViewModel(get(), get()) }
     factory { SessionsViewModel(get(), get()) }

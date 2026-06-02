@@ -308,13 +308,21 @@ private fun SimpleCharacterCard(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     tonalElevation = 4.dp
                 ) {
-                    if (!character.displayImageUrl.isNullOrBlank()) {
-                        AsyncImage(
-                            model = character.displayImageUrl,
-                            contentDescription = character.name,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
+                    val imageUrl = character.displayImageUrl
+                    val isGenerating = imageUrl?.startsWith("generating:") == true
+
+                    if (!imageUrl.isNullOrBlank()) {
+                        Box(contentAlignment = Alignment.Center) {
+                            AsyncImage(
+                                model = if (isGenerating) null else imageUrl,
+                                contentDescription = character.name,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                            )
+                            if (isGenerating) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            }
+                        }
                     } else {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
@@ -445,13 +453,19 @@ private fun SummaryCharacterCard(
                             .background(MaterialTheme.colorScheme.surfaceVariant),
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (!character.displayImageUrl.isNullOrBlank()) {
+                        val imageUrl = character.displayImageUrl
+                        val isGenerating = imageUrl?.startsWith("generating:") == true
+
+                        if (!imageUrl.isNullOrBlank()) {
                             AsyncImage(
-                                model = character.displayImageUrl,
+                                model = if (isGenerating) null else imageUrl,
                                 contentDescription = character.name,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop,
                             )
+                            if (isGenerating) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            }
                         } else {
                             Icon(
                                 imageVector = Icons.Default.Person,

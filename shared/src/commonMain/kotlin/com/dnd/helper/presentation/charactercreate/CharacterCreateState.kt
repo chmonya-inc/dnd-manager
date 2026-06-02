@@ -76,6 +76,6 @@ data class CharacterCreateState(
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
     val error: String? = null,
-    val aiWidth: Int = 512,
-    val aiHeight: Int = 512,
+    val aiWidth: Int = 1024,
+    val aiHeight: Int = 1024,
 )

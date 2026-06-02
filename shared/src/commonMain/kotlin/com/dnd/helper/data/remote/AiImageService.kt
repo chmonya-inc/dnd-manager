@@ -174,7 +174,8 @@ class AiImageService(
         promptText: String, 
         type: GenerationType = GenerationType.CHARACTER,
         customWidth: Int? = null,
-        customHeight: Int? = null
+        customHeight: Int? = null,
+        onRemoteIdGenerated: ((String) -> Unit)? = null
     ): String? {
         try {
             val (defaultWidth, defaultHeight) = when (type) {
@@ -261,6 +262,7 @@ class AiImageService(
             }
             
             val promptId = json.parseToJsonElement(queueResponse.bodyAsText()).jsonObject["prompt_id"]?.jsonPrimitive?.content ?: return null
+            onRemoteIdGenerated?.invoke(promptId)
             
             // 2. Wait for completion via WebSocket
             var completed = false

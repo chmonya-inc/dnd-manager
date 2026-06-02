@@ -193,12 +193,24 @@ private fun MasterContent(
             // Left Column: Avatar and Basic Info
             Column(modifier = Modifier.width(260.dp)) {
                 Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+                    val imageUrl = displayChar.displayImageUrl
+                    val isGenerating = imageUrl?.startsWith("generating:") == true
+
                     AsyncImage(
-                        model = displayChar.displayImageUrl,
+                        model = if (isGenerating) null else imageUrl,
                         contentDescription = displayChar.name,
                         modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop
                     )
+
+                    if (isGenerating) {
+                        Box(
+                            modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    }
 
                     if (state.isEditing) {
                         Surface(

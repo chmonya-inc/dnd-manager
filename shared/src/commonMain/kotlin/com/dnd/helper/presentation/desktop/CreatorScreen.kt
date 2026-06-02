@@ -27,6 +27,7 @@ import com.dnd.helper.data.remote.GenerationType
 import com.dnd.helper.data.remote.PromptGenerator
 import com.dnd.helper.domain.model.*
 import com.dnd.helper.domain.repository.CharacterRepository
+import com.dnd.helper.domain.repository.EditingRepository
 import com.dnd.helper.presentation.charactercreate.CharacterCreateScreen
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -44,18 +45,29 @@ fun ImageGenerationButton(
     width: Int? = null,
     height: Int? = null
 ) {
-    val aiService: AiImageService = koinInject()
-    val repository: CharacterRepository = koinInject()
-    val scope = rememberCoroutineScope()
-    var isGenerating by remember { mutableStateOf(false) }
+    val editingRepository: EditingRepository = koinInject()
+    var currentTaskId by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(currentTaskId) {
+        val taskId = currentTaskId ?: return@LaunchedEffect
+        editingRepository.activeTasks.collect { tasks ->
+            val task = tasks.find { it.id == taskId }
+            if (task != null) {
+                if (task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED && task.resultUrl != null) {
+                    onImageUrlGenerated(task.resultUrl!!)
+                    currentTaskId = null
+                } else if (task.status == com.dnd.helper.domain.repository.GenerationStatus.FAILED) {
+                    onImageUrlGenerated("") // Clear the "generating" state
+                    currentTaskId = null
+                }
+            }
+        }
+    }
 
     IconButton(
         onClick = {
-            if (prompt.isNotBlank()) {
-                isGenerating = true
-                onImageUrlGenerated("url will appear after generation")
-                
-                val genType = generationType ?: when (entityType?.lowercase()) {
+            if (prompt.isNotBlank() && entityId != null && entityType != null) {
+                val genType = generationType ?: when (entityType.lowercase()) {
                     "character" -> GenerationType.CHARACTER
                     "npc" -> GenerationType.NPC
                     "monster" -> GenerationType.MONSTER
@@ -65,60 +77,23 @@ fun ImageGenerationButton(
                     else -> GenerationType.CHARACTER
                 }
                 
-                scope.launch {
-                    val url = aiService.generateImage(prompt, genType, width, height)
-                    if (url != null) {
-                        onImageUrlGenerated(url)
-                        // If it's an existing entity, also save to repository in background
-                        if (entityId != null && entityType != null) {
-                            // We use repository.enqueueImageGeneration if we want to reuse its save logic,
-                            // but that would generate AGAIN. So we should have a way to just SAVE the url.
-                            // For now, let's just manually save it.
-                            when (entityType.lowercase()) {
-                                "npc" -> {
-                                    val result = repository.getNpcs()
-                                    if (result is com.dnd.helper.domain.common.Result.Success) {
-                                        result.data.find { it.id == entityId }?.let { npc ->
-                                            repository.saveNpc(npc.copy(imageUrl = url))
-                                        }
-                                    }
-                                }
-                                "monster" -> {
-                                    val result = repository.getMonsters()
-                                    if (result is com.dnd.helper.domain.common.Result.Success) {
-                                        result.data.find { it.id == entityId }?.let { monster ->
-                                            repository.saveMonster(monster.copy(imageUrl = url))
-                                        }
-                                    }
-                                }
-                                "location" -> {
-                                    val result = repository.getLocations()
-                                    if (result is com.dnd.helper.domain.common.Result.Success) {
-                                        result.data.find { it.id == entityId }?.let { location ->
-                                            repository.saveLocation(location.copy(imageUrl = url))
-                                        }
-                                    }
-                                }
-                                "character" -> {
-                                    val result = repository.getCharacter(entityId)
-                                    if (result is com.dnd.helper.domain.common.Result.Success) {
-                                        repository.saveCharacter(result.data.copy(imageUrl = url))
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        onImageUrlGenerated("") 
-                    }
-                    isGenerating = false
-                }
+                val mockUrl = editingRepository.startGeneration(
+                    entityId = entityId,
+                    entityType = entityType,
+                    prompt = prompt,
+                    genType = genType,
+                    width = width ?: 1024,
+                    height = height ?: 1024
+                )
+                currentTaskId = mockUrl.removePrefix("generating:")
+                onImageUrlGenerated(mockUrl)
             }
         },
-        enabled = !isGenerating && prompt.isNotBlank(),
+        enabled = prompt.isNotBlank() && entityId != null && currentTaskId == null,
         modifier = modifier
     ) {
-        if (isGenerating) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = accentColor, strokeWidth = 2.dp)
+        if (currentTaskId != null) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = accentColor)
         } else {
             Icon(Icons.Default.AutoFixHigh, contentDescription = "Generate Image", tint = accentColor)
         }
@@ -322,14 +297,15 @@ private fun NpcCreateForm(
 ) {
     val repository: CharacterRepository = koinInject()
     val scope = rememberCoroutineScope()
-    
+
+    val npcId = remember { existing?.id ?: "npc-${Random.nextLong(1000000, 9999999)}" }
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var background by remember { mutableStateOf(existing?.background ?: "") }
     var description by remember { mutableStateOf(existing?.description ?: "") }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
     var customPrompt by remember { mutableStateOf(existing?.let { PromptGenerator.getFullPrompt("${it.name}, ${it.background}. ${it.description}", GenerationType.NPC) } ?: "") }
-    var aiWidth by remember { mutableStateOf("512") }
-    var aiHeight by remember { mutableStateOf("512") }
+    var aiWidth by remember { mutableStateOf("1024") }
+    var aiHeight by remember { mutableStateOf("1024") }
     var isSaving by remember { mutableStateOf(false) }
 
     LaunchedEffect(name, background, description) {
@@ -345,7 +321,7 @@ private fun NpcCreateForm(
             isSaving = true
             scope.launch {
                 val npc = Npc(
-                    id = existing?.id ?: "npc-${Random.nextLong()}",
+                    id = npcId,
                     name = name,
                     background = background,
                     description = description,
@@ -391,7 +367,7 @@ private fun NpcCreateForm(
                 prompt = customPrompt.ifBlank { "NPC: $name, $background. $description" },
                 onImageUrlGenerated = { imageUrl = it },
                 accentColor = NpcColor,
-                entityId = existing?.id,
+                entityId = npcId,
                 entityType = "npc",
                 width = aiWidth.toIntOrNull(),
                 height = aiHeight.toIntOrNull()
@@ -429,7 +405,8 @@ private fun MonsterCreateForm(
 ) {
     val repository: CharacterRepository = koinInject()
     val scope = rememberCoroutineScope()
-    
+
+    val monsterId = remember { existing?.id ?: "monster-${Random.nextLong(1000000, 9999999)}" }
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var description by remember { mutableStateOf(existing?.description ?: "") }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
@@ -440,17 +417,17 @@ private fun MonsterCreateForm(
     var hp by remember { mutableStateOf(existing?.maxHp?.toString() ?: "10") }
     var ac by remember { mutableStateOf(existing?.armorClass?.toString() ?: "10") }
     var speed by remember { mutableStateOf(existing?.speed?.toString() ?: "30") }
-    
+
     var str by remember { mutableStateOf(existing?.stats?.strength?.toString() ?: "10") }
     var dex by remember { mutableStateOf(existing?.stats?.dexterity?.toString() ?: "10") }
     var con by remember { mutableStateOf(existing?.stats?.constitution?.toString() ?: "10") }
     var int by remember { mutableStateOf(existing?.stats?.intelligence?.toString() ?: "10") }
     var wis by remember { mutableStateOf(existing?.stats?.wisdom?.toString() ?: "10") }
     var cha by remember { mutableStateOf(existing?.stats?.charisma?.toString() ?: "10") }
-    
+
     var customPrompt by remember { mutableStateOf(existing?.let { PromptGenerator.getFullPrompt("${it.name}, ${it.type}, ${it.size}. ${it.description}", GenerationType.MONSTER) } ?: "") }
-    var aiWidth by remember { mutableStateOf("512") }
-    var aiHeight by remember { mutableStateOf("512") }
+    var aiWidth by remember { mutableStateOf("1024") }
+    var aiHeight by remember { mutableStateOf("1024") }
     var isSaving by remember { mutableStateOf(false) }
 
     LaunchedEffect(name, type, size, description) {
@@ -466,7 +443,7 @@ private fun MonsterCreateForm(
             isSaving = true
             scope.launch {
                 val monster = Monster(
-                    id = existing?.id ?: "monster-${Random.nextLong()}",
+                    id = monsterId,
                     name = name,
                     description = description,
                     imageUrl = imageUrl.ifBlank { null },
@@ -544,7 +521,7 @@ private fun MonsterCreateForm(
                 prompt = customPrompt.ifBlank { "Monster: $name, $type, $size. $description" },
                 onImageUrlGenerated = { imageUrl = it },
                 accentColor = MonsterColor,
-                entityId = existing?.id,
+                entityId = monsterId,
                 entityType = "monster",
                 width = aiWidth.toIntOrNull(),
                 height = aiHeight.toIntOrNull()
@@ -583,10 +560,11 @@ private fun ItemCreateForm(
 ) {
     val repository: CharacterRepository = koinInject()
     val scope = rememberCoroutineScope()
-    
+
+    val itemId = remember { existing?.id ?: "item-${Random.nextLong(1000000, 9999999)}" }
     var characters by remember { mutableStateOf<List<com.dnd.helper.domain.model.Character>>(emptyList()) }
     var selectedCharId by remember { mutableStateOf(initialOwnerId ?: "") }
-    
+
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var description by remember { mutableStateOf(existing?.description ?: "") }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
@@ -618,7 +596,7 @@ private fun ItemCreateForm(
             isSaving = true
             scope.launch {
                 val item = Item(
-                    id = existing?.id ?: "item-${Random.nextLong()}",
+                    id = itemId,
                     name = name,
                     description = description,
                     imageUrl = imageUrl.ifBlank { null },
@@ -737,8 +715,8 @@ private fun ItemCreateForm(
                 prompt = customPrompt.ifBlank { "Item: $name, $rarity. $description" },
                 onImageUrlGenerated = { imageUrl = it },
                 accentColor = ItemColor,
-                entityId = existing?.id,
-                entityType = "character", // Items update their owner character
+                entityId = if (selectedCharId.isNotBlank()) "$selectedCharId:$itemId" else null,
+                entityType = "item",
                 generationType = GenerationType.ITEM,
                 width = aiWidth.toIntOrNull(),
                 height = aiHeight.toIntOrNull()
@@ -768,8 +746,10 @@ private fun LocationCreateForm(
     onCreated: () -> Unit
 ) {
     val repository: CharacterRepository = koinInject()
+    val editingRepository: EditingRepository = koinInject()
     val scope = rememberCoroutineScope()
-    
+
+    val locationId = remember { existing?.id ?: "loc-${Random.nextLong(1000000, 9999999)}" }
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var description by remember { mutableStateOf(existing?.description ?: "") }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
@@ -777,6 +757,12 @@ private fun LocationCreateForm(
     var aiWidth by remember { mutableStateOf("1024") }
     var aiHeight by remember { mutableStateOf("1024") }
     var isSaving by remember { mutableStateOf(false) }
+
+    DisposableEffect(locationId) {
+        onDispose {
+            editingRepository.cancelGenerationForEntity(locationId)
+        }
+    }
 
     LaunchedEffect(name, description) {
         customPrompt = PromptGenerator.getFullPrompt("$name. $description".trim(), GenerationType.LOCATION)
@@ -791,7 +777,7 @@ private fun LocationCreateForm(
             isSaving = true
             scope.launch {
                 val location = Location(
-                    id = existing?.id ?: Random.nextLong().toString(),
+                    id = locationId,
                     name = name,
                     description = description,
                     imageUrl = imageUrl
@@ -827,7 +813,7 @@ private fun LocationCreateForm(
                 prompt = customPrompt.ifBlank { "Location: $name. $description" },
                 onImageUrlGenerated = { imageUrl = it },
                 accentColor = LocationColor,
-                entityId = existing?.id,
+                entityId = locationId,
                 entityType = "location",
                 width = aiWidth.toIntOrNull(),
                 height = aiHeight.toIntOrNull()

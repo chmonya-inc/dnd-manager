@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -145,9 +146,12 @@ private fun HeaderCard(
                     .background(MaterialTheme.colorScheme.surface),
                 contentAlignment = Alignment.Center,
             ) {
-                if (!character.displayImageUrl.isNullOrBlank()) {
+                val imageUrl = character.displayImageUrl
+                val isGenerating = imageUrl?.startsWith("generating:") == true
+
+                if (!imageUrl.isNullOrBlank()) {
                     AsyncImage(
-                        model = character.displayImageUrl,
+                        model = if (isGenerating) null else imageUrl,
                         contentDescription = character.name,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
@@ -155,6 +159,9 @@ private fun HeaderCard(
                             println("[AsyncImage] Failed to load avatar for ${character.name}: ${state.result.throwable}")
                         },
                     )
+                    if (isGenerating) {
+                        CircularProgressIndicator()
+                    }
                 } else {
                     Icon(
                         imageVector = Icons.Default.Face,

@@ -943,10 +943,12 @@ private fun CharacteristicsContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
     ) {
-        if (!displayChar.imageUrl.isNullOrBlank()) {
+        val imageUrl = displayChar.displayImageUrl
+        if (!imageUrl.isNullOrBlank()) {
+            val isGenerating = imageUrl.startsWith("generating:")
             Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
                 AsyncImage(
-                    model = displayChar.displayImageUrl,
+                    model = if (isGenerating) null else imageUrl,
                     contentDescription = displayChar.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
@@ -954,6 +956,11 @@ private fun CharacteristicsContent(
                         println("[AsyncImage] Failed to load hero image for ${displayChar.name}: ${imageState.result.throwable}")
                     },
                 )
+                if (isGenerating) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
             }
         }
 

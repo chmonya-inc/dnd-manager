@@ -11,6 +11,21 @@ interface CharacterRepository {
     val characterUpdates: Flow<String>
 
     /**
+     * Emits the ID of an NPC whenever it is successfully saved locally.
+     */
+    val npcUpdates: Flow<String>
+
+    /**
+     * Emits the ID of a monster whenever it is successfully saved locally.
+     */
+    val monsterUpdates: Flow<String>
+
+    /**
+     * Emits the ID of a location whenever it is successfully saved locally.
+     */
+    val locationUpdates: Flow<String>
+
+    /**
      * Emits the type of update (e.g., "characters", "monsters") whenever the server notifies via WebSocket.
      */
     val remoteUpdates: Flow<String>
@@ -43,12 +58,6 @@ interface CharacterRepository {
     suspend fun getEvents(forceRefresh: Boolean = false): Result<List<GameEvent>>
     suspend fun saveEvent(event: GameEvent): Result<Unit>
     suspend fun deleteEvent(id: String): Result<Unit>
-
-    /**
-     * Enqueues an image generation task in a process-scoped scope.
-     * When the image is ready, it will automatically update the entity (character, npc, etc.) in the repository.
-     */
-    fun enqueueImageGeneration(prompt: String, entityId: String, entityType: String, genType: com.dnd.helper.data.remote.GenerationType = com.dnd.helper.data.remote.GenerationType.CHARACTER)
 
     /**
      * Updates the in-memory cache with the given character and notifies observers.

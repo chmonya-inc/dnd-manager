@@ -4,34 +4,57 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.common.toUserMessage
-import com.dnd.helper.domain.model.Character
-import com.dnd.helper.domain.model.CharacterAppearance
-import com.dnd.helper.domain.model.CharacterCombat
-import com.dnd.helper.domain.model.CharacterFeatures
-import com.dnd.helper.domain.model.CharacterProficiencies
-import com.dnd.helper.domain.model.CharacterStats
-import com.dnd.helper.domain.model.EquipmentSlot
-import com.dnd.helper.domain.model.Item
-import com.dnd.helper.domain.model.ItemRarity
-import com.dnd.helper.domain.model.Skill
-import com.dnd.helper.domain.model.Weapon
+import com.dnd.helper.domain.model.*
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.data.remote.GenerationType
 import com.dnd.helper.data.remote.PromptGenerator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 import kotlin.time.Clock
 
 class CharacterCreateViewModel(
     private val repository: CharacterRepository,
-    private val aiService: com.dnd.helper.data.remote.AiImageService,
+    private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
 ) : ViewModel() {
 
+    private val tempId = "temp-char-${Random.nextInt(1000000, 9999999)}"
     private val _state = MutableStateFlow(CharacterCreateState())
     val state: StateFlow<CharacterCreateState> = _state.asStateFlow()
+
+    init {
+        // Listen for background image generation completion
+        viewModelScope.launch {
+            editingRepository.activeTasks.collect { tasks ->
+                val myTasks = tasks.filter { 
+                    it.entityId == tempId || it.entityId.startsWith("$tempId:") 
+                }
+                
+                myTasks.forEach { task ->
+                    if ((task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED && task.resultUrl != null) ||
+                         task.status == com.dnd.helper.domain.repository.GenerationStatus.FAILED) {
+                        
+                        val resultUrl = if (task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED) task.resultUrl ?: "" else ""
+                        
+                        _state.update { currentState ->
+                            if (task.entityType == "character" && currentState.imageUrl == "generating:${task.id}") {
+                                currentState.copy(imageUrl = resultUrl)
+                            } else if (task.entityType == "item") {
+                                val itemId = task.entityId.substringAfter(":")
+                                if (currentState.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
+                                    val newItems = currentState.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
+                                    currentState.copy(items = newItems)
+                                } else currentState
+                            } else currentState
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     fun onEvent(event: CharacterCreateEvent) {
         when (event) {
@@ -168,45 +191,36 @@ class CharacterCreateViewModel(
         }
         if (s.name.isBlank() && s.aiPrompt.isBlank()) return
 
-        _state.value = _state.value.copy(imageUrl = "url will appear after generation")
-        
-        viewModelScope.launch {
-            val url = aiService.generateImage(
-                promptText = prompt,
-                type = GenerationType.CHARACTER,
-                customWidth = s.aiWidth,
-                customHeight = s.aiHeight
-            )
-            if (url != null) {
-                _state.value = _state.value.copy(imageUrl = url)
-            } else {
-                _state.value = _state.value.copy(imageUrl = "")
-            }
-        }
+        val mockUrl = editingRepository.startGeneration(
+            entityId = tempId,
+            entityType = "character",
+            prompt = prompt,
+            genType = GenerationType.CHARACTER,
+            width = s.aiWidth,
+            height = s.aiHeight
+        )
+        _state.value = _state.value.copy(imageUrl = mockUrl)
     }
 
     private fun generateItemImage(index: Int) {
-        val items = _state.value.items
+        val s = _state.value
+        val items = s.items
         if (index !in items.indices) return
         val item = items[index]
         val promptText = "${item.name}, ${item.rarity}. ${item.description}"
         if (item.name.isBlank()) return
 
         val fullPrompt = PromptGenerator.getFullPrompt(promptText, GenerationType.ITEM)
-        updateItem(index) { it.copy(imageUrl = "url will appear after generation") }
-        viewModelScope.launch {
-            val url = aiService.generateImage(
-                promptText = fullPrompt,
-                type = GenerationType.ITEM,
-                customWidth = _state.value.aiWidth,
-                customHeight = _state.value.aiHeight
-            )
-            if (url != null) {
-                updateItem(index) { it.copy(imageUrl = url) }
-            } else {
-                updateItem(index) { it.copy(imageUrl = "") }
-            }
-        }
+        
+        val mockUrl = editingRepository.startGeneration(
+            entityId = "$tempId:${item.id}",
+            entityType = "item",
+            prompt = fullPrompt,
+            genType = GenerationType.ITEM,
+            width = s.aiWidth,
+            height = s.aiHeight
+        )
+        updateItem(index) { it.copy(imageUrl = mockUrl) }
     }
 
     // Items
@@ -312,6 +326,7 @@ class CharacterCreateViewModel(
     private fun getRandomId(): String {
         return Random.nextInt(100000, 999999).toString()
     }
+
     private fun saveCharacter() {
         val s = _state.value
 
@@ -343,7 +358,7 @@ class CharacterCreateViewModel(
         }
 
         val character = Character(
-            id = "char-${getRandomId()}",
+            id = tempId,
             name = s.name.trim(),
             playerName = s.playerName.trim(),
             race = s.race.trim(),

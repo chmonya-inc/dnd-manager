@@ -19,13 +19,21 @@ import kotlinx.coroutines.launch
 class CharacterRepositoryImpl(
     private val dataSource: KtorRemoteDataSource,
     private val storage: CharacterStorage,
-    private val aiService: AiImageService,
 ) : CharacterRepository {
 
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val _characterUpdates = MutableSharedFlow<String>(extraBufferCapacity = 1)
     override val characterUpdates: SharedFlow<String> = _characterUpdates.asSharedFlow()
+
+    private val _npcUpdates = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    override val npcUpdates: SharedFlow<String> = _npcUpdates.asSharedFlow()
+
+    private val _monsterUpdates = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    override val monsterUpdates: SharedFlow<String> = _monsterUpdates.asSharedFlow()
+
+    private val _locationUpdates = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    override val locationUpdates: SharedFlow<String> = _locationUpdates.asSharedFlow()
 
     override val remoteUpdates: Flow<String> = dataSource.observeUpdates()
 
@@ -186,7 +194,10 @@ class CharacterRepositoryImpl(
 
     override suspend fun saveLocation(location: Location): Result<Unit> {
         val result = dataSource.saveLocation(location)
-        if (result is Result.Success) locationsCache = null // invalidate
+        if (result is Result.Success) {
+            locationsCache = null // invalidate
+            _locationUpdates.tryEmit(location.id)
+        }
         return result
     }
 
@@ -208,7 +219,10 @@ class CharacterRepositoryImpl(
 
     override suspend fun saveMonster(monster: Monster): Result<Unit> {
         val result = dataSource.saveMonster(monster)
-        if (result is Result.Success) monstersCache = null
+        if (result is Result.Success) {
+            monstersCache = null
+            _monsterUpdates.tryEmit(monster.id)
+        }
         return result
     }
 
@@ -230,7 +244,10 @@ class CharacterRepositoryImpl(
 
     override suspend fun saveNpc(npc: Npc): Result<Unit> {
         val result = dataSource.saveNpc(npc)
-        if (result is Result.Success) npcsCache = null
+        if (result is Result.Success) {
+            npcsCache = null
+            _npcUpdates.tryEmit(npc.id)
+        }
         return result
     }
 
@@ -290,48 +307,5 @@ class CharacterRepositoryImpl(
         val result = dataSource.deleteEvent(id)
         if (result is Result.Success) eventsCache = null
         return result
-    }
-
-    override fun enqueueImageGeneration(prompt: String, entityId: String, entityType: String, genType: GenerationType) {
-        repositoryScope.launch {
-            val url = aiService.generateImage(prompt, genType) ?: return@launch
-            
-            when (entityType.lowercase()) {
-                "character" -> {
-                    getCharacter(entityId).let { result ->
-                        if (result is Result.Success) {
-                            saveCharacter(result.data.copy(imageUrl = url))
-                        }
-                    }
-                }
-                "npc" -> {
-                    getNpcs().let { result ->
-                        if (result is Result.Success) {
-                            result.data.find { it.id == entityId }?.let { npc ->
-                                saveNpc(npc.copy(imageUrl = url))
-                            }
-                        }
-                    }
-                }
-                "monster" -> {
-                    getMonsters().let { result ->
-                        if (result is Result.Success) {
-                            result.data.find { it.id == entityId }?.let { monster ->
-                                saveMonster(monster.copy(imageUrl = url))
-                            }
-                        }
-                    }
-                }
-                "location" -> {
-                    getLocations().let { result ->
-                        if (result is Result.Success) {
-                            result.data.find { it.id == entityId }?.let { location ->
-                                saveLocation(location.copy(imageUrl = url))
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class LibraryState(
@@ -23,7 +24,8 @@ data class LibraryState(
 )
 
 class LibraryViewModel(
-    private val repository: CharacterRepository
+    private val repository: CharacterRepository,
+    private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LibraryState())
@@ -38,6 +40,63 @@ class LibraryViewModel(
 
     init {
         refreshData()
+
+        // Listen for background image generation completion
+        viewModelScope.launch {
+            editingRepository.activeTasks.collect { tasks ->
+                tasks.forEach { task ->
+                    if ((task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED && task.resultUrl != null) || 
+                         task.status == com.dnd.helper.domain.repository.GenerationStatus.FAILED) {
+                        
+                        val resultUrl = if (task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED) task.resultUrl else ""
+                        
+                        _state.update { currentState ->
+                            when (task.entityType) {
+                                "npc" -> {
+                                    if (currentState.npcs.any { it.id == task.entityId && it.imageUrl == "generating:${task.id}" }) {
+                                        val newNpcs = currentState.npcs.map { if (it.id == task.entityId) it.copy(imageUrl = resultUrl) else it }
+                                        currentState.copy(npcs = newNpcs)
+                                    } else currentState
+                                }
+                                "monster" -> {
+                                    if (currentState.monsters.any { it.id == task.entityId && it.imageUrl == "generating:${task.id}" }) {
+                                        val newMonsters = currentState.monsters.map { if (it.id == task.entityId) it.copy(imageUrl = resultUrl) else it }
+                                        currentState.copy(monsters = newMonsters)
+                                    } else currentState
+                                }
+                                "location" -> {
+                                    if (currentState.locations.any { it.id == task.entityId && it.imageUrl == "generating:${task.id}" }) {
+                                        val newLocations = currentState.locations.map { if (it.id == task.entityId) it.copy(imageUrl = resultUrl) else it }
+                                        currentState.copy(locations = newLocations)
+                                    } else currentState
+                                }
+                                "character" -> {
+                                    if (currentState.characters.any { it.id == task.entityId && it.imageUrl == "generating:${task.id}" }) {
+                                        val newChars = currentState.characters.map { if (it.id == task.entityId) it.copy(imageUrl = resultUrl) else it }
+                                        currentState.copy(characters = newChars)
+                                    } else currentState
+                                }
+                                "item" -> {
+                                    val parts = task.entityId.split(":")
+                                    if (parts.size == 2) {
+                                        val charId = parts[0]
+                                        val itemId = parts[1]
+                                        val char = currentState.characters.find { it.id == charId }
+                                        if (char != null && char.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
+                                            val newItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
+                                            val updatedChar = char.copy(items = newItems)
+                                            val newChars = currentState.characters.map { if (it.id == charId) updatedChar else it }
+                                            currentState.copy(characters = newChars)
+                                        } else currentState
+                                    } else currentState
+                                }
+                                else -> currentState
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // Listen for remote updates via WebSocket
         viewModelScope.launch {
@@ -61,6 +120,20 @@ class LibraryViewModel(
                     refreshData(force = true)
                 }
             }
+        }
+
+        // Listen for internal repository updates (e.g. from local saves)
+        viewModelScope.launch {
+            repository.npcUpdates.collect { refreshData(force = true) }
+        }
+        viewModelScope.launch {
+            repository.monsterUpdates.collect { refreshData(force = true) }
+        }
+        viewModelScope.launch {
+            repository.locationUpdates.collect { refreshData(force = true) }
+        }
+        viewModelScope.launch {
+            repository.characterUpdates.collect { refreshData(force = true) }
         }
     }
 

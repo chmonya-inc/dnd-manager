@@ -11,13 +11,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 
 class CharacterDetailViewModel(
     private val repository: CharacterRepository,
-    private val aiService: com.dnd.helper.data.remote.AiImageService,
+    private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
     private val characterId: String,
 ) : ViewModel() {
 
@@ -52,11 +53,68 @@ class CharacterDetailViewModel(
     init {
         loadCharacter()
 
+        // Listen for background image generation completion
+        viewModelScope.launch {
+            editingRepository.activeTasks.collect { tasks ->
+                val myTasks = tasks.filter { 
+                    it.entityId == characterId || it.entityId.startsWith("$characterId:") 
+                }
+                
+                myTasks.forEach { task ->
+                    // Handle completion or failure
+                    if ((task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED && task.resultUrl != null) || 
+                         task.status == com.dnd.helper.domain.repository.GenerationStatus.FAILED) {
+                        
+                        val resultUrl = if (task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED) task.resultUrl else ""
+                        
+                        if (task.entityType == "character") {
+                            _state.update { currentState ->
+                                var nextState = currentState
+                                // Update main character
+                                if (currentState.character?.imageUrl == "generating:${task.id}") {
+                                    nextState = nextState.copy(character = currentState.character.copy(imageUrl = resultUrl))
+                                }
+                                // Update edited character
+                                if (currentState.editedCharacter?.imageUrl == "generating:${task.id}") {
+                                    nextState = nextState.copy(editedCharacter = currentState.editedCharacter.copy(imageUrl = resultUrl))
+                                }
+                                nextState
+                            }
+                        } else if (task.entityType == "item") {
+                            val itemId = task.entityId.substringAfter(":")
+                            
+                            _state.update { currentState ->
+                                var nextState = currentState
+                                // Update in main character
+                                currentState.character?.let { char ->
+                                    if (char.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
+                                        val newItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
+                                        nextState = nextState.copy(character = char.copy(items = newItems))
+                                    }
+                                }
+                                // Update in edited character
+                                currentState.editedCharacter?.let { char ->
+                                    if (char.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
+                                        val newItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
+                                        nextState = nextState.copy(editedCharacter = char.copy(items = newItems))
+                                    }
+                                }
+                                nextState
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Listen for remote updates via WebSocket
         viewModelScope.launch {
             repository.remoteUpdates.collect { updateType ->
                 if (updateType == "characters") {
                     val state = _state.value
+                    // If we are editing, we don't want to fully reload (and lose changes)
+                    // but we might want to pick up some remote changes?
+                    // For now, only reload if NOT editing and NOT saving
                     if (!state.isEditing && !state.hasUnsavedChanges && !isRecentlySaved) {
                         println("[CharacterDetail] Remote update received via WebSocket, reloading character...")
                         loadCharacter(fromAutoRefresh = true)
@@ -127,63 +185,49 @@ class CharacterDetailViewModel(
             PromptGenerator.getFullPrompt(text, GenerationType.CHARACTER)
         }
         
-        _state.value = currentState.copy(
-            editedCharacter = edited.copy(imageUrl = "url will appear after generation")
+        val mockUrl = editingRepository.startGeneration(
+            entityId = characterId,
+            entityType = "character",
+            prompt = prompt,
+            genType = GenerationType.CHARACTER,
+            width = currentState.aiWidth,
+            height = currentState.aiHeight
         )
         
-        viewModelScope.launch {
-            val url = aiService.generateImage(prompt, GenerationType.CHARACTER, currentState.aiWidth, currentState.aiHeight)
-            val latestState = _state.value
-            val currentEdited = latestState.editedCharacter ?: return@launch
-            
-            if (url != null) {
-                val updatedChar = currentEdited.copy(imageUrl = url)
-                _state.value = latestState.copy(editedCharacter = updatedChar)
-                
-                // If not in manual editing mode, save to repository automatically
-                if (!latestState.isEditing) {
-                    repository.saveCharacter(updatedChar)
-                }
-            } else {
-                _state.value = latestState.copy(editedCharacter = currentEdited.copy(imageUrl = ""))
-            }
+        _state.value = currentState.copy(
+            editedCharacter = edited.copy(imageUrl = mockUrl)
+        )
+        
+        // If not in manual editing mode, update the character immediately so the list shows the mock URL
+        if (!currentState.isEditing) {
+            repository.optimisticUpdate(edited.copy(imageUrl = mockUrl))
         }
     }
 
     private fun generateItemImage(itemId: String) {
-        val edited = _state.value.editedCharacter ?: return
+        val currentState = _state.value
+        val edited = currentState.editedCharacter ?: return
         val item = edited.items.find { it.id == itemId } ?: return
         val promptText = "${item.name}, ${item.rarity}. ${item.description}"
         if (item.name.isBlank()) return
 
         val fullPrompt = PromptGenerator.getFullPrompt(promptText, GenerationType.ITEM)
-        val newItems = edited.items.map {
-            if (it.id == itemId) it.copy(imageUrl = "url will appear after generation") else it
-        }
-        _state.value = _state.value.copy(editedCharacter = edited.copy(items = newItems))
+        
+        val mockUrl = editingRepository.startGeneration(
+            entityId = "$characterId:$itemId",
+            entityType = "item",
+            prompt = fullPrompt,
+            genType = GenerationType.ITEM
+        )
 
-        viewModelScope.launch {
-            val url = aiService.generateImage(fullPrompt, GenerationType.ITEM)
-            val currentState = _state.value
-            val currentEdited = currentState.editedCharacter ?: return@launch
-            
-            if (url != null) {
-                val updatedItems = currentEdited.items.map {
-                    if (it.id == itemId) it.copy(imageUrl = url) else it
-                }
-                val updatedChar = currentEdited.copy(items = updatedItems)
-                _state.value = currentState.copy(editedCharacter = updatedChar)
-                
-                // If not in manual editing mode, save to repository automatically
-                if (!currentState.isEditing) {
-                    repository.saveCharacter(updatedChar)
-                }
-            } else {
-                val updatedItems = currentEdited.items.map {
-                    if (it.id == itemId) it.copy(imageUrl = "") else it
-                }
-                _state.value = currentState.copy(editedCharacter = currentEdited.copy(items = updatedItems))
-            }
+        val newItems = edited.items.map {
+            if (it.id == itemId) it.copy(imageUrl = mockUrl) else it
+        }
+        val updatedChar = edited.copy(items = newItems)
+        _state.value = currentState.copy(editedCharacter = updatedChar)
+
+        if (!currentState.isEditing) {
+            repository.optimisticUpdate(updatedChar)
         }
     }
 
