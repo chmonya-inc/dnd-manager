@@ -189,7 +189,7 @@ private fun MasterContent(
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         if (state.isEditing) {
             state.editedCharacter?.let { edited ->
-                EditFields(edited, viewModel)
+                EditFields(edited, state, viewModel)
             }
         } else {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -351,7 +351,7 @@ private fun ExpandableSection(
 }
 
 @Composable
-private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel: CharacterDetailViewModel) {
+private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: CharacterDetailState, viewModel: CharacterDetailViewModel) {
     OutlinedTextField(
         value = edited.name,
         onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(name = it))) },
@@ -398,6 +398,71 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
         modifier = Modifier.fillMaxWidth(),
         minLines = 3
     )
+    Spacer(modifier = Modifier.height(16.dp))
+    Text("AI Image Generation Settings", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+    Spacer(modifier = Modifier.height(8.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically, 
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        OutlinedTextField(
+            value = state.aiPrompt,
+            onValueChange = { viewModel.onEvent(CharacterDetailEvent.UpdateAiPrompt(it)) },
+            label = { Text("AI Prompt") },
+            modifier = Modifier.weight(1f),
+            minLines = 3,
+            shape = RoundedCornerShape(12.dp)
+        )
+        
+        Column(
+            modifier = Modifier.width(160.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = state.aiWidth.toString(),
+                    onValueChange = { 
+                        val w = it.toIntOrNull() ?: state.aiWidth
+                        viewModel.onEvent(CharacterDetailEvent.UpdateAiSize(w, state.aiHeight))
+                    },
+                    label = { Text("W") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(8.dp)
+                )
+                OutlinedTextField(
+                    value = state.aiHeight.toString(),
+                    onValueChange = { 
+                        val h = it.toIntOrNull() ?: state.aiHeight
+                        viewModel.onEvent(CharacterDetailEvent.UpdateAiSize(state.aiWidth, h))
+                    },
+                    label = { Text("H") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(8.dp)
+                )
+            }
+            Button(
+                onClick = { viewModel.onEvent(CharacterDetailEvent.GenerateImage) },
+                enabled = edited.imageUrl != "url will appear after generation",
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                if (edited.imageUrl == "url will appear after generation") {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
+                } else {
+                    Icon(Icons.Default.AutoFixHigh, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Generate", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+    }
 }
 
 @Composable
