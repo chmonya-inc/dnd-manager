@@ -22,12 +22,108 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.dnd.helper.data.remote.AiImageService
+import com.dnd.helper.data.remote.GenerationType
+import com.dnd.helper.data.remote.PromptGenerator
 import com.dnd.helper.domain.model.*
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.presentation.charactercreate.CharacterCreateScreen
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import kotlin.random.Random
+
+@Composable
+fun ImageGenerationButton(
+    prompt: String,
+    onImageUrlGenerated: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
+    entityId: String? = null,
+    entityType: String? = null,
+    generationType: GenerationType? = null,
+    width: Int? = null,
+    height: Int? = null
+) {
+    val aiService: AiImageService = koinInject()
+    val repository: CharacterRepository = koinInject()
+    val scope = rememberCoroutineScope()
+    var isGenerating by remember { mutableStateOf(false) }
+
+    IconButton(
+        onClick = {
+            if (prompt.isNotBlank()) {
+                isGenerating = true
+                onImageUrlGenerated("url will appear after generation")
+                
+                val genType = generationType ?: when (entityType?.lowercase()) {
+                    "character" -> GenerationType.CHARACTER
+                    "npc" -> GenerationType.NPC
+                    "monster" -> GenerationType.MONSTER
+                    "location" -> GenerationType.LOCATION
+                    "skill" -> GenerationType.SKILL
+                    "item" -> GenerationType.ITEM
+                    else -> GenerationType.CHARACTER
+                }
+                
+                scope.launch {
+                    val url = aiService.generateImage(prompt, genType, width, height)
+                    if (url != null) {
+                        onImageUrlGenerated(url)
+                        // If it's an existing entity, also save to repository in background
+                        if (entityId != null && entityType != null) {
+                            // We use repository.enqueueImageGeneration if we want to reuse its save logic,
+                            // but that would generate AGAIN. So we should have a way to just SAVE the url.
+                            // For now, let's just manually save it.
+                            when (entityType.lowercase()) {
+                                "npc" -> {
+                                    val result = repository.getNpcs()
+                                    if (result is com.dnd.helper.domain.common.Result.Success) {
+                                        result.data.find { it.id == entityId }?.let { npc ->
+                                            repository.saveNpc(npc.copy(imageUrl = url))
+                                        }
+                                    }
+                                }
+                                "monster" -> {
+                                    val result = repository.getMonsters()
+                                    if (result is com.dnd.helper.domain.common.Result.Success) {
+                                        result.data.find { it.id == entityId }?.let { monster ->
+                                            repository.saveMonster(monster.copy(imageUrl = url))
+                                        }
+                                    }
+                                }
+                                "location" -> {
+                                    val result = repository.getLocations()
+                                    if (result is com.dnd.helper.domain.common.Result.Success) {
+                                        result.data.find { it.id == entityId }?.let { location ->
+                                            repository.saveLocation(location.copy(imageUrl = url))
+                                        }
+                                    }
+                                }
+                                "character" -> {
+                                    val result = repository.getCharacter(entityId)
+                                    if (result is com.dnd.helper.domain.common.Result.Success) {
+                                        repository.saveCharacter(result.data.copy(imageUrl = url))
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        onImageUrlGenerated("") 
+                    }
+                    isGenerating = false
+                }
+            }
+        },
+        enabled = !isGenerating && prompt.isNotBlank(),
+        modifier = modifier
+    ) {
+        if (isGenerating) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = accentColor, strokeWidth = 2.dp)
+        } else {
+            Icon(Icons.Default.AutoFixHigh, contentDescription = "Generate Image", tint = accentColor)
+        }
+    }
+}
 
 // Theme colors for different categories
 private val MonsterColor = Color(0xFFEF5350) // Red
@@ -231,7 +327,14 @@ private fun NpcCreateForm(
     var background by remember { mutableStateOf(existing?.background ?: "") }
     var description by remember { mutableStateOf(existing?.description ?: "") }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
+    var customPrompt by remember { mutableStateOf(existing?.let { PromptGenerator.getFullPrompt("${it.name}, ${it.background}. ${it.description}", GenerationType.NPC) } ?: "") }
+    var aiWidth by remember { mutableStateOf("512") }
+    var aiHeight by remember { mutableStateOf("512") }
     var isSaving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(name, background, description) {
+        customPrompt = PromptGenerator.getFullPrompt("$name, $background. $description".trim(), GenerationType.NPC)
+    }
 
     CreatorFormLayout(
         accentColor = NpcColor,
@@ -273,14 +376,27 @@ private fun NpcCreateForm(
         }
         
         SectionHeader(Icons.Default.Image, "Appearance", NpcColor)
-        OutlinedTextField(
-            value = imageUrl,
-            onValueChange = { imageUrl = it },
-            label = { Text("Image URL") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            placeholder = { Text("https://...") }
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = imageUrl,
+                onValueChange = { imageUrl = it },
+                label = { Text("Image URL") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                placeholder = { Text("https://...") }
+            )
+            OutlinedTextField(value = aiWidth, onValueChange = { aiWidth = it }, label = { Text("W") }, modifier = Modifier.width(70.dp), shape = RoundedCornerShape(8.dp), singleLine = true)
+            OutlinedTextField(value = aiHeight, onValueChange = { aiHeight = it }, label = { Text("H") }, modifier = Modifier.width(70.dp), shape = RoundedCornerShape(8.dp), singleLine = true)
+            ImageGenerationButton(
+                prompt = customPrompt.ifBlank { "NPC: $name, $background. $description" },
+                onImageUrlGenerated = { imageUrl = it },
+                accentColor = NpcColor,
+                entityId = existing?.id,
+                entityType = "npc",
+                width = aiWidth.toIntOrNull(),
+                height = aiHeight.toIntOrNull()
+            )
+        }
         
         SectionHeader(Icons.AutoMirrored.Filled.Notes, "Backstory & Notes", NpcColor)
         OutlinedTextField(
@@ -290,6 +406,17 @@ private fun NpcCreateForm(
             modifier = Modifier.fillMaxWidth(),
             minLines = 8,
             shape = RoundedCornerShape(12.dp)
+        )
+
+        SectionHeader(Icons.Default.AutoFixHigh, "AI Image Generation Prompt", NpcColor)
+        OutlinedTextField(
+            value = customPrompt,
+            onValueChange = { customPrompt = it },
+            label = { Text("AI Prompt") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("Detailed description for AI generation...") }
         )
     }
 }
@@ -321,7 +448,14 @@ private fun MonsterCreateForm(
     var wis by remember { mutableStateOf(existing?.stats?.wisdom?.toString() ?: "10") }
     var cha by remember { mutableStateOf(existing?.stats?.charisma?.toString() ?: "10") }
     
+    var customPrompt by remember { mutableStateOf(existing?.let { PromptGenerator.getFullPrompt("${it.name}, ${it.type}, ${it.size}. ${it.description}", GenerationType.MONSTER) } ?: "") }
+    var aiWidth by remember { mutableStateOf("512") }
+    var aiHeight by remember { mutableStateOf("512") }
     var isSaving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(name, type, size, description) {
+        customPrompt = PromptGenerator.getFullPrompt("$name, $type, $size. $description".trim(), GenerationType.MONSTER)
+    }
 
     CreatorFormLayout(
         accentColor = MonsterColor,
@@ -396,7 +530,26 @@ private fun MonsterCreateForm(
         }
 
         SectionHeader(Icons.Default.Image, "Media", MonsterColor)
-        OutlinedTextField(value = imageUrl, onValueChange = { imageUrl = it }, label = { Text("Image URL") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = imageUrl,
+                onValueChange = { imageUrl = it },
+                label = { Text("Image URL") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            OutlinedTextField(value = aiWidth, onValueChange = { aiWidth = it }, label = { Text("W") }, modifier = Modifier.width(70.dp), shape = RoundedCornerShape(8.dp), singleLine = true)
+            OutlinedTextField(value = aiHeight, onValueChange = { aiHeight = it }, label = { Text("H") }, modifier = Modifier.width(70.dp), shape = RoundedCornerShape(8.dp), singleLine = true)
+            ImageGenerationButton(
+                prompt = customPrompt.ifBlank { "Monster: $name, $type, $size. $description" },
+                onImageUrlGenerated = { imageUrl = it },
+                accentColor = MonsterColor,
+                entityId = existing?.id,
+                entityType = "monster",
+                width = aiWidth.toIntOrNull(),
+                height = aiHeight.toIntOrNull()
+            )
+        }
 
         SectionHeader(Icons.AutoMirrored.Filled.List, "Traits & Actions", MonsterColor)
         OutlinedTextField(
@@ -406,6 +559,17 @@ private fun MonsterCreateForm(
             modifier = Modifier.fillMaxWidth(),
             minLines = 8,
             shape = RoundedCornerShape(12.dp)
+        )
+
+        SectionHeader(Icons.Default.AutoFixHigh, "AI Image Generation Prompt", MonsterColor)
+        OutlinedTextField(
+            value = customPrompt,
+            onValueChange = { customPrompt = it },
+            label = { Text("AI Prompt") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("Detailed description for AI generation...") }
         )
     }
 }
@@ -428,7 +592,14 @@ private fun ItemCreateForm(
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
     var rarity by remember { mutableStateOf(existing?.rarity ?: ItemRarity.COMMON) }
     var slot by remember { mutableStateOf<EquipmentSlot?>(existing?.slot ?: EquipmentSlot.MAIN_HAND) }
+    var customPrompt by remember { mutableStateOf(existing?.let { PromptGenerator.getFullPrompt("${it.name}, ${it.rarity}. ${it.description}", GenerationType.ITEM) } ?: "") }
+    var aiWidth by remember { mutableStateOf("256") }
+    var aiHeight by remember { mutableStateOf("256") }
     var isSaving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(name, rarity, description) {
+        customPrompt = PromptGenerator.getFullPrompt("$name, $rarity. $description".trim(), GenerationType.ITEM)
+    }
 
     LaunchedEffect(Unit) {
         val result = repository.getCharacters()
@@ -552,10 +723,41 @@ private fun ItemCreateForm(
         }
 
         SectionHeader(Icons.Default.Image, "Visuals", ItemColor)
-        OutlinedTextField(value = imageUrl, onValueChange = { imageUrl = it }, label = { Text("Image URL") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = imageUrl,
+                onValueChange = { imageUrl = it },
+                label = { Text("Image URL") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            OutlinedTextField(value = aiWidth, onValueChange = { aiWidth = it }, label = { Text("W") }, modifier = Modifier.width(70.dp), shape = RoundedCornerShape(8.dp), singleLine = true)
+            OutlinedTextField(value = aiHeight, onValueChange = { aiHeight = it }, label = { Text("H") }, modifier = Modifier.width(70.dp), shape = RoundedCornerShape(8.dp), singleLine = true)
+            ImageGenerationButton(
+                prompt = customPrompt.ifBlank { "Item: $name, $rarity. $description" },
+                onImageUrlGenerated = { imageUrl = it },
+                accentColor = ItemColor,
+                entityId = existing?.id,
+                entityType = "character", // Items update their owner character
+                generationType = GenerationType.ITEM,
+                width = aiWidth.toIntOrNull(),
+                height = aiHeight.toIntOrNull()
+            )
+        }
         
         SectionHeader(Icons.Default.Description, "Description", ItemColor)
         OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Properties & Lore") }, modifier = Modifier.fillMaxWidth(), minLines = 5, shape = RoundedCornerShape(12.dp))
+
+        SectionHeader(Icons.Default.AutoFixHigh, "AI Image Generation Prompt", ItemColor)
+        OutlinedTextField(
+            value = customPrompt,
+            onValueChange = { customPrompt = it },
+            label = { Text("AI Prompt") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("Detailed description for AI generation...") }
+        )
     }
 }
 
@@ -571,7 +773,14 @@ private fun LocationCreateForm(
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var description by remember { mutableStateOf(existing?.description ?: "") }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
+    var customPrompt by remember { mutableStateOf(existing?.let { PromptGenerator.getFullPrompt("${it.name}. ${it.description}", GenerationType.LOCATION) } ?: "") }
+    var aiWidth by remember { mutableStateOf("1024") }
+    var aiHeight by remember { mutableStateOf("1024") }
     var isSaving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(name, description) {
+        customPrompt = PromptGenerator.getFullPrompt("$name. $description".trim(), GenerationType.LOCATION)
+    }
 
     CreatorFormLayout(
         accentColor = LocationColor,
@@ -603,14 +812,27 @@ private fun LocationCreateForm(
         )
         
         SectionHeader(Icons.Default.Image, "Media", LocationColor)
-        OutlinedTextField(
-            value = imageUrl,
-            onValueChange = { imageUrl = it },
-            label = { Text("Image URL") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            placeholder = { Text("https://...") }
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = imageUrl,
+                onValueChange = { imageUrl = it },
+                label = { Text("Image URL") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                placeholder = { Text("https://...") }
+            )
+            OutlinedTextField(value = aiWidth, onValueChange = { aiWidth = it }, label = { Text("W") }, modifier = Modifier.width(70.dp), shape = RoundedCornerShape(8.dp), singleLine = true)
+            OutlinedTextField(value = aiHeight, onValueChange = { aiHeight = it }, label = { Text("H") }, modifier = Modifier.width(70.dp), shape = RoundedCornerShape(8.dp), singleLine = true)
+            ImageGenerationButton(
+                prompt = customPrompt.ifBlank { "Location: $name. $description" },
+                onImageUrlGenerated = { imageUrl = it },
+                accentColor = LocationColor,
+                entityId = existing?.id,
+                entityType = "location",
+                width = aiWidth.toIntOrNull(),
+                height = aiHeight.toIntOrNull()
+            )
+        }
         
         SectionHeader(Icons.Default.Description, "Details & Lore", LocationColor)
         OutlinedTextField(
@@ -620,6 +842,17 @@ private fun LocationCreateForm(
             modifier = Modifier.fillMaxWidth(),
             minLines = 8,
             shape = RoundedCornerShape(12.dp)
+        )
+
+        SectionHeader(Icons.Default.AutoFixHigh, "AI Image Generation Prompt", LocationColor)
+        OutlinedTextField(
+            value = customPrompt,
+            onValueChange = { customPrompt = it },
+            label = { Text("AI Prompt") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            shape = RoundedCornerShape(12.dp),
+            placeholder = { Text("Detailed description for AI generation...") }
         )
     }
 }

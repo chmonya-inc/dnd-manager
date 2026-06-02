@@ -15,6 +15,8 @@ sealed interface CharacterDetailEvent {
     // New string editing events
     data object ToggleEdit : CharacterDetailEvent
     data class EditCharacter(val character: Character) : CharacterDetailEvent
+    data class UpdateAiPrompt(val prompt: String) : CharacterDetailEvent
+    data class UpdateAiSize(val width: Int, val height: Int) : CharacterDetailEvent
     data object SaveChanges : CharacterDetailEvent
     data object ToggleMasterMode : CharacterDetailEvent
     data object AddSkill : CharacterDetailEvent
@@ -28,4 +30,7 @@ sealed interface CharacterDetailEvent {
     data object AddNote : CharacterDetailEvent
     data class RemoveNote(val noteId: String) : CharacterDetailEvent
     data class UpdateNote(val note: com.dnd.helper.domain.model.Note) : CharacterDetailEvent
+
+    data object GenerateImage : CharacterDetailEvent
+    data class GenerateItemImage(val itemId: String) : CharacterDetailEvent
 }

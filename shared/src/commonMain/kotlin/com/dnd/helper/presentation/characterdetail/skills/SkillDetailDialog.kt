@@ -22,7 +22,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil3.compose.AsyncImage
+import com.dnd.helper.data.remote.AiImageService
+import com.dnd.helper.data.remote.GenerationType
+import com.dnd.helper.data.remote.PromptGenerator
 import com.dnd.helper.domain.model.Skill
+import org.koin.compose.koinInject
+import kotlinx.coroutines.launch
 
 @Composable
 fun SkillDetailDialog(
@@ -32,7 +37,17 @@ fun SkillDetailDialog(
     onDelete: () -> Unit = {},
     onUpdate: (Skill) -> Unit = {}
 ) {
+    val aiService: AiImageService = koinInject()
+    val scope = rememberCoroutineScope()
     var editedSkill by remember { mutableStateOf(skill) }
+    var customPrompt by remember { mutableStateOf(PromptGenerator.getFullPrompt("${editedSkill.name}, ${editedSkill.damageType} skill. ${editedSkill.description}", GenerationType.SKILL)) }
+    var aiWidth by remember { mutableIntStateOf(256) }
+    var aiHeight by remember { mutableIntStateOf(256) }
+    var isGenerating by remember { mutableStateOf(false) }
+
+    LaunchedEffect(editedSkill.name, editedSkill.damageType, editedSkill.description) {
+        customPrompt = PromptGenerator.getFullPrompt("${editedSkill.name}, ${editedSkill.damageType} skill. ${editedSkill.description}".trim(), GenerationType.SKILL)
+    }
     
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -99,6 +114,75 @@ fun SkillDetailDialog(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(value = editedSkill.name, onValueChange = { editedSkill = editedSkill.copy(name = it); onUpdate(editedSkill) }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
                         OutlinedTextField(value = editedSkill.iconUrl ?: "", onValueChange = { editedSkill = editedSkill.copy(iconUrl = it.ifBlank { null }); onUpdate(editedSkill) }, label = { Text("Icon URL") }, modifier = Modifier.fillMaxWidth())
+                        
+                        // AI Generation Section
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("AI Icon Generation (${aiWidth}x${aiHeight})", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    OutlinedTextField(
+                                        value = customPrompt,
+                                        onValueChange = { customPrompt = it },
+                                        label = { Text("AI Prompt") },
+                                        modifier = Modifier.weight(1f),
+                                        minLines = 2,
+                                        shape = RoundedCornerShape(12.dp),
+                                        textStyle = MaterialTheme.typography.bodySmall
+                                    )
+                                    
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        OutlinedTextField(
+                                            value = aiWidth.toString(),
+                                            onValueChange = { aiWidth = it.toIntOrNull() ?: aiWidth },
+                                            label = { Text("W") },
+                                            modifier = Modifier.width(70.dp),
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            shape = RoundedCornerShape(8.dp),
+                                            textStyle = MaterialTheme.typography.bodySmall
+                                        )
+                                        OutlinedTextField(
+                                            value = aiHeight.toString(),
+                                            onValueChange = { aiHeight = it.toIntOrNull() ?: aiHeight },
+                                            label = { Text("H") },
+                                            modifier = Modifier.width(70.dp),
+                                            singleLine = true,
+                                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                            shape = RoundedCornerShape(8.dp),
+                                            textStyle = MaterialTheme.typography.bodySmall
+                                        )
+                                        IconButton(
+                                            onClick = { 
+                                                isGenerating = true
+                                                editedSkill = editedSkill.copy(iconUrl = "url will appear after generation")
+                                                scope.launch {
+                                                    val url = aiService.generateImage(customPrompt, GenerationType.SKILL, aiWidth, aiHeight)
+                                                    if (url != null) {
+                                                        editedSkill = editedSkill.copy(iconUrl = url)
+                                                        onUpdate(editedSkill)
+                                                    } else {
+                                                        editedSkill = editedSkill.copy(iconUrl = "")
+                                                    }
+                                                    isGenerating = false
+                                                }
+                                            },
+                                            enabled = !isGenerating
+                                        ) {
+                                            if (isGenerating) {
+                                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                            } else {
+                                                Icon(Icons.Default.AutoAwesome, "Generate Icon", tint = MaterialTheme.colorScheme.primary)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         OutlinedTextField(value = editedSkill.level.toString(), onValueChange = { editedSkill = editedSkill.copy(level = it.toIntOrNull() ?: 0); onUpdate(editedSkill) }, label = { Text("Level") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                         OutlinedTextField(value = editedSkill.damageType, onValueChange = { editedSkill = editedSkill.copy(damageType = it); onUpdate(editedSkill) }, label = { Text("Damage Type") }, modifier = Modifier.fillMaxWidth())
                         OutlinedTextField(value = editedSkill.damage, onValueChange = { editedSkill = editedSkill.copy(damage = it); onUpdate(editedSkill) }, label = { Text("Damage") }, modifier = Modifier.fillMaxWidth())

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.repository.CharacterRepository
+import com.dnd.helper.data.remote.GenerationType
+import com.dnd.helper.data.remote.PromptGenerator
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +17,7 @@ import kotlinx.serialization.encodeToString
 
 class CharacterDetailViewModel(
     private val repository: CharacterRepository,
+    private val aiService: com.dnd.helper.data.remote.AiImageService,
     private val characterId: String,
 ) : ViewModel() {
 
@@ -80,11 +83,23 @@ class CharacterDetailViewModel(
                 if (state.isEditing) {
                     _state.value = state.copy(isEditing = false, editedCharacter = null)
                 } else {
-                    _state.value = state.copy(isEditing = true, editedCharacter = state.character)
+                    val char = state.character
+                    val prompt = if (char != null) {
+                        PromptGenerator.getFullPrompt("${char.name}, ${char.race} ${char.characterClass}. ${char.description}", GenerationType.CHARACTER)
+                    } else ""
+                    _state.value = state.copy(isEditing = true, editedCharacter = char, aiPrompt = prompt)
                 }
             }
             is CharacterDetailEvent.EditCharacter -> {
-                _state.value = _state.value.copy(editedCharacter = event.character)
+                val char = event.character
+                val prompt = PromptGenerator.getFullPrompt("${char.name}, ${char.race} ${char.characterClass}. ${char.description}", GenerationType.CHARACTER)
+                _state.value = _state.value.copy(editedCharacter = char, aiPrompt = prompt)
+            }
+            is CharacterDetailEvent.UpdateAiPrompt -> {
+                _state.value = _state.value.copy(aiPrompt = event.prompt)
+            }
+            is CharacterDetailEvent.UpdateAiSize -> {
+                _state.value = _state.value.copy(aiWidth = event.width, aiHeight = event.height)
             }
             CharacterDetailEvent.SaveChanges -> saveChanges()
             CharacterDetailEvent.ToggleMasterMode -> {
@@ -99,6 +114,76 @@ class CharacterDetailViewModel(
             CharacterDetailEvent.AddNote -> addNote()
             is CharacterDetailEvent.RemoveNote -> removeNote(event.noteId)
             is CharacterDetailEvent.UpdateNote -> updateNote(event.note)
+            CharacterDetailEvent.GenerateImage -> generateImage()
+            is CharacterDetailEvent.GenerateItemImage -> generateItemImage(event.itemId)
+        }
+    }
+
+    private fun generateImage() {
+        val currentState = _state.value
+        val edited = currentState.editedCharacter ?: return
+        val prompt = if (currentState.aiPrompt.isNotBlank()) currentState.aiPrompt else {
+            val text = "${edited.name}, ${edited.race} ${edited.characterClass}. ${edited.description}"
+            PromptGenerator.getFullPrompt(text, GenerationType.CHARACTER)
+        }
+        
+        _state.value = currentState.copy(
+            editedCharacter = edited.copy(imageUrl = "url will appear after generation")
+        )
+        
+        viewModelScope.launch {
+            val url = aiService.generateImage(prompt, GenerationType.CHARACTER, currentState.aiWidth, currentState.aiHeight)
+            val latestState = _state.value
+            val currentEdited = latestState.editedCharacter ?: return@launch
+            
+            if (url != null) {
+                val updatedChar = currentEdited.copy(imageUrl = url)
+                _state.value = latestState.copy(editedCharacter = updatedChar)
+                
+                // If not in manual editing mode, save to repository automatically
+                if (!latestState.isEditing) {
+                    repository.saveCharacter(updatedChar)
+                }
+            } else {
+                _state.value = latestState.copy(editedCharacter = currentEdited.copy(imageUrl = ""))
+            }
+        }
+    }
+
+    private fun generateItemImage(itemId: String) {
+        val edited = _state.value.editedCharacter ?: return
+        val item = edited.items.find { it.id == itemId } ?: return
+        val promptText = "${item.name}, ${item.rarity}. ${item.description}"
+        if (item.name.isBlank()) return
+
+        val fullPrompt = PromptGenerator.getFullPrompt(promptText, GenerationType.ITEM)
+        val newItems = edited.items.map {
+            if (it.id == itemId) it.copy(imageUrl = "url will appear after generation") else it
+        }
+        _state.value = _state.value.copy(editedCharacter = edited.copy(items = newItems))
+
+        viewModelScope.launch {
+            val url = aiService.generateImage(fullPrompt, GenerationType.ITEM)
+            val currentState = _state.value
+            val currentEdited = currentState.editedCharacter ?: return@launch
+            
+            if (url != null) {
+                val updatedItems = currentEdited.items.map {
+                    if (it.id == itemId) it.copy(imageUrl = url) else it
+                }
+                val updatedChar = currentEdited.copy(items = updatedItems)
+                _state.value = currentState.copy(editedCharacter = updatedChar)
+                
+                // If not in manual editing mode, save to repository automatically
+                if (!currentState.isEditing) {
+                    repository.saveCharacter(updatedChar)
+                }
+            } else {
+                val updatedItems = currentEdited.items.map {
+                    if (it.id == itemId) it.copy(imageUrl = "") else it
+                }
+                _state.value = currentState.copy(editedCharacter = currentEdited.copy(items = updatedItems))
+            }
         }
     }
 

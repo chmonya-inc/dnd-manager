@@ -171,6 +171,30 @@ class DesktopCharacterStorage : CharacterStorage {
     override fun getTheme(): String? {
         return prefs.get("app_theme", null)
     }
+
+    override fun saveComfyUiAddress(address: String) {
+        prefs.put("comfy_ui_address", address)
+    }
+
+    override fun getComfyUiAddress(): String? {
+        return prefs.get("comfy_ui_address", null)
+    }
+
+    override fun saveComfyUiWorkflow(json: String) {
+        prefs.put("comfy_ui_workflow", json)
+    }
+
+    override fun getComfyUiWorkflow(): String? {
+        return prefs.get("comfy_ui_workflow", null)
+    }
+
+    override fun saveGenerationSteps(steps: Int) {
+        prefs.putInt("gen_steps", steps)
+    }
+
+    override fun getGenerationSteps(): Int {
+        return prefs.getInt("gen_steps", 20)
+    }
 }
 
 actual val platformModule = module {
@@ -191,5 +215,31 @@ actual fun openUrl(url: String) {
         }
     } catch (e: Exception) {
         e.printStackTrace()
+    }
+}
+
+actual fun pickFile(title: String, allowedExtensions: List<String>): String? {
+    val activeWindow = java.awt.Window.getWindows()
+        .filterIsInstance<java.awt.Frame>()
+        .find { it.isVisible && it.title == "D&D Helper" }
+        ?: java.awt.Window.getWindows().find { it.isVisible && it is java.awt.Frame } as? java.awt.Frame
+
+    val dialog = java.awt.FileDialog(activeWindow, title, java.awt.FileDialog.LOAD)
+    if (allowedExtensions.isNotEmpty()) {
+        dialog.setFilenameFilter { _, name -> 
+            allowedExtensions.any { name.lowercase().endsWith(it.lowercase()) } 
+        }
+    }
+    
+    dialog.isAlwaysOnTop = true
+    dialog.isVisible = true
+    return if (dialog.file != null) dialog.directory + dialog.file else null
+}
+
+actual fun readFileContent(path: String): String? {
+    return try {
+        java.io.File(path).readText()
+    } catch (e: Exception) {
+        null
     }
 }

@@ -45,6 +45,12 @@ interface CharacterRepository {
     suspend fun deleteEvent(id: String): Result<Unit>
 
     /**
+     * Enqueues an image generation task in a process-scoped scope.
+     * When the image is ready, it will automatically update the entity (character, npc, etc.) in the repository.
+     */
+    fun enqueueImageGeneration(prompt: String, entityId: String, entityType: String, genType: com.dnd.helper.data.remote.GenerationType = com.dnd.helper.data.remote.GenerationType.CHARACTER)
+
+    /**
      * Updates the in-memory cache with the given character and notifies observers.
      * Use this for optimistic UI updates.
      */

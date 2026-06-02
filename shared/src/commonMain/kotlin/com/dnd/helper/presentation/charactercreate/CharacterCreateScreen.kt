@@ -2,17 +2,7 @@ package com.dnd.helper.presentation.charactercreate
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -132,12 +122,14 @@ fun CharacterCreateScreen(
                             value = state.playerName,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.PlayerNameChanged(it)) },
                             label = { Text("Player") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.race,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.RaceChanged(it)) },
                             label = { Text("Race") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
@@ -145,12 +137,14 @@ fun CharacterCreateScreen(
                             value = state.characterClass,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ClassChanged(it)) },
                             label = { Text("Class") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.subclass,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SubclassChanged(it)) },
                             label = { Text("Subclass") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
@@ -158,28 +152,24 @@ fun CharacterCreateScreen(
                             value = state.background,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.BackgroundChanged(it)) },
                             label = { Text("Background") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.level,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.LevelChanged(it)) },
                             label = { Text("Level") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.experiencePoints,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ExperiencePointsChanged(it)) },
-                            label = { Text("XP") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
-                        OutlinedTextField(
-                            value = state.imageUrl,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ImageUrlChanged(it)) },
-                            label = { Text("Image URL") },
-                            )
-                    }
+                    OutlinedTextField(
+                        value = state.experiencePoints,
+                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.ExperiencePointsChanged(it)) },
+                        label = { Text("XP") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Spacer(Modifier.height(6.dp))
                     OutlinedTextField(
                         value = state.description,
@@ -192,7 +182,62 @@ fun CharacterCreateScreen(
             }
 
             // ===== Appearance =====
-            item { SectionHeader(icon = Icons.Default.Face, title = "Appearance", accent = MaterialTheme.colorScheme.secondary) }
+            item { SectionHeader(icon = Icons.Default.Face, title = "Appearance & Visuals", accent = MaterialTheme.colorScheme.secondary) }
+            item {
+                CardSection {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = state.imageUrl,
+                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ImageUrlChanged(it)) },
+                            label = { Text("Image URL") },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        OutlinedTextField(
+                            value = state.aiWidth.toString(),
+                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(it.toIntOrNull() ?: state.aiWidth, state.aiHeight)) },
+                            label = { Text("W") },
+                            modifier = Modifier.width(70.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                        OutlinedTextField(
+                            value = state.aiHeight.toString(),
+                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(state.aiWidth, it.toIntOrNull() ?: state.aiHeight)) },
+                            label = { Text("H") },
+                            modifier = Modifier.width(70.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                        IconButton(
+                            onClick = { viewModel.onEvent(CharacterCreateEvent.GenerateImage) },
+                            enabled = state.imageUrl != "url will appear after generation"
+                        ) {
+                            if (state.imageUrl == "url will appear after generation") {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.AutoFixHigh, contentDescription = "Generate Image", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = state.aiPrompt,
+                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiPromptChanged(it)) },
+                        label = { Text("AI Generation Prompt") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3,
+                        shape = RoundedCornerShape(12.dp),
+                        placeholder = { Text("Detailed description for AI generation...") }
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(Modifier.height(16.dp))
+                }
+            }
+
             item {
                 CardSection {
                     TwoColumnRow {
@@ -201,12 +246,14 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.AgeChanged(it)) },
                             label = { Text("Age") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.gender,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.GenderChanged(it)) },
                             label = { Text("Gender") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
@@ -214,12 +261,14 @@ fun CharacterCreateScreen(
                             value = state.height,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.HeightChanged(it)) },
                             label = { Text("Height") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.weight,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeightChanged(it)) },
                             label = { Text("Weight") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
@@ -227,12 +276,14 @@ fun CharacterCreateScreen(
                             value = state.eyes,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.EyesChanged(it)) },
                             label = { Text("Eyes") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.hair,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.HairChanged(it)) },
                             label = { Text("Hair") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     OutlinedTextField(
@@ -249,18 +300,18 @@ fun CharacterCreateScreen(
             item {
                 CardSection {
                     TwoColumnRow {
-                        StatCard("STR", state.strength, StrColor) { viewModel.onEvent(CharacterCreateEvent.StrengthChanged(it)) }
-                        StatCard("DEX", state.dexterity, DexColor) { viewModel.onEvent(CharacterCreateEvent.DexterityChanged(it)) }
+                        StatCard("STR", state.strength, StrColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.StrengthChanged(it)) }
+                        StatCard("DEX", state.dexterity, DexColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.DexterityChanged(it)) }
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
-                        StatCard("CON", state.constitution, ConColor) { viewModel.onEvent(CharacterCreateEvent.ConstitutionChanged(it)) }
-                        StatCard("INT", state.intelligence, IntColor) { viewModel.onEvent(CharacterCreateEvent.IntelligenceChanged(it)) }
+                        StatCard("CON", state.constitution, ConColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.ConstitutionChanged(it)) }
+                        StatCard("INT", state.intelligence, IntColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.IntelligenceChanged(it)) }
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
-                        StatCard("WIS", state.wisdom, WisColor) { viewModel.onEvent(CharacterCreateEvent.WisdomChanged(it)) }
-                        StatCard("CHA", state.charisma, ChaColor) { viewModel.onEvent(CharacterCreateEvent.CharismaChanged(it)) }
+                        StatCard("WIS", state.wisdom, WisColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.WisdomChanged(it)) }
+                        StatCard("CHA", state.charisma, ChaColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.CharismaChanged(it)) }
                     }
                 }
             }
@@ -275,13 +326,15 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.MaxHpChanged(it)) },
                             label = { Text("Max HP") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.currentHp,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.CurrentHpChanged(it)) },
                             label = { Text("Current HP") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
@@ -290,13 +343,15 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.TempHpChanged(it)) },
                             label = { Text("Temp HP") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.armorClass,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ArmorClassChanged(it)) },
                             label = { Text("AC") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
@@ -305,13 +360,15 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.InitiativeChanged(it)) },
                             label = { Text("Initiative") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.speed,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SpeedChanged(it)) },
                             label = { Text("Speed") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
@@ -320,12 +377,14 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ProficiencyBonusChanged(it)) },
                             label = { Text("Prof. Bonus") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.hitDice,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.HitDiceChanged(it)) },
                             label = { Text("Hit Dice") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     OutlinedTextField(
@@ -360,13 +419,15 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ExhaustionChanged(it)) },
                             label = { Text("Exhaustion (0-6)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.deathSaveSuccesses,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.DeathSaveSuccessesChanged(it)) },
                             label = { Text("DS Successes") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
@@ -375,12 +436,14 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.DeathSaveFailuresChanged(it)) },
                             label = { Text("DS Failures") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.conditions,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ConditionsChanged(it)) },
                             label = { Text("Conditions") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
@@ -394,12 +457,14 @@ fun CharacterCreateScreen(
                             value = state.savingThrows,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SavingThrowsChanged(it)) },
                             label = { Text("Saving Throws") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.skills,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillsChanged(it)) },
                             label = { Text("Skills") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
@@ -407,12 +472,14 @@ fun CharacterCreateScreen(
                             value = state.armorProficiencies,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ArmorProficienciesChanged(it)) },
                             label = { Text("Armor") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.weaponProficiencies,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponProficienciesChanged(it)) },
                             label = { Text("Weapons") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(6.dp))
                     TwoColumnRow {
@@ -420,12 +487,14 @@ fun CharacterCreateScreen(
                             value = state.toolProficiencies,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ToolProficienciesChanged(it)) },
                             label = { Text("Tools") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = state.languages,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.LanguagesChanged(it)) },
                             label = { Text("Languages") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
@@ -456,11 +525,13 @@ fun CharacterCreateScreen(
                         CompactSlotDropdown(
                             selected = item.slot,
                             onSelect = { viewModel.onEvent(CharacterCreateEvent.ItemSlotChanged(index, it)) },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         CompactRarityDropdown(
                             selected = item.rarity,
                             onSelect = { viewModel.onEvent(CharacterCreateEvent.ItemRarityChanged(index, it)) },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(4.dp))
                     OutlinedTextField(
@@ -471,12 +542,24 @@ fun CharacterCreateScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = item.imageUrl ?: "",
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.ItemImageUrlChanged(index, it)) },
-                        label = { Text("Image URL") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = item.imageUrl ?: "",
+                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ItemImageUrlChanged(index, it)) },
+                            label = { Text("Image URL") },
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(
+                            onClick = { viewModel.onEvent(CharacterCreateEvent.GenerateItemImage(index)) },
+                            enabled = item.imageUrl != "url will appear after generation"
+                        ) {
+                            if (item.imageUrl == "url will appear after generation") {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.AutoFixHigh, "Generate")
+                            }
+                        }
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
                             checked = item.equipped,
@@ -524,12 +607,14 @@ fun CharacterCreateScreen(
                             value = weapon.attackBonus,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponAttackBonusChanged(index, it)) },
                             label = { Text("Attack Bonus") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = weapon.damage,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponDamageChanged(index, it)) },
                             label = { Text("Damage") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(4.dp))
                     TwoColumnRow {
@@ -537,12 +622,14 @@ fun CharacterCreateScreen(
                             value = weapon.damageType,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponDamageTypeChanged(index, it)) },
                             label = { Text("Damage Type") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = weapon.notes,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponNotesChanged(index, it)) },
                             label = { Text("Notes") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
@@ -584,12 +671,14 @@ fun CharacterCreateScreen(
                             value = skill.damage,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillDamageChanged(index, it)) },
                             label = { Text("Damage") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = skill.damageType,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillDamageTypeChanged(index, it)) },
                             label = { Text("Damage Type") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(4.dp))
                     TwoColumnRow {
@@ -597,12 +686,14 @@ fun CharacterCreateScreen(
                             value = skill.resourceCost,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillResourceCostChanged(index, it)) },
                             label = { Text("Cost (e.g. 1 Action)") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = skill.range,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillRangeChanged(index, it)) },
                             label = { Text("Range") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(4.dp))
                     TwoColumnRow {
@@ -610,12 +701,14 @@ fun CharacterCreateScreen(
                             value = skill.castingTime,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillCastingTimeChanged(index, it)) },
                             label = { Text("Casting Time") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = skill.duration,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillDurationChanged(index, it)) },
                             label = { Text("Duration") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(4.dp))
                     TwoColumnRow {
@@ -624,12 +717,14 @@ fun CharacterCreateScreen(
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillLevelChanged(index, it)) },
                             label = { Text("Level") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                         OutlinedTextField(
                             value = skill.school,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillSchoolChanged(index, it)) },
                             label = { Text("School") },
-                            )
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                     Spacer(Modifier.height(4.dp))
                     TwoColumnRow {
@@ -637,8 +732,9 @@ fun CharacterCreateScreen(
                             value = skill.iconUrl ?: "",
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillIconNameChanged(index, it)) },
                             label = { Text("Icon URL") },
+                            modifier = Modifier.weight(1f)
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                             Checkbox(
                                 checked = skill.isPassive,
                                 onCheckedChange = { viewModel.onEvent(CharacterCreateEvent.SkillIsPassiveChanged(index, it)) },
@@ -791,7 +887,7 @@ private fun CardSection(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun TwoColumnRow(content: @Composable () -> Unit) {
+private fun TwoColumnRow(content: @Composable RowScope.() -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -801,9 +897,9 @@ private fun TwoColumnRow(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun StatCard(label: String, value: String, color: Color, onValueChange: (String) -> Unit) {
+private fun StatCard(label: String, value: String, color: Color, modifier: Modifier = Modifier, onValueChange: (String) -> Unit) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(12.dp))
             .background(color.copy(alpha = 0.08f))
             .padding(8.dp),

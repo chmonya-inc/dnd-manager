@@ -100,4 +100,9 @@ sealed interface CharacterCreateEvent {
     data class FeatsChanged(val value: String) : CharacterCreateEvent
 
     data object SaveCharacter : CharacterCreateEvent
+
+    data object GenerateImage : CharacterCreateEvent
+    data class GenerateItemImage(val index: Int) : CharacterCreateEvent
+    data class AiSizeChanged(val width: Int, val height: Int) : CharacterCreateEvent
+    data class AiPromptChanged(val value: String) : CharacterCreateEvent
 }

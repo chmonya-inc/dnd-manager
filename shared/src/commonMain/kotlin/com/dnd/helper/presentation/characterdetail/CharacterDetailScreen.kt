@@ -292,7 +292,7 @@ fun CharacterDetailScreen(
 }
 
 @Composable
-private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel: CharacterDetailViewModel) {
+private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: CharacterDetailState, viewModel: CharacterDetailViewModel) {
     OutlinedTextField(
         value = edited.name,
         onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(name = it))) },
@@ -437,6 +437,56 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, viewModel:
         modifier = Modifier.fillMaxWidth(),
         minLines = 3
     )
+    Spacer(modifier = Modifier.height(16.dp))
+    Text("AI Image Generation Prompt (${state.aiWidth}x${state.aiHeight})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+    Spacer(modifier = Modifier.height(8.dp))
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = state.aiPrompt,
+            onValueChange = { viewModel.onEvent(CharacterDetailEvent.UpdateAiPrompt(it)) },
+            label = { Text("AI Prompt") },
+            modifier = Modifier.weight(1f),
+            minLines = 3,
+            shape = RoundedCornerShape(12.dp)
+        )
+        
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = state.aiWidth.toString(),
+                onValueChange = { 
+                    val w = it.toIntOrNull() ?: state.aiWidth
+                    viewModel.onEvent(CharacterDetailEvent.UpdateAiSize(w, state.aiHeight))
+                },
+                label = { Text("W") },
+                modifier = Modifier.width(80.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(8.dp)
+            )
+            OutlinedTextField(
+                value = state.aiHeight.toString(),
+                onValueChange = { 
+                    val h = it.toIntOrNull() ?: state.aiHeight
+                    viewModel.onEvent(CharacterDetailEvent.UpdateAiSize(state.aiWidth, h))
+                },
+                label = { Text("H") },
+                modifier = Modifier.width(80.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(8.dp)
+            )
+            IconButton(
+                onClick = { viewModel.onEvent(CharacterDetailEvent.GenerateImage) },
+                enabled = edited.imageUrl != "url will appear after generation"
+            ) {
+                if (edited.imageUrl == "url will appear after generation") {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Default.AutoFixHigh, "Generate", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -908,7 +958,7 @@ private fun CharacteristicsContent(
         Column(modifier = Modifier.padding(16.dp)) {
             if (state.isEditing) {
                 state.editedCharacter?.let { edited ->
-                    EditFields(edited, viewModel)
+                    EditFields(edited, state, viewModel)
                 }
             } else {
                 CharacterHeader(character, viewModel)

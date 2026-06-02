@@ -16,6 +16,7 @@ data class CharacterCreateState(
     val experiencePoints: String = "0",
     val description: String = "",
     val imageUrl: String = "",
+    val aiPrompt: String = "",
 
     // Appearance
     val age: String = "",
@@ -75,4 +76,6 @@ data class CharacterCreateState(
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
     val error: String? = null,
+    val aiWidth: Int = 512,
+    val aiHeight: Int = 512,
 )

@@ -22,6 +22,7 @@ if (localPropertiesFile.exists()) {
 }
 val appsScriptUrlAndroid: String = localProperties.getProperty("apps.script.url.android", "")
 val appsScriptUrlDesktop: String = localProperties.getProperty("apps.script.url.desktop", "")
+val imgbbApiKey: String = localProperties.getProperty("imgbb.api.key", "")
 
 // ── Generate config class from local.properties ────────────────────
 val generateAppConfig = tasks.register("generateAppConfig") {
@@ -38,6 +39,7 @@ val generateAppConfig = tasks.register("generateAppConfig") {
             object GeneratedConfig {
                 const val WEB_APP_URL_ANDROID = "$appsScriptUrlAndroid"
                 const val WEB_APP_URL_DESKTOP = "$appsScriptUrlDesktop"
+                const val IMGBB_API_KEY = "$imgbbApiKey"
             }
             """.trimIndent()
         )

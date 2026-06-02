@@ -64,7 +64,8 @@ fun InventoryTab(
             },
             onUpdate = { updatedItem ->
                 onEvent(CharacterDetailEvent.UpdateItem(updatedItem))
-            }
+            },
+            onEvent = onEvent
         )
     }
 
@@ -389,7 +390,8 @@ private fun ItemDetailDialog(
     onToggleEquip: () -> Unit,
     isMasterMode: Boolean = false,
     onDelete: () -> Unit = {},
-    onUpdate: (Item) -> Unit = {}
+    onUpdate: (Item) -> Unit = {},
+    onEvent: (CharacterDetailEvent) -> Unit = {}
 ) {
     var editedItem by remember { mutableStateOf(item) }
     val rarityColor = editedItem.rarity.toColor()
@@ -475,7 +477,24 @@ private fun ItemDetailDialog(
                 if (isMasterMode) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(value = editedItem.description, onValueChange = { editedItem = editedItem.copy(description = it); onUpdate(editedItem) }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
-                        OutlinedTextField(value = editedItem.imageUrl ?: "", onValueChange = { editedItem = editedItem.copy(imageUrl = it.ifBlank { null }); onUpdate(editedItem) }, label = { Text("Image URL") }, modifier = Modifier.fillMaxWidth())
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = editedItem.imageUrl ?: "",
+                                onValueChange = { editedItem = editedItem.copy(imageUrl = it.ifBlank { null }); onUpdate(editedItem) },
+                                label = { Text("Image URL") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(
+                                onClick = { onEvent(CharacterDetailEvent.GenerateItemImage(editedItem.id)) },
+                                enabled = editedItem.imageUrl != "url will appear after generation"
+                            ) {
+                                if (editedItem.imageUrl == "url will appear after generation") {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Icon(Icons.Default.AutoFixHigh, "Generate")
+                                }
+                            }
+                        }
                     }
                 } else {
                     if (editedItem.slot != null) {

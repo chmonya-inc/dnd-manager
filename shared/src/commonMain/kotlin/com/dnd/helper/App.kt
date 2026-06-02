@@ -96,17 +96,19 @@ val appModule = module {
     }
 
     single { KtorRemoteDataSource(get(), get()) }
-    single<CharacterRepository> { CharacterRepositoryImpl(get(), get()) }
+    single { com.dnd.helper.data.remote.AiImageService(get(), get()) }
+    single<CharacterRepository> { CharacterRepositoryImpl(get(), get(), get()) }
     factory { CharacterListViewModel(get(), get()) }
     factory { StartViewModel(get()) }
-    factory { CharacterCreateViewModel(get()) }
+    factory { CharacterCreateViewModel(get(), get()) }
     factory { (characterId: String) ->
-        CharacterDetailViewModel(get(), characterId)
+        CharacterDetailViewModel(get(), get(), characterId)
     }
     factory { LibraryViewModel(get()) }
     factory { LogViewModel(get()) }
     factory { MusicViewModel(get(), get()) }
     factory { SessionsViewModel(get(), get()) }
+    factory { SettingsViewModel(get()) }
     single { ThemeViewModel(get()) }
     single { com.dnd.helper.presentation.desktop.PresentationViewModel(get()) }
 }

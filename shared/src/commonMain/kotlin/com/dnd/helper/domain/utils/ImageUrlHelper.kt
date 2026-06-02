@@ -10,6 +10,15 @@ object ImageUrlHelper {
         
         // Already a direct link or not a Google Drive link
         if (url.contains("googleusercontent")) return url
+        
+        // Handle ImgBB viewer links by trying to guess the direct link or at least identifying them
+        // Note: ImgBB direct links usually start with i.ibb.co
+        if (url.contains("ibb.co") && !url.contains("i.ibb.co")) {
+            // This is a viewer link, we should have saved the direct 'i.ibb.co' link instead.
+            // Log it so we can identify if this is still happening.
+            println("[ImageUrlHelper] Warning: Detected ImgBB viewer link instead of direct image link: $url")
+        }
+
         if (!url.contains("drive.google.com")) return url
         
         return try {

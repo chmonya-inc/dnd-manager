@@ -16,6 +16,8 @@ import com.dnd.helper.domain.model.ItemRarity
 import com.dnd.helper.domain.model.Skill
 import com.dnd.helper.domain.model.Weapon
 import com.dnd.helper.domain.repository.CharacterRepository
+import com.dnd.helper.data.remote.GenerationType
+import com.dnd.helper.data.remote.PromptGenerator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +27,7 @@ import kotlin.time.Clock
 
 class CharacterCreateViewModel(
     private val repository: CharacterRepository,
+    private val aiService: com.dnd.helper.data.remote.AiImageService,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CharacterCreateState())
@@ -33,15 +36,27 @@ class CharacterCreateViewModel(
     fun onEvent(event: CharacterCreateEvent) {
         when (event) {
             // Basic info
-            is CharacterCreateEvent.NameChanged -> _state.value = _state.value.copy(name = event.value)
+            is CharacterCreateEvent.NameChanged -> {
+                _state.value = _state.value.copy(name = event.value)
+                updateDefaultPrompt()
+            }
             is CharacterCreateEvent.PlayerNameChanged -> _state.value = _state.value.copy(playerName = event.value)
-            is CharacterCreateEvent.RaceChanged -> _state.value = _state.value.copy(race = event.value)
-            is CharacterCreateEvent.ClassChanged -> _state.value = _state.value.copy(characterClass = event.value)
+            is CharacterCreateEvent.RaceChanged -> {
+                _state.value = _state.value.copy(race = event.value)
+                updateDefaultPrompt()
+            }
+            is CharacterCreateEvent.ClassChanged -> {
+                _state.value = _state.value.copy(characterClass = event.value)
+                updateDefaultPrompt()
+            }
             is CharacterCreateEvent.SubclassChanged -> _state.value = _state.value.copy(subclass = event.value)
             is CharacterCreateEvent.BackgroundChanged -> _state.value = _state.value.copy(background = event.value)
             is CharacterCreateEvent.LevelChanged -> _state.value = _state.value.copy(level = event.value)
             is CharacterCreateEvent.ExperiencePointsChanged -> _state.value = _state.value.copy(experiencePoints = event.value)
-            is CharacterCreateEvent.DescriptionChanged -> _state.value = _state.value.copy(description = event.value)
+            is CharacterCreateEvent.DescriptionChanged -> {
+                _state.value = _state.value.copy(description = event.value)
+                updateDefaultPrompt()
+            }
             is CharacterCreateEvent.ImageUrlChanged -> _state.value = _state.value.copy(imageUrl = event.value)
 
             // Appearance
@@ -127,7 +142,70 @@ class CharacterCreateViewModel(
             is CharacterCreateEvent.RacialTraitsChanged -> _state.value = _state.value.copy(racialTraits = event.value)
             is CharacterCreateEvent.FeatsChanged -> _state.value = _state.value.copy(feats = event.value)
 
-            CharacterCreateEvent.SaveCharacter -> saveCharacter()
+            is CharacterCreateEvent.SaveCharacter -> saveCharacter()
+            is CharacterCreateEvent.GenerateImage -> generateImage()
+            is CharacterCreateEvent.GenerateItemImage -> generateItemImage(event.index)
+            is CharacterCreateEvent.AiSizeChanged -> _state.value = _state.value.copy(aiWidth = event.width, aiHeight = event.height)
+            is CharacterCreateEvent.AiPromptChanged -> _state.value = _state.value.copy(aiPrompt = event.value)
+        }
+    }
+
+    private fun updateDefaultPrompt() {
+        val s = _state.value
+        val promptText = "${s.name}, ${s.race} ${s.characterClass}. ${s.description}".trim()
+        if (promptText.isNotBlank()) {
+            _state.value = _state.value.copy(
+                aiPrompt = PromptGenerator.getFullPrompt(promptText, GenerationType.CHARACTER)
+            )
+        }
+    }
+
+    private fun generateImage() {
+        val s = _state.value
+        val prompt = s.aiPrompt.ifBlank {
+            val text = "${s.name}, ${s.race} ${s.characterClass}. ${s.description}"
+            PromptGenerator.getFullPrompt(text, GenerationType.CHARACTER)
+        }
+        if (s.name.isBlank() && s.aiPrompt.isBlank()) return
+
+        _state.value = _state.value.copy(imageUrl = "url will appear after generation")
+        
+        viewModelScope.launch {
+            val url = aiService.generateImage(
+                promptText = prompt,
+                type = GenerationType.CHARACTER,
+                customWidth = s.aiWidth,
+                customHeight = s.aiHeight
+            )
+            if (url != null) {
+                _state.value = _state.value.copy(imageUrl = url)
+            } else {
+                _state.value = _state.value.copy(imageUrl = "")
+            }
+        }
+    }
+
+    private fun generateItemImage(index: Int) {
+        val items = _state.value.items
+        if (index !in items.indices) return
+        val item = items[index]
+        val promptText = "${item.name}, ${item.rarity}. ${item.description}"
+        if (item.name.isBlank()) return
+
+        val fullPrompt = PromptGenerator.getFullPrompt(promptText, GenerationType.ITEM)
+        updateItem(index) { it.copy(imageUrl = "url will appear after generation") }
+        viewModelScope.launch {
+            val url = aiService.generateImage(
+                promptText = fullPrompt,
+                type = GenerationType.ITEM,
+                customWidth = _state.value.aiWidth,
+                customHeight = _state.value.aiHeight
+            )
+            if (url != null) {
+                updateItem(index) { it.copy(imageUrl = url) }
+            } else {
+                updateItem(index) { it.copy(imageUrl = "") }
+            }
         }
     }
 

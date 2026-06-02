@@ -41,6 +41,30 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
     override fun getTheme(): String? {
         return prefs.getString("app_theme", null)
     }
+
+    override fun saveComfyUiAddress(address: String) {
+        prefs.edit().putString("comfy_ui_address", address).apply()
+    }
+
+    override fun getComfyUiAddress(): String? {
+        return prefs.getString("comfy_ui_address", null)
+    }
+
+    override fun saveComfyUiWorkflow(json: String) {
+        prefs.edit().putString("comfy_ui_workflow", json).apply()
+    }
+
+    override fun getComfyUiWorkflow(): String? {
+        return prefs.getString("comfy_ui_workflow", null)
+    }
+
+    override fun saveGenerationSteps(steps: Int) {
+        prefs.edit().putInt("gen_steps", steps).apply()
+    }
+
+    override fun getGenerationSteps(): Int {
+        return prefs.getInt("gen_steps", 20)
+    }
 }
 
 actual val platformModule = module {
@@ -51,7 +75,13 @@ actual val platformModule = module {
 actual val isDesktop: Boolean = false
 
 actual fun openUrl(url: String) {
-    // Android implementation would need a context, but we are in a static context here.
-    // Usually handled via a Platform helper injected into ViewModels, 
-    // but for this simple request I'll just skip it or log it as it's primarily for Desktop.
+    // Android implementation...
+}
+
+actual fun pickFile(title: String, allowedExtensions: List<String>): String? {
+    return null // Not implemented for Android yet
+}
+
+actual fun readFileContent(path: String): String? {
+    return null
 }

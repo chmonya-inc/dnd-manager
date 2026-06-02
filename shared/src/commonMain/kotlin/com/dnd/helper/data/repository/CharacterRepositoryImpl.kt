@@ -1,19 +1,28 @@
 package com.dnd.helper.data.repository
 
+import com.dnd.helper.data.remote.AiImageService
+import com.dnd.helper.data.remote.GenerationType
 import com.dnd.helper.data.remote.KtorRemoteDataSource
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.model.*
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 
 class CharacterRepositoryImpl(
     private val dataSource: KtorRemoteDataSource,
     private val storage: CharacterStorage,
+    private val aiService: AiImageService,
 ) : CharacterRepository {
+
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val _characterUpdates = MutableSharedFlow<String>(extraBufferCapacity = 1)
     override val characterUpdates: SharedFlow<String> = _characterUpdates.asSharedFlow()
@@ -281,5 +290,48 @@ class CharacterRepositoryImpl(
         val result = dataSource.deleteEvent(id)
         if (result is Result.Success) eventsCache = null
         return result
+    }
+
+    override fun enqueueImageGeneration(prompt: String, entityId: String, entityType: String, genType: GenerationType) {
+        repositoryScope.launch {
+            val url = aiService.generateImage(prompt, genType) ?: return@launch
+            
+            when (entityType.lowercase()) {
+                "character" -> {
+                    getCharacter(entityId).let { result ->
+                        if (result is Result.Success) {
+                            saveCharacter(result.data.copy(imageUrl = url))
+                        }
+                    }
+                }
+                "npc" -> {
+                    getNpcs().let { result ->
+                        if (result is Result.Success) {
+                            result.data.find { it.id == entityId }?.let { npc ->
+                                saveNpc(npc.copy(imageUrl = url))
+                            }
+                        }
+                    }
+                }
+                "monster" -> {
+                    getMonsters().let { result ->
+                        if (result is Result.Success) {
+                            result.data.find { it.id == entityId }?.let { monster ->
+                                saveMonster(monster.copy(imageUrl = url))
+                            }
+                        }
+                    }
+                }
+                "location" -> {
+                    getLocations().let { result ->
+                        if (result is Result.Success) {
+                            result.data.find { it.id == entityId }?.let { location ->
+                                saveLocation(location.copy(imageUrl = url))
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

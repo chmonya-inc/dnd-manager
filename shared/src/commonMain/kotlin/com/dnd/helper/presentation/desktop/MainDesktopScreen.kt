@@ -44,6 +44,7 @@ sealed class DesktopTab(val title: String, val icon: ImageVector) {
     data object Creator : DesktopTab("Creator", Icons.Default.AddCircle)
     data object Logs : DesktopTab("Logs", Icons.Default.History)
     data object Presenter : DesktopTab("Presenter", Icons.Default.Tv)
+    data object Settings : DesktopTab("Settings", Icons.Default.Settings)
 }
 
 private val tabs = listOf(
@@ -51,7 +52,8 @@ private val tabs = listOf(
     DesktopTab.Library,
     DesktopTab.Creator,
     DesktopTab.Logs,
-    DesktopTab.Presenter
+    DesktopTab.Presenter,
+    DesktopTab.Settings
 )
 
 @Composable
@@ -242,6 +244,7 @@ fun MainDesktopScreen() {
                     )
                     DesktopTab.Logs -> LogScreen()
                     DesktopTab.Presenter -> PresentationScreen()
+                    DesktopTab.Settings -> SettingsScreen()
                 }
 
                 if (showMusicPlayer) {

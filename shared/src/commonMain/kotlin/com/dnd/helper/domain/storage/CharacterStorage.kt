@@ -9,4 +9,10 @@ interface CharacterStorage {
     fun getSessions(): String?
     fun saveTheme(themeName: String)
     fun getTheme(): String?
+    fun saveComfyUiAddress(address: String)
+    fun getComfyUiAddress(): String?
+    fun saveComfyUiWorkflow(json: String)
+    fun getComfyUiWorkflow(): String?
+    fun saveGenerationSteps(steps: Int)
+    fun getGenerationSteps(): Int
 }

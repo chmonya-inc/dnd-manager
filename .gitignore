@@ -26,3 +26,4 @@ local.properties
 /kotlin-js-store/wasm/yarn.lock
 /server/database.db
 /desktop/kcef-bundle
+/references/

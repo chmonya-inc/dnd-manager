@@ -36,6 +36,30 @@ class WasmCharacterStorage : CharacterStorage {
     override fun getTheme(): String? {
         return localStorage.getItem("app_theme")
     }
+
+    override fun saveComfyUiAddress(address: String) {
+        localStorage.setItem("comfy_ui_address", address)
+    }
+
+    override fun getComfyUiAddress(): String? {
+        return localStorage.getItem("comfy_ui_address")
+    }
+
+    override fun saveComfyUiWorkflow(json: String) {
+        localStorage.setItem("comfy_ui_workflow", json)
+    }
+
+    override fun getComfyUiWorkflow(): String? {
+        return localStorage.getItem("comfy_ui_workflow")
+    }
+
+    override fun saveGenerationSteps(steps: Int) {
+        localStorage.setItem("gen_steps", steps.toString())
+    }
+
+    override fun getGenerationSteps(): Int {
+        return localStorage.getItem("gen_steps")?.toIntOrNull() ?: 20
+    }
 }
 
 actual val platformModule = module {
@@ -46,4 +70,12 @@ actual val isDesktop: Boolean = false
 
 actual fun openUrl(url: String) {
     kotlinx.browser.window.open(url, "_blank")
+}
+
+actual fun pickFile(title: String, allowedExtensions: List<String>): String? {
+    return null
+}
+
+actual fun readFileContent(path: String): String? {
+    return null
 }
