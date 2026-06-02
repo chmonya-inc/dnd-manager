@@ -150,17 +150,18 @@ private fun HeaderCard(
                 val isGenerating = imageUrl?.startsWith("generating:") == true
 
                 if (!imageUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = if (isGenerating) null else imageUrl,
-                        contentDescription = character.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        onError = { state ->
-                            println("[AsyncImage] Failed to load avatar for ${character.name}: ${state.result.throwable}")
-                        },
-                    )
                     if (isGenerating) {
                         CircularProgressIndicator()
+                    } else {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = character.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            onError = { state ->
+                                println("[AsyncImage] Failed to load avatar for ${character.name}: ${state.result.throwable}")
+                            },
+                        )
                     }
                 } else {
                     Icon(

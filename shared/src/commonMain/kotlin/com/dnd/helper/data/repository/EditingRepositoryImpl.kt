@@ -15,7 +15,10 @@ class EditingRepositoryImpl(
     private val characterRepository: CharacterRepository
 ) : EditingRepository {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val scope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { context, throwable ->
+            println(throwable)
+        })
 
     private val _activeTasks = MutableStateFlow<List<GenerationTask>>(emptyList())
     override val activeTasks: StateFlow<List<GenerationTask>> = _activeTasks.asStateFlow()
@@ -30,6 +33,8 @@ class EditingRepositoryImpl(
         width: Int,
         height: Int
     ): String {
+        val width = 124
+        val height = 124
         val taskId = Random.nextLong(1000000, 9999999).toString()
         val mockUrl = "generating:$taskId"
 
@@ -75,14 +80,15 @@ class EditingRepositoryImpl(
                 var success = false
                 repeat(5) { attempt ->
                     if (!success) {
-                        println("[EditingRepo] Attempting to save URL to $entityType $entityId (attempt ${attempt+1})")
+                        println("[EditingRepo] Attempting to save URL to $entityType $entityId (attempt ${attempt + 1})")
                         success = try {
                             saveGeneratedUrl(entityId, entityType, url)
-                            true
                         } catch (e: Exception) {
-                            println("[EditingRepo] Save failed: ${e.message}")
-                            delay(2000)
+                            println("[EditingRepo] Save failed with exception: ${e.message}")
                             false
+                        }
+                        if (!success) {
+                            delay(2000)
                         }
                     }
                 }
@@ -94,8 +100,8 @@ class EditingRepositoryImpl(
             }
 
             // Auto-cleanup task after 30 seconds to keep flow clean
-            delay(30_000)
-            _activeTasks.value = _activeTasks.value.filter { it.id != taskId }
+//            delay(30_000)
+//            _activeTasks.value = _activeTasks.value.filter { it.id != taskId }
         }
 
         activeJobs[taskId] = job
@@ -119,44 +125,66 @@ class EditingRepositoryImpl(
         tasks.forEach { cancelGeneration(it.id) }
     }
 
-    private fun updateTaskStatus(taskId: String, status: GenerationStatus, resultUrl: String? = null) {
+    private fun updateTaskStatus(
+        taskId: String,
+        status: GenerationStatus,
+        resultUrl: String? = null
+    ) {
         _activeTasks.value = _activeTasks.value.map {
             if (it.id == taskId) it.copy(status = status, resultUrl = resultUrl) else it
         }
     }
 
-    private suspend fun saveGeneratedUrl(entityId: String, entityType: String, url: String) {
-        when (entityType.lowercase()) {
+    private suspend fun saveGeneratedUrl(
+        entityId: String,
+        entityType: String,
+        url: String
+    ): Boolean {
+        return when (entityType.lowercase()) {
             "character" -> {
                 val result = characterRepository.getCharacter(entityId)
                 if (result is Result.Success) {
-                    characterRepository.saveCharacter(result.data.copy(imageUrl = url))
-                }
+                    val saveResult =
+                        characterRepository.saveCharacter(result.data.copy(imageUrl = url))
+                    saveResult is Result.Success
+                } else false
             }
+
             "npc" -> {
                 val result = characterRepository.getNpcs()
                 if (result is Result.Success) {
-                    result.data.find { it.id == entityId }?.let {
-                        characterRepository.saveNpc(it.copy(imageUrl = url))
-                    }
-                }
+                    val entity = result.data.find { it.id == entityId }
+                    if (entity != null) {
+                        val saveResult = characterRepository.saveNpc(entity.copy(imageUrl = url))
+                        saveResult is Result.Success
+                    } else false
+                } else false
             }
+
             "monster" -> {
                 val result = characterRepository.getMonsters()
                 if (result is Result.Success) {
-                    result.data.find { it.id == entityId }?.let {
-                        characterRepository.saveMonster(it.copy(imageUrl = url))
-                    }
-                }
+                    val entity = result.data.find { it.id == entityId }
+                    if (entity != null) {
+                        val saveResult =
+                            characterRepository.saveMonster(entity.copy(imageUrl = url))
+                        saveResult is Result.Success
+                    } else false
+                } else false
             }
+
             "location" -> {
                 val result = characterRepository.getLocations()
                 if (result is Result.Success) {
-                    result.data.find { it.id == entityId }?.let {
-                        characterRepository.saveLocation(it.copy(imageUrl = url))
-                    }
-                }
+                    val entity = result.data.find { it.id == entityId }
+                    if (entity != null) {
+                        val saveResult =
+                            characterRepository.saveLocation(entity.copy(imageUrl = url))
+                        saveResult is Result.Success
+                    } else false
+                } else false
             }
+
             "item" -> {
                 // Item is nested in Character. entityId should be "charId:itemId"
                 val parts = entityId.split(":")
@@ -166,13 +194,19 @@ class EditingRepositoryImpl(
                     val result = characterRepository.getCharacter(charId)
                     if (result is Result.Success) {
                         val char = result.data
-                        val updatedItems = char.items.map {
-                            if (it.id == itemId) it.copy(imageUrl = url) else it
-                        }
-                        characterRepository.saveCharacter(char.copy(items = updatedItems))
-                    }
-                }
+                        if (char.items.any { it.id == itemId }) {
+                            val updatedItems = char.items.map {
+                                if (it.id == itemId) it.copy(imageUrl = url) else it
+                            }
+                            val saveResult =
+                                characterRepository.saveCharacter(char.copy(items = updatedItems))
+                            saveResult is Result.Success
+                        } else false
+                    } else false
+                } else false
             }
+
+            else -> false
         }
     }
 }

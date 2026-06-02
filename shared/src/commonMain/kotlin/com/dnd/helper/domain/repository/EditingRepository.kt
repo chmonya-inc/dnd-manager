@@ -32,8 +32,8 @@ interface EditingRepository {
         entityType: String,
         prompt: String,
         genType: GenerationType,
-        width: Int = 1024,
-        height: Int = 1024
+        width: Int = 512,
+        height: Int = 512
     ): String
 
     /**

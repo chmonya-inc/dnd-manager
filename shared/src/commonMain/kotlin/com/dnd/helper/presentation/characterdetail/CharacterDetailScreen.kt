@@ -947,19 +947,20 @@ private fun CharacteristicsContent(
         if (!imageUrl.isNullOrBlank()) {
             val isGenerating = imageUrl.startsWith("generating:")
             Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
-                AsyncImage(
-                    model = if (isGenerating) null else imageUrl,
-                    contentDescription = displayChar.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit,
-                    onError = { imageState ->
-                        println("[AsyncImage] Failed to load hero image for ${displayChar.name}: ${imageState.result.throwable}")
-                    },
-                )
                 if (isGenerating) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
+                } else {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = displayChar.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
+                        onError = { imageState ->
+                            println("[AsyncImage] Failed to load hero image for ${displayChar.name}: ${imageState.result.throwable}")
+                        },
+                    )
                 }
             }
         }

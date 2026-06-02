@@ -312,15 +312,16 @@ private fun SimpleCharacterCard(
                     val isGenerating = imageUrl?.startsWith("generating:") == true
 
                     if (!imageUrl.isNullOrBlank()) {
-                        Box(contentAlignment = Alignment.Center) {
-                            AsyncImage(
-                                model = if (isGenerating) null else imageUrl,
-                                contentDescription = character.name,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop,
-                            )
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             if (isGenerating) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            } else {
+                                AsyncImage(
+                                    model = imageUrl,
+                                    contentDescription = character.name,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop,
+                                )
                             }
                         }
                     } else {
@@ -457,14 +458,17 @@ private fun SummaryCharacterCard(
                         val isGenerating = imageUrl?.startsWith("generating:") == true
 
                         if (!imageUrl.isNullOrBlank()) {
-                            AsyncImage(
-                                model = if (isGenerating) null else imageUrl,
-                                contentDescription = character.name,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop,
-                            )
-                            if (isGenerating) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                if (isGenerating) {
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                } else {
+                                    AsyncImage(
+                                        model = imageUrl,
+                                        contentDescription = character.name,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop,
+                                    )
+                                }
                             }
                         } else {
                             Icon(

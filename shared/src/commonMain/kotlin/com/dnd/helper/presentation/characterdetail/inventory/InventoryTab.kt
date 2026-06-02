@@ -226,20 +226,21 @@ private fun EquipmentSlotBox(
                 val isGenerating = imageUrl?.startsWith("generating:") == true
 
                 if (!imageUrl.isNullOrBlank()) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        AsyncImage(
-                            model = if (isGenerating) null else imageUrl,
-                            contentDescription = item.name,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(4.dp)
-                                .clip(MaterialTheme.shapes.small),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        )
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (isGenerating) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp).align(Alignment.Center),
+                                modifier = Modifier.size(24.dp),
                                 strokeWidth = 2.dp
+                            )
+                        } else {
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = item.name,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(4.dp)
+                                    .clip(MaterialTheme.shapes.small),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                             )
                         }
                     }
@@ -357,20 +358,21 @@ private fun ItemCell(item: Item, onClick: () -> Unit) {
             val isGenerating = imageUrl?.startsWith("generating:") == true
 
             if (!imageUrl.isNullOrBlank()) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    AsyncImage(
-                        model = if (isGenerating) null else imageUrl,
-                        contentDescription = item.name,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(2.dp)
-                            .clip(MaterialTheme.shapes.small),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                    )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     if (isGenerating) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp).align(Alignment.Center),
+                            modifier = Modifier.size(20.dp),
                             strokeWidth = 2.dp
+                        )
+                    } else {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = item.name,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(2.dp)
+                                .clip(MaterialTheme.shapes.small),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                         )
                     }
                 }
@@ -444,14 +446,15 @@ private fun ItemDetailDialog(
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        AsyncImage(
-                            model = if (isGenerating) null else imageUrl,
-                            contentDescription = editedItem.name,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        )
                         if (isGenerating) {
                             CircularProgressIndicator()
+                        } else {
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = editedItem.name,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            )
                         }
                     }
                     Spacer(Modifier.height(12.dp))

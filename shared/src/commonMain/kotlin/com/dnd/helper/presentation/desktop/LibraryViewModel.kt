@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.dnd.helper.data.remote.PromptGenerator
+import com.dnd.helper.data.remote.GenerationType
 
 data class LibraryState(
     val selectedType: LibraryType = LibraryType.Items,
@@ -50,47 +52,48 @@ class LibraryViewModel(
                         
                         val resultUrl = if (task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED) task.resultUrl else ""
                         
-                        _state.update { currentState ->
-                            when (task.entityType) {
-                                "npc" -> {
-                                    if (currentState.npcs.any { it.id == task.entityId && it.imageUrl == "generating:${task.id}" }) {
-                                        val newNpcs = currentState.npcs.map { if (it.id == task.entityId) it.copy(imageUrl = resultUrl) else it }
-                                        currentState.copy(npcs = newNpcs)
-                                    } else currentState
+                        val currentState = _state.value
+                        when (task.entityType) {
+                            "npc" -> {
+                                val npc = currentState.npcs.find { it.id == task.entityId }
+                                if (npc != null) {
+                                    val updatedNpc = npc.copy(imageUrl = resultUrl)
+                                    _state.value = currentState.copy(npcs = currentState.npcs.map { if (it.id == npc.id) updatedNpc else it })
                                 }
-                                "monster" -> {
-                                    if (currentState.monsters.any { it.id == task.entityId && it.imageUrl == "generating:${task.id}" }) {
-                                        val newMonsters = currentState.monsters.map { if (it.id == task.entityId) it.copy(imageUrl = resultUrl) else it }
-                                        currentState.copy(monsters = newMonsters)
-                                    } else currentState
+                            }
+                            "monster" -> {
+                                val monster = currentState.monsters.find { it.id == task.entityId }
+                                if (monster != null) {
+                                    val updatedMonster = monster.copy(imageUrl = resultUrl)
+                                    _state.value = currentState.copy(monsters = currentState.monsters.map { if (it.id == monster.id) updatedMonster else it })
                                 }
-                                "location" -> {
-                                    if (currentState.locations.any { it.id == task.entityId && it.imageUrl == "generating:${task.id}" }) {
-                                        val newLocations = currentState.locations.map { if (it.id == task.entityId) it.copy(imageUrl = resultUrl) else it }
-                                        currentState.copy(locations = newLocations)
-                                    } else currentState
+                            }
+                            "location" -> {
+                                val loc = currentState.locations.find { it.id == task.entityId }
+                                if (loc != null) {
+                                    val updatedLoc = loc.copy(imageUrl = resultUrl)
+                                    _state.value = currentState.copy(locations = currentState.locations.map { if (it.id == loc.id) updatedLoc else it })
                                 }
-                                "character" -> {
-                                    if (currentState.characters.any { it.id == task.entityId && it.imageUrl == "generating:${task.id}" }) {
-                                        val newChars = currentState.characters.map { if (it.id == task.entityId) it.copy(imageUrl = resultUrl) else it }
-                                        currentState.copy(characters = newChars)
-                                    } else currentState
+                            }
+                            "character" -> {
+                                val char = currentState.characters.find { it.id == task.entityId }
+                                if (char != null) {
+                                    val updatedChar = char.copy(imageUrl = resultUrl)
+                                    _state.value = currentState.copy(characters = currentState.characters.map { if (it.id == char.id) updatedChar else it })
                                 }
-                                "item" -> {
-                                    val parts = task.entityId.split(":")
-                                    if (parts.size == 2) {
-                                        val charId = parts[0]
-                                        val itemId = parts[1]
-                                        val char = currentState.characters.find { it.id == charId }
-                                        if (char != null && char.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
-                                            val newItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
-                                            val updatedChar = char.copy(items = newItems)
-                                            val newChars = currentState.characters.map { if (it.id == charId) updatedChar else it }
-                                            currentState.copy(characters = newChars)
-                                        } else currentState
-                                    } else currentState
+                            }
+                            "item" -> {
+                                val parts = task.entityId.split(":")
+                                if (parts.size == 2) {
+                                    val charId = parts[0]
+                                    val itemId = parts[1]
+                                    val char = currentState.characters.find { it.id == charId }
+                                    if (char != null && char.items.any { it.id == itemId }) {
+                                        val updatedItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
+                                        val updatedChar = char.copy(items = updatedItems)
+                                        _state.value = currentState.copy(characters = currentState.characters.map { if (it.id == charId) updatedChar else it })
+                                    }
                                 }
-                                else -> currentState
                             }
                         }
                     }
@@ -304,5 +307,103 @@ class LibraryViewModel(
                 saveJobs.remove(character.id)
             }
         }
+    }
+
+    fun generateMissingImages() {
+        viewModelScope.launch {
+            var generatedCount = 0
+            val activeTaskIds = editingRepository.activeTasks.value.map { it.id }.toSet()
+
+            val npcsResult = repository.getNpcs(forceRefresh = false)
+            if (npcsResult is Result.Success) {
+                npcsResult.data.forEach { npc ->
+                    if (npc.imageUrl.needsImageGeneration(activeTaskIds)) {
+                        val prompt = PromptGenerator.getFullPrompt("${npc.name}. ${npc.description}. ${npc.background}", GenerationType.NPC)
+                        val mockUrl = editingRepository.startGeneration(npc.id, "npc", prompt, GenerationType.NPC)
+                        val updatedNpc = npc.copy(imageUrl = mockUrl)
+                        _state.update { it.copy(npcs = it.npcs.map { n -> if (n.id == npc.id) updatedNpc else n }) }
+                        launch { repository.saveNpc(updatedNpc) }
+                        generatedCount++
+                    }
+                }
+            }
+
+            val monstersResult = repository.getMonsters(forceRefresh = false)
+            if (monstersResult is Result.Success) {
+                monstersResult.data.forEach { monster ->
+                    if (monster.imageUrl.needsImageGeneration(activeTaskIds)) {
+                        val prompt = PromptGenerator.getFullPrompt("${monster.name}, ${monster.type}. ${monster.description}", GenerationType.MONSTER)
+                        val mockUrl = editingRepository.startGeneration(monster.id, "monster", prompt, GenerationType.MONSTER)
+                        val updatedMonster = monster.copy(imageUrl = mockUrl)
+                        _state.update { it.copy(monsters = it.monsters.map { m -> if (m.id == monster.id) updatedMonster else m }) }
+                        launch { repository.saveMonster(updatedMonster) }
+                        generatedCount++
+                    }
+                }
+            }
+
+            val locationsResult = repository.getLocations(forceRefresh = false)
+            if (locationsResult is Result.Success) {
+                locationsResult.data.forEach { loc ->
+                    if (loc.imageUrl.needsImageGeneration(activeTaskIds)) {
+                        val prompt = PromptGenerator.getFullPrompt("${loc.name}. ${loc.description}", GenerationType.LOCATION)
+                        val mockUrl = editingRepository.startGeneration(loc.id, "location", prompt, GenerationType.LOCATION, 1024, 576)
+                        val updatedLoc = loc.copy(imageUrl = mockUrl)
+                        _state.update { it.copy(locations = it.locations.map { l -> if (l.id == loc.id) updatedLoc else l }) }
+                        launch { repository.saveLocation(updatedLoc) }
+                        generatedCount++
+                    }
+                }
+            }
+
+            val charactersResult = repository.getCharacters(forceRefresh = false)
+            if (charactersResult is Result.Success) {
+                charactersResult.data.forEach { char ->
+                    var charModified = false
+                    var newCharImageUrl = char.imageUrl
+
+                    if (char.imageUrl.needsImageGeneration(activeTaskIds)) {
+                        val prompt = PromptGenerator.getFullPrompt("${char.name}, ${char.race} ${char.characterClass}. ${char.description}", GenerationType.CHARACTER)
+                        newCharImageUrl = editingRepository.startGeneration(char.id, "character", prompt, GenerationType.CHARACTER)
+                        charModified = true
+                        generatedCount++
+                    }
+
+                    val updatedItems = char.items.map { item ->
+                        if (item.imageUrl.needsImageGeneration(activeTaskIds) && item.name.isNotBlank()) {
+                            val prompt = PromptGenerator.getFullPrompt("${item.name}, ${item.rarity}. ${item.description}", GenerationType.ITEM)
+                            val mockUrl = editingRepository.startGeneration("${char.id}:${item.id}", "item", prompt, GenerationType.ITEM)
+                            charModified = true
+                            generatedCount++
+                            item.copy(imageUrl = mockUrl)
+                        } else item
+                    }
+
+                    if (charModified) {
+                        val updatedChar = char.copy(imageUrl = newCharImageUrl, items = updatedItems)
+                        _state.update { it.copy(characters = it.characters.map { c -> if (c.id == char.id) updatedChar else c }) }
+                        launch { scheduleCharacterSave(updatedChar, "Generate Missing Images") }
+                    }
+                }
+            }
+
+            repository.saveLog(LogEntry(
+                action = "Generate Missing Images",
+                details = if (generatedCount > 0) "Started generating $generatedCount missing images in background." else "No missing images found.",
+                success = true
+            ))
+
+            refreshData(force = true)
+        }
+    }
+
+    private fun String?.needsImageGeneration(activeTaskIds: Set<String>): Boolean {
+        if (this == null) return true
+        if (this.startsWith("generating:")) {
+            val taskId = this.removePrefix("generating:")
+            return !activeTaskIds.contains(taskId) // Needs generation if it's stuck (not in active tasks)
+        }
+        if (this.contains("dummyimage")) return true
+        return !this.contains("http")
     }
 }

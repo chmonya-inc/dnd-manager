@@ -196,19 +196,27 @@ private fun MasterContent(
                     val imageUrl = displayChar.displayImageUrl
                     val isGenerating = imageUrl?.startsWith("generating:") == true
 
-                    AsyncImage(
-                        model = if (isGenerating) null else imageUrl,
-                        contentDescription = displayChar.name,
-                        modifier = Modifier.fillMaxSize().clip(MaterialTheme.shapes.medium),
-                        contentScale = ContentScale.Crop
-                    )
-
                     if (isGenerating) {
                         Box(
                             modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f), MaterialTheme.shapes.medium),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(color = Color.White)
+                        }
+                    } else if (!imageUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = displayChar.name,
+                            modifier = Modifier.fillMaxSize().clip(MaterialTheme.shapes.medium),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        // Fallback image if null/blank
+                        Box(
+                            modifier = Modifier.fillMaxSize().background(Color.Gray.copy(alpha = 0.2f), MaterialTheme.shapes.medium),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Face, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color.Gray)
                         }
                     }
 

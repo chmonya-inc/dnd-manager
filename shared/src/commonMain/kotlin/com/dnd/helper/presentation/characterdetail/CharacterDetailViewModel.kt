@@ -72,7 +72,8 @@ class CharacterDetailViewModel(
                                 var nextState = currentState
                                 // Update main character
                                 if (currentState.character?.imageUrl == "generating:${task.id}") {
-                                    nextState = nextState.copy(character = currentState.character.copy(imageUrl = resultUrl))
+                                    val updated = currentState.character.copy(imageUrl = resultUrl)
+                                    nextState = nextState.copy(character = updated)
                                 }
                                 // Update edited character
                                 if (currentState.editedCharacter?.imageUrl == "generating:${task.id}") {
@@ -89,7 +90,8 @@ class CharacterDetailViewModel(
                                 currentState.character?.let { char ->
                                     if (char.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
                                         val newItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
-                                        nextState = nextState.copy(character = char.copy(items = newItems))
+                                        val updated = char.copy(items = newItems)
+                                        nextState = nextState.copy(character = updated)
                                     }
                                 }
                                 // Update in edited character

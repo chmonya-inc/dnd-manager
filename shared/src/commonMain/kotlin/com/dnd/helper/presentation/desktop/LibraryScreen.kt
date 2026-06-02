@@ -70,34 +70,46 @@ fun LibraryScreen(
     var mousePosition by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     var dropTargetId by remember { mutableStateOf<String?>(null) }
     val characterBounds = remember { mutableStateMapOf<String, androidx.compose.ui.layout.LayoutCoordinates>() }
+    
+    var showGenerateAllDialog by remember { mutableStateOf(false) }
+
+    if (showGenerateAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showGenerateAllDialog = false },
+            title = { Text("Generate Missing Images") },
+            text = { Text("Are you sure you want to generate images for all entities in the library that do not currently have one? This will not overwrite existing images.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.generateMissingImages()
+                        showGenerateAllDialog = false
+                    }
+                ) {
+                    Text("Generate")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showGenerateAllDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             Surface(tonalElevation = 2.dp, shadowElevation = 2.dp) {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    TabRow(
-                        selectedTabIndex = when(state.selectedType) {
-                            LibraryType.Items -> 0
-                            LibraryType.Mobs -> 1
-                            LibraryType.Npcs -> 2
-                            LibraryType.Locations -> 3
-                            LibraryType.Templates -> 4
-                        },
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = currentThemeColor,
-                        indicator = { tabPositions ->
-                            TabRowDefaults.SecondaryIndicator(
-                                modifier = Modifier.tabIndicatorOffset(tabPositions[when(state.selectedType) {
-                                    LibraryType.Items -> 0
-                                    LibraryType.Mobs -> 1
-                                    LibraryType.Npcs -> 2
-                                    LibraryType.Locations -> 3
-                                    LibraryType.Templates -> 4
-                                }]),
-                                color = currentThemeColor
-                            )
-                        },
-                        modifier = Modifier.padding(end = 64.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), MaterialTheme.shapes.extraLarge)
+                            .padding(4.dp)
                     ) {
                         val tabs = listOf(
                             Triple(LibraryType.Items, dndColors.item, Icons.Default.ShoppingBag),
@@ -109,30 +121,38 @@ fun LibraryScreen(
                         
                         tabs.forEach { (type, color, icon) ->
                             val selected = state.selectedType == type
-                            Tab(
+                            Surface(
                                 selected = selected,
                                 onClick = { viewModel.onTypeSelected(type) },
-                                text = { 
-                                    Text(
-                                        type.title, 
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant
-                                    ) 
-                                },
-                                icon = { 
-                                Icon(
-                                    imageVector = icon, 
-                                    contentDescription = null,
-                                    tint = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant
-                                ) 
+                                shape = MaterialTheme.shapes.extraLarge,
+                                color = if (selected) color else Color.Transparent,
+                                contentColor = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(icon, null, modifier = Modifier.size(18.dp))
+                                    Text(type.title, style = MaterialTheme.typography.labelLarge, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
                                 }
-                            )
+                            }
                         }
                     }
-                    
-                    Row(modifier = Modifier.align(Alignment.CenterEnd).padding(end = 8.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
+                            onClick = { showGenerateAllDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
+                        ) {
+                            Icon(Icons.Default.AutoFixHigh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Generate missing images")
+                        }
                         IconButton(onClick = { viewModel.refreshData(force = true) }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                            Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
@@ -283,7 +303,8 @@ private fun NpcGrid(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(npcs, key = { it.id }) { npc ->
+                val sortedNpcs = npcs.sortedBy { it.name }
+                items(sortedNpcs, key = { it.id }) { npc ->
                     NpcLibraryCard(
                         npc = npc,
                         onPresent = { presentationViewModel.addItem(npc.name, type = "NPC", imageUrl = npc.displayImageUrl) },
@@ -362,16 +383,17 @@ private fun NpcLibraryCard(
                 val isGenerating = imageUrl?.startsWith("generating:") == true
 
                 if (!imageUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = if (isGenerating) null else imageUrl,
-                        contentDescription = npc.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
                     if (isGenerating) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color.White)
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
+                    } else {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = npc.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(npcColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
@@ -434,7 +456,8 @@ private fun MonsterGrid(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(monsters, key = { it.id }) { monster ->
+                val sortedMonsters = monsters.sortedBy { it.name }
+                items(sortedMonsters, key = { it.id }) { monster ->
                     MonsterLibraryCard(
                         monster = monster,
                         onPresent = { presentationViewModel.addItem(monster.name, type = "Monster", imageUrl = monster.displayImageUrl) },
@@ -474,16 +497,17 @@ private fun MonsterLibraryCard(
                 val isGenerating = imageUrl?.startsWith("generating:") == true
 
                 if (!imageUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = if (isGenerating) null else imageUrl,
-                        contentDescription = monster.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
                     if (isGenerating) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color.White)
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
+                    } else {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = monster.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(monsterColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
@@ -552,7 +576,7 @@ private fun ItemLibraryGrid(
     var showCreateDialog by remember { mutableStateOf(false) }
     
     val distinctCharacters = remember(characters) { 
-        characters.filter { it.id.isNotBlank() }.distinctBy { it.id.trim() } 
+        characters.filter { it.id.isNotBlank() }.distinctBy { it.id.trim() }.sortedBy { it.name }
     }
 
     if (showCreateDialog) {
@@ -617,7 +641,8 @@ private fun ItemLibraryGrid(
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
                                 maxItemsInEachRow = Int.MAX_VALUE
                             ) {
-                                character.items.forEach { item ->
+                                val sortedItems = character.items.sortedBy { it.name }
+                                sortedItems.forEach { item ->
                                     var itemCoords: androidx.compose.ui.layout.LayoutCoordinates? by remember { mutableStateOf(null) }
                                     Box(modifier = Modifier.width(240.dp)
                                         .onGloballyPositioned { itemCoords = it }
@@ -808,16 +833,17 @@ private fun ItemLibraryCard(
                 val isGenerating = imageUrl?.startsWith("generating:") == true
 
                 if (!imageUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = if (isGenerating) null else imageUrl,
-                        contentDescription = item.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
                     if (isGenerating) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color.White)
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
+                    } else {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = item.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 } else {
                     Box(
@@ -899,11 +925,12 @@ private fun LocationGrid(
             EmptyLibraryState("No locations found", LocalDndColors.current.location)
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 300.dp),
+                columns = GridCells.Adaptive(minSize = 260.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(locations, key = { it.id }) { location ->
+                val sortedLocations = locations.sortedBy { it.name }
+                items(sortedLocations, key = { it.id }) { location ->
                     LocationLibraryCard(
                         location = location,
                         onPresent = { presentationViewModel.addItem(location.name, type = "Location", imageUrl = location.displayImageUrl, isBackground = true) },
@@ -943,16 +970,17 @@ private fun LocationLibraryCard(
                 val isGenerating = imageUrl?.startsWith("generating:") == true
 
                 if (!imageUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = if (isGenerating) null else imageUrl,
-                        contentDescription = location.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
                     if (isGenerating) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color.White)
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
+                    } else {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = location.name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 } else {
                     Box(modifier = Modifier.fillMaxSize().background(locationColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
@@ -1023,7 +1051,8 @@ private fun TemplateLibraryGrid(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(ItemTemplates.genericItems) { template ->
+            val sortedTemplates = ItemTemplates.genericItems.sortedBy { it.name }
+            items(sortedTemplates) { template ->
                 TemplateCard(template, onClick = { selectedTemplate = template })
             }
         }
