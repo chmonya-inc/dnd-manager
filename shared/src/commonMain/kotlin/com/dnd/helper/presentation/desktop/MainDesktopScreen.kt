@@ -31,6 +31,7 @@ import com.dnd.helper.theme.AppTheme
 import com.dnd.helper.theme.ThemeViewModel
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -50,12 +51,6 @@ private val tabs = listOf(
     DesktopTab.Creator,
     DesktopTab.Logs,
     DesktopTab.Presenter
-)
-
-@Serializable
-data class Session(
-    val id: String,
-    val name: String,
 )
 
 @Composable
@@ -297,21 +292,13 @@ fun CharactersSplitPane(
 private fun SessionsDialog(
     onDismiss: () -> Unit,
     onSessionSelected: (String) -> Unit,
-    storage: CharacterStorage = org.koin.compose.koinInject(),
-    repository: CharacterRepository = org.koin.compose.koinInject(),
+    viewModel: SessionsViewModel = koinViewModel(),
 ) {
     val clipboardManager = LocalClipboardManager.current
-    val scope = rememberCoroutineScope()
-    var sessions by remember {
-        mutableStateOf(
-            loadSessions(storage)
-        )
-    }
-    var activeTableId by remember { mutableStateOf(storage.getTableId() ?: "") }
+    val state by viewModel.state.collectAsState()
+    
     var newName by remember { mutableStateOf("") }
     var newId by remember { mutableStateOf("") }
-    var isImporting by remember { mutableStateOf(false) }
-    var importError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -319,8 +306,8 @@ private fun SessionsDialog(
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 // Active session info
-                if (activeTableId.isNotBlank()) {
-                    val activeSession = sessions.find { it.id == activeTableId }
+                if (state.activeTableId.isNotBlank()) {
+                    val activeSession = state.sessions.find { it.id == state.activeTableId }
                     Text(
                         text = "Active: ${activeSession?.name ?: "Unknown"}",
                         style = MaterialTheme.typography.labelMedium,
@@ -330,7 +317,7 @@ private fun SessionsDialog(
                 }
 
                 // Saved sessions list
-                if (sessions.isNotEmpty()) {
+                if (state.sessions.isNotEmpty()) {
                     Text(
                         text = "Saved Sessions",
                         style = MaterialTheme.typography.labelLarge,
@@ -341,22 +328,16 @@ private fun SessionsDialog(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        items(sessions, key = { it.id }) { session ->
+                        items(state.sessions, key = { it.id }) { session ->
                             SessionRow(
                                 session = session,
-                                isActive = session.id == activeTableId,
+                                isActive = session.id == state.activeTableId,
                                 onSelect = {
-                                    storage.saveTableId(session.id)
-                                    activeTableId = session.id
+                                    viewModel.selectSession(session.id)
                                     onSessionSelected(session.id)
                                 },
                                 onDelete = {
-                                    sessions = sessions.filter { it.id != session.id }
-                                    storage.saveSessions(sessionsJson.encodeToString(sessions))
-                                    if (activeTableId == session.id) {
-                                        storage.saveTableId("")
-                                        activeTableId = ""
-                                    }
+                                    viewModel.deleteSession(session.id)
                                 },
                                 onCopy = {
                                     val encoded = IdUtils.encode(session.id)
@@ -404,18 +385,7 @@ private fun SessionsDialog(
                 Button(
                     onClick = {
                         if (newName.isNotBlank()) {
-                            val finalId = if (newId.isNotBlank()) {
-                                IdUtils.decode(newId)
-                            } else {
-                                IdUtils.generateSessionId()
-                            }
-                            
-                            val updated = sessions.toMutableList()
-                            // Replace if same ID exists
-                            updated.removeAll { it.id == finalId }
-                            updated.add(Session(id = finalId, name = newName))
-                            sessions = updated
-                            storage.saveSessions(sessionsJson.encodeToString(sessions))
+                            viewModel.addSession(newName, newId)
                             newName = ""
                             newId = ""
                         }
@@ -426,7 +396,7 @@ private fun SessionsDialog(
                     Text(if (newId.isNotBlank()) "Join Session" else "Create Session")
                 }
 
-                if (activeTableId.isNotBlank()) {
+                if (state.activeTableId.isNotBlank()) {
                     Spacer(Modifier.height(16.dp))
                     HorizontalDivider()
                     Spacer(Modifier.height(16.dp))
@@ -438,20 +408,12 @@ private fun SessionsDialog(
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(
                         onClick = {
-                            scope.launch {
-                                isImporting = true
-                                importError = null
-                                when (val res = SessionImporter.import(repository)) {
-                                    is Result.Error -> importError = "Import failed: ${res.error}"
-                                    is Result.Success -> { /* Success */ }
-                                }
-                                isImporting = false
-                            }
+                            viewModel.importData()
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !isImporting
+                        enabled = !state.isImporting
                     ) {
-                        if (isImporting) {
+                        if (state.isImporting) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                             Spacer(Modifier.width(8.dp))
                             Text("Importing...")
@@ -461,7 +423,7 @@ private fun SessionsDialog(
                             Text("Import from XLSX")
                         }
                     }
-                    importError?.let {
+                    state.importError?.let {
                         Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     }
                 }
@@ -543,8 +505,6 @@ private fun SessionRow(
     }
 }
 
-private val sessionsJson = Json { ignoreUnknownKeys = true }
-
 @Composable
 fun ThemeDialog(
     onDismiss: () -> Unit,
@@ -588,13 +548,4 @@ fun ThemeDialog(
             TextButton(onClick = onDismiss) { Text("Done") }
         }
     )
-}
-
-private fun loadSessions(storage: CharacterStorage): List<Session> {
-    val raw = storage.getSessions() ?: return emptyList()
-    return try {
-        sessionsJson.decodeFromString<List<Session>>(raw)
-    } catch (e: Exception) {
-        emptyList()
-    }
 }

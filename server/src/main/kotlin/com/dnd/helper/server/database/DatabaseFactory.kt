@@ -9,9 +9,22 @@ import java.io.File
 
 object DatabaseFactory {
     fun init() {
-        val databasePath = "database.db"
+        val host = System.getenv("DB_HOST") ?: "localhost"
+        val port = System.getenv("DB_PORT") ?: "5432"
+        val dbName = System.getenv("DB_NAME") ?: "dndhelper"
+        val user = System.getenv("DB_USER") ?: "postgres"
+        val password = System.getenv("DB_PASSWORD") ?: "postgres"
+
+        val url = "jdbc:postgresql://$host:$port/$dbName"
         
-        Database.connect("jdbc:sqlite:$databasePath", "org.sqlite.JDBC")
+        println("[DatabaseFactory] Connecting to PostgreSQL at $url...")
+        
+        Database.connect(
+            url = url,
+            driver = "org.postgresql.Driver",
+            user = user,
+            password = password
+        )
         
         transaction {
             SchemaUtils.createMissingTablesAndColumns(
@@ -24,6 +37,7 @@ object DatabaseFactory {
                 Logs
             )
         }
+        println("[DatabaseFactory] Successfully connected to PostgreSQL")
     }
 
     suspend fun <T> dbQuery(block: suspend () -> T): T =

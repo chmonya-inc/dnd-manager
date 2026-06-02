@@ -24,7 +24,7 @@ dependencies {
     implementation(libs.exposed.dao)
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.json)
-    implementation(libs.sqlite.jdbc)
+    implementation(libs.postgresql)
     implementation(libs.logback)
     
     testImplementation(libs.ktor.server.test.host)

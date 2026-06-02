@@ -106,6 +106,7 @@ val appModule = module {
     factory { LibraryViewModel(get()) }
     factory { LogViewModel(get()) }
     factory { MusicViewModel(get(), get()) }
+    factory { SessionsViewModel(get(), get()) }
     single { ThemeViewModel(get()) }
     single { com.dnd.helper.presentation.desktop.PresentationViewModel(get()) }
 }

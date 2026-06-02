@@ -47,7 +47,31 @@ The project follows a Clean Architecture pattern with MVVM:
 - `:app`: Android-specific entry point and configuration.
 - `:desktop`: Desktop-specific entry point using Compose for Desktop.
 - `:web`: Web entry point using Kotlin/Wasm and Canvas-based rendering.
+- `:server`: Ktor server with PostgreSQL database for advanced syncing and data management.
 - `apps-script`: Backend code for Google Apps Script.
+
+## 🛠️ Server & Database Setup
+
+The project includes a standalone Ktor server (`:server`) that uses **PostgreSQL**.
+
+### 1. Database Configuration
+The server uses environment variables for configuration:
+- `DB_HOST`: Database host (default: `localhost`)
+- `DB_PORT`: Database port (default: `5432`)
+- `DB_NAME`: Database name (default: `dndhelper`)
+- `DB_USER`: Database user (default: `postgres`)
+- `DB_PASSWORD`: Database password (default: `postgres`)
+
+### 2. Running with Docker
+A `docker-compose.yml` is provided for convenience. To start the database:
+```bash
+docker compose up -d
+```
+
+### 3. Running the Server
+```bash
+./gradlew :server:run
+```
 
 ## 🛠️ Pre-conditions & Setup
 

@@ -8,7 +8,7 @@ import androidx.compose.ui.window.rememberWindowState
 import com.dnd.helper.theme.DndHelperTheme
 
 fun main() = application {
-    val windowState = rememberWindowState(placement = WindowPlacement.Fullscreen)
+    val windowState = rememberWindowState(placement = WindowPlacement.Maximized)
 
     Window(
         onCloseRequest = ::exitApplication,
