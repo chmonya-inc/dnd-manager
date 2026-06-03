@@ -73,6 +73,10 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
     override fun getApiCache(key: String): String? {
         return null
     }
+
+    override fun clearApiCache() {
+        // Android implementation placeholder
+    }
 }
 
 actual val platformModule = module {

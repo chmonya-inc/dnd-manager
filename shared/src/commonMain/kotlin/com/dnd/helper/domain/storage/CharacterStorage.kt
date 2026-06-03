@@ -17,4 +17,5 @@ interface CharacterStorage {
     fun getGenerationSteps(): Int
     fun saveApiCache(key: String, json: String)
     fun getApiCache(key: String): String?
+    fun clearApiCache()
 }

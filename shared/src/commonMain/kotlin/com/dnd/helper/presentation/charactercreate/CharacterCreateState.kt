@@ -9,14 +9,29 @@ data class CharacterCreateState(
     val name: String = "",
     val playerName: String = "",
     val race: String = "",
+    val subrace: String = "",
     val characterClass: String = "",
     val subclass: String = "",
     val background: String = "",
+    val alignment: String = "",
     val level: String = "1",
     val experiencePoints: String = "0",
     val description: String = "",
     val imageUrl: String = "",
     val aiPrompt: String = "",
+    
+    val availableClasses: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableSubclasses: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableRaces: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableSubraces: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableBackgrounds: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableAlignments: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableLanguages: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableSkills: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableEquipment: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableFeats: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableFeatures: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableTraits: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
 
     // Appearance
     val age: String = "",
@@ -55,11 +70,16 @@ data class CharacterCreateState(
 
     // Proficiencies (comma-separated)
     val savingThrows: String = "",
-    val skills: String = "",
     val armorProficiencies: String = "",
-    val weaponProficiencies: String = "",
-    val toolProficiencies: String = "",
-    val languages: String = "",
+
+    // Multi-select Lists
+    val selectedSkills: List<String> = emptyList(),
+    val selectedWeapons: List<String> = emptyList(),
+    val selectedTools: List<String> = emptyList(),
+    val selectedLanguages: List<String> = emptyList(),
+    val selectedClassFeatures: List<String> = emptyList(),
+    val selectedRacialTraits: List<String> = emptyList(),
+    val selectedFeats: List<String> = emptyList(),
 
     // Lists
     val items: List<Item> = emptyList(),

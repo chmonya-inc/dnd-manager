@@ -217,6 +217,17 @@ class DesktopCharacterStorage : CharacterStorage {
             null
         }
     }
+
+    override fun clearApiCache() {
+        try {
+            val dir = java.io.File(System.getProperty("user.home"), ".dndhelper/cache")
+            if (dir.exists()) {
+                dir.deleteRecursively()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 }
 
 actual val platformModule = module {

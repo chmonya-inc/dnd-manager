@@ -19,6 +19,7 @@ import kotlin.time.Clock
 class CharacterCreateViewModel(
     private val repository: CharacterRepository,
     private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
+    private val api: com.dnd.helper.data.remote.DndApiDataSource,
 ) : ViewModel() {
 
     private val tempId = "temp-char-${Random.nextInt(1000000, 9999999)}"
@@ -54,6 +55,49 @@ class CharacterCreateViewModel(
                 }
             }
         }
+
+        viewModelScope.launch {
+            when (val res = api.getClasses()) {
+                is Result.Success -> _state.update { it.copy(availableClasses = res.data.results) }
+                else -> {}
+            }
+            when (val res = api.getRaces()) {
+                is Result.Success -> _state.update { it.copy(availableRaces = res.data.results) }
+                else -> {}
+            }
+            when (val res = api.getBackgrounds()) {
+                is Result.Success -> _state.update { it.copy(availableBackgrounds = res.data.results) }
+                else -> {}
+            }
+            when (val res = api.getAlignments()) {
+                is Result.Success -> _state.update { it.copy(availableAlignments = res.data.results) }
+                else -> {}
+            }
+            when (val res = api.getLanguages()) {
+                is Result.Success -> _state.update { it.copy(availableLanguages = res.data.results) }
+                else -> {}
+            }
+            when (val res = api.getSkills()) {
+                is Result.Success -> _state.update { it.copy(availableSkills = res.data.results) }
+                else -> {}
+            }
+            when (val res = api.getEquipment()) {
+                is Result.Success -> _state.update { it.copy(availableEquipment = res.data.results) }
+                else -> {}
+            }
+            when (val res = api.getFeats()) {
+                is Result.Success -> _state.update { it.copy(availableFeats = res.data.results) }
+                else -> {}
+            }
+            when (val res = api.getFeatures()) {
+                is Result.Success -> _state.update { it.copy(availableFeatures = res.data.results) }
+                else -> {}
+            }
+            when (val res = api.getTraits()) {
+                is Result.Success -> _state.update { it.copy(availableTraits = res.data.results) }
+                else -> {}
+            }
+        }
     }
 
     fun onEvent(event: CharacterCreateEvent) {
@@ -65,15 +109,34 @@ class CharacterCreateViewModel(
             }
             is CharacterCreateEvent.PlayerNameChanged -> _state.value = _state.value.copy(playerName = event.value)
             is CharacterCreateEvent.RaceChanged -> {
-                _state.value = _state.value.copy(race = event.value)
+                _state.value = _state.value.copy(race = event.value, subrace = "")
                 updateDefaultPrompt()
+
+                val raceIndex = _state.value.availableRaces.find { it.name == event.value }?.index ?: event.value.lowercase().replace(" ", "-")
+                viewModelScope.launch {
+                    when (val res = api.getRace(raceIndex)) {
+                        is Result.Success -> _state.update { it.copy(availableSubraces = res.data.subraces) }
+                        else -> _state.update { it.copy(availableSubraces = emptyList()) }
+                    }
+                }
             }
+            is CharacterCreateEvent.SubraceChanged -> _state.value = _state.value.copy(subrace = event.value)
             is CharacterCreateEvent.ClassChanged -> {
-                _state.value = _state.value.copy(characterClass = event.value)
+                _state.value = _state.value.copy(characterClass = event.value, subclass = "")
                 updateDefaultPrompt()
+                
+                // Fetch subclasses for this class
+                val classIndex = _state.value.availableClasses.find { it.name == event.value }?.index ?: event.value.lowercase().replace(" ", "-")
+                viewModelScope.launch {
+                    when (val res = api.getClass(classIndex)) {
+                        is Result.Success -> _state.update { it.copy(availableSubclasses = res.data.subclasses) }
+                        else -> _state.update { it.copy(availableSubclasses = emptyList()) }
+                    }
+                }
             }
             is CharacterCreateEvent.SubclassChanged -> _state.value = _state.value.copy(subclass = event.value)
             is CharacterCreateEvent.BackgroundChanged -> _state.value = _state.value.copy(background = event.value)
+            is CharacterCreateEvent.AlignmentChanged -> _state.value = _state.value.copy(alignment = event.value)
             is CharacterCreateEvent.LevelChanged -> _state.value = _state.value.copy(level = event.value)
             is CharacterCreateEvent.ExperiencePointsChanged -> _state.value = _state.value.copy(experiencePoints = event.value)
             is CharacterCreateEvent.DescriptionChanged -> {
@@ -119,11 +182,15 @@ class CharacterCreateViewModel(
 
             // Proficiencies
             is CharacterCreateEvent.SavingThrowsChanged -> _state.value = _state.value.copy(savingThrows = event.value)
-            is CharacterCreateEvent.SkillsChanged -> _state.value = _state.value.copy(skills = event.value)
             is CharacterCreateEvent.ArmorProficienciesChanged -> _state.value = _state.value.copy(armorProficiencies = event.value)
-            is CharacterCreateEvent.WeaponProficienciesChanged -> _state.value = _state.value.copy(weaponProficiencies = event.value)
-            is CharacterCreateEvent.ToolProficienciesChanged -> _state.value = _state.value.copy(toolProficiencies = event.value)
-            is CharacterCreateEvent.LanguagesChanged -> _state.value = _state.value.copy(languages = event.value)
+            is CharacterCreateEvent.AddLanguage -> _state.value = _state.value.copy(selectedLanguages = _state.value.selectedLanguages + event.value)
+            is CharacterCreateEvent.RemoveLanguage -> _state.value = _state.value.copy(selectedLanguages = _state.value.selectedLanguages - event.value)
+            is CharacterCreateEvent.AddProficiencySkill -> _state.value = _state.value.copy(selectedSkills = _state.value.selectedSkills + event.value)
+            is CharacterCreateEvent.RemoveProficiencySkill -> _state.value = _state.value.copy(selectedSkills = _state.value.selectedSkills - event.value)
+            is CharacterCreateEvent.AddProficiencyWeapon -> _state.value = _state.value.copy(selectedWeapons = _state.value.selectedWeapons + event.value)
+            is CharacterCreateEvent.RemoveProficiencyWeapon -> _state.value = _state.value.copy(selectedWeapons = _state.value.selectedWeapons - event.value)
+            is CharacterCreateEvent.AddProficiencyTool -> _state.value = _state.value.copy(selectedTools = _state.value.selectedTools + event.value)
+            is CharacterCreateEvent.RemoveProficiencyTool -> _state.value = _state.value.copy(selectedTools = _state.value.selectedTools - event.value)
 
             // Items
             CharacterCreateEvent.AddItem -> addItem()
@@ -161,9 +228,13 @@ class CharacterCreateViewModel(
             is CharacterCreateEvent.SkillIsPassiveChanged -> updateSkill(event.index) { it.copy(isPassive = event.value) }
 
             // Features
-            is CharacterCreateEvent.ClassFeaturesChanged -> _state.value = _state.value.copy(classFeatures = event.value)
-            is CharacterCreateEvent.RacialTraitsChanged -> _state.value = _state.value.copy(racialTraits = event.value)
-            is CharacterCreateEvent.FeatsChanged -> _state.value = _state.value.copy(feats = event.value)
+            // Features
+            is CharacterCreateEvent.AddClassFeature -> _state.value = _state.value.copy(selectedClassFeatures = _state.value.selectedClassFeatures + event.value)
+            is CharacterCreateEvent.RemoveClassFeature -> _state.value = _state.value.copy(selectedClassFeatures = _state.value.selectedClassFeatures - event.value)
+            is CharacterCreateEvent.AddRacialTrait -> _state.value = _state.value.copy(selectedRacialTraits = _state.value.selectedRacialTraits + event.value)
+            is CharacterCreateEvent.RemoveRacialTrait -> _state.value = _state.value.copy(selectedRacialTraits = _state.value.selectedRacialTraits - event.value)
+            is CharacterCreateEvent.AddFeat -> _state.value = _state.value.copy(selectedFeats = _state.value.selectedFeats + event.value)
+            is CharacterCreateEvent.RemoveFeat -> _state.value = _state.value.copy(selectedFeats = _state.value.selectedFeats - event.value)
 
             is CharacterCreateEvent.SaveCharacter -> saveCharacter()
             is CharacterCreateEvent.GenerateImage -> generateImage()
@@ -175,7 +246,7 @@ class CharacterCreateViewModel(
 
     private fun updateDefaultPrompt() {
         val s = _state.value
-        val promptText = "${s.name}, ${s.race} ${s.characterClass}. ${s.description}".trim()
+        val promptText = "${s.name}, ${s.alignment} ${s.subrace} ${s.race} ${s.characterClass} ${s.subclass}. Background: ${s.background}. Description: ${s.description}. Armor: ${s.armorProficiencies}. Weapons: ${s.selectedWeapons.joinToString()}.".trim()
         if (promptText.isNotBlank()) {
             _state.value = _state.value.copy(
                 aiPrompt = PromptGenerator.getFullPrompt(promptText, GenerationType.CHARACTER)
@@ -362,9 +433,11 @@ class CharacterCreateViewModel(
             name = s.name.trim(),
             playerName = s.playerName.trim(),
             race = s.race.trim(),
+            subrace = s.subrace.trim(),
             characterClass = s.characterClass.trim(),
             subclass = s.subclass.trim(),
             background = s.background.trim(),
+            alignment = s.alignment.trim(),
             level = level,
             experiencePoints = experiencePoints,
             description = s.description.trim(),
@@ -404,17 +477,17 @@ class CharacterCreateViewModel(
             ),
             proficiencies = CharacterProficiencies(
                 savingThrows = parseCommaList(s.savingThrows),
-                skills = parseCommaList(s.skills),
+                skills = s.selectedSkills,
                 armor = parseCommaList(s.armorProficiencies),
-                weapons = parseCommaList(s.weaponProficiencies),
-                tools = parseCommaList(s.toolProficiencies),
-                languages = parseCommaList(s.languages),
+                weapons = s.selectedWeapons,
+                tools = s.selectedTools,
+                languages = s.selectedLanguages,
             ),
             weapons = s.weapons,
             features = CharacterFeatures(
-                classFeatures = parseLineList(s.classFeatures),
-                racialTraits = parseLineList(s.racialTraits),
-                feats = parseLineList(s.feats),
+                classFeatures = s.selectedClassFeatures,
+                racialTraits = s.selectedRacialTraits,
+                feats = s.selectedFeats,
             ),
             skills = s.skillList,
             items = s.items,

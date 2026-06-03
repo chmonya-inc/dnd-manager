@@ -33,7 +33,7 @@ data class BreathWeaponDto(
     val name: String = "",
     val desc: String = "",
     val area_of_effect: AreaOfEffectDto = AreaOfEffectDto(),
-    val damage: BreathWeaponDamageDto = BreathWeaponDamageDto(),
+    val damage: List<BreathWeaponDamageDto> = emptyList(),
     val dc: DcDto = DcDto(),
     val usage: TraitUsageDto = TraitUsageDto(),
 )

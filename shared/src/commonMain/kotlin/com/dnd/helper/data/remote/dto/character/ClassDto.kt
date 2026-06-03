@@ -26,7 +26,7 @@ data class ClassDto(
 @Serializable
 data class MulticlassingDto(
     val prerequisites: List<PrerequisiteDto> = emptyList(),
-    val prerequisite_options: List<ChoiceDto>? = null,
+    val prerequisite_options: ChoiceDto? = null,
     val proficiencies: List<ApiReferenceDto> = emptyList(),
     val proficiency_choices: List<ChoiceDto> = emptyList(),
 )

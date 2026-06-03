@@ -183,7 +183,7 @@ private fun HeaderCard(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = character.race,
+                    text = "${character.subrace} ${character.race}".trim(),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -259,6 +259,20 @@ private fun HeaderCard(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = character.background,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (character.alignment.isNotBlank()) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = character.alignment,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -412,7 +426,35 @@ private fun CombatSummaryCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Initiative, Speed, Prof Bonus row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.Top,
+            ) {
+                CombatStat(
+                    icon = Icons.Default.Lightbulb,
+                    value = if (combat.initiative >= 0) "+${combat.initiative}" else "${combat.initiative}",
+                    label = "Initiative",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                CombatStat(
+                    icon = Icons.AutoMirrored.Filled.DirectionsRun,
+                    value = "${combat.speed} ft",
+                    label = "Speed",
+                    tint = MaterialTheme.colorScheme.tertiary,
+                )
+                CombatStat(
+                    icon = Icons.Default.Star,
+                    value = "+${combat.proficiencyBonus}",
+                    label = "Prof Bonus",
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // HP Controls
             Row(

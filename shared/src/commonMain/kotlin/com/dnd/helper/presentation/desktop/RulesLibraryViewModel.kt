@@ -74,6 +74,11 @@ class RulesLibraryViewModel(
         _state.update { it.copy(selectedCategory = category) }
     }
 
+    fun reload() {
+        api.clearCache()
+        loadData()
+    }
+
     private fun loadData() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }

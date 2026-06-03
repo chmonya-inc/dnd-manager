@@ -162,7 +162,7 @@ class CharacterDetailViewModel(
             }
             is CharacterDetailEvent.EditCharacter -> {
                 val char = event.character
-                val prompt = PromptGenerator.getFullPrompt("${char.name}, ${char.race} ${char.characterClass}. ${char.description}", GenerationType.CHARACTER)
+                val prompt = PromptGenerator.getFullPrompt("${char.name}, ${char.alignment} ${char.subrace} ${char.race} ${char.characterClass} ${char.subclass}. Background: ${char.background}. Description: ${char.description}. Armor: ${char.proficiencies.armor.joinToString()}. Weapons: ${char.proficiencies.weapons.joinToString()}.", GenerationType.CHARACTER)
                 _state.value = _state.value.copy(editedCharacter = char, aiPrompt = prompt)
             }
             is CharacterDetailEvent.UpdateAiPrompt -> {

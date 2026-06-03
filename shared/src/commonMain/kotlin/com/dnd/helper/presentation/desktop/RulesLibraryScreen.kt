@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -65,6 +66,19 @@ fun RulesLibraryScreen(
                 ) {
                     CircularProgressIndicator()
                 }
+            }
+
+            FloatingActionButton(
+                onClick = { viewModel.reload() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(24.dp),
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Reload"
+                )
             }
         }
     }
@@ -144,8 +158,20 @@ fun CategoryDataFragment(state: RulesLibraryState, category: RuleCategory) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(type, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
-                        Badge { Text(list.size.toString()) }
+                        Text(
+                            text = type,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Badge(
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f) else MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                        ) {
+                            Text(list.size.toString())
+                        }
                     }
                 }
             }
@@ -184,8 +210,12 @@ fun ExpandableDtoCard(item: Any) {
                 Text(
                     text = getDtoTitle(item),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
+                Spacer(Modifier.width(8.dp))
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = if (expanded) "Collapse" else "Expand",
@@ -399,7 +429,7 @@ private fun RenderDtoDetails(item: Any) {
             ).joinToString())
             DtoField("Stats", "STR: ${item.strength} | DEX: ${item.dexterity} | CON: ${item.constitution} | INT: ${item.intelligence} | WIS: ${item.wisdom} | CHA: ${item.charisma}")
             DtoField("Challenge Rating", "${item.challenge_rating} (${item.xp} XP)")
-            if (item.desc.isNotEmpty()) DtoField("Description", item.desc.joinToString("\n"))
+            if (item.desc.isNotEmpty()) DtoField("Description", item.desc)
         }
         is com.dnd.helper.data.remote.dto.game.ConditionDto -> {
             DtoField("Description", item.desc.joinToString("\n"))

@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 data class MonsterDto(
     val index: String = "",
     val name: String = "",
-    val desc: List<String> = emptyList(),
+    val desc: String = "",
     val image: String? = null,
     // Ability scores (flat int fields)
     val strength: Int = 10,
@@ -101,13 +101,13 @@ data class MonsterActionDto(
 data class MonsterAttackDto(
     val name: String = "",
     val dc: DcDto? = null,
-    val damage: DamageDto? = null,
+    val damage: List<DamageDto> = emptyList(),
 )
 
 @Serializable
 data class MonsterMultiAttackActionDto(
     val action_name: String = "",
-    val count: Double = 1.0,
+    val count: kotlinx.serialization.json.JsonElement? = null,
     val type: String = "", // "melee" | "ranged" | "ability" | "magic"
 )
 

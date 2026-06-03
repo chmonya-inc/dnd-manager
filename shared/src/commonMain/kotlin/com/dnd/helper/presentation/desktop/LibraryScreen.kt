@@ -221,7 +221,7 @@ fun LibraryScreen(
                             characters = state.characters, 
                             presentationViewModel = presentationViewModel, 
                             onDeleteItem = viewModel::deleteItem,
-                            onAddItem = viewModel::addItem,
+                            onCreateNew = { onNavigateToCreator(CreatorType.Item()) },
                             onEdit = { item, ownerId -> onNavigateToCreator(CreatorType.Item(item, ownerId)) },
                             dropTargetId = dropTargetId,
                             characterBounds = characterBounds,
@@ -638,7 +638,7 @@ private fun ItemLibraryGrid(
     characters: List<com.dnd.helper.domain.model.Character>,
     presentationViewModel: PresentationViewModel,
     onDeleteItem: (String, String) -> Unit,
-    onAddItem: (String, Item) -> Unit,
+    onCreateNew: () -> Unit,
     onEdit: (Item, String) -> Unit,
     dropTargetId: String?,
     characterBounds: MutableMap<String, androidx.compose.ui.layout.LayoutCoordinates>,
@@ -647,22 +647,12 @@ private fun ItemLibraryGrid(
     onDragEnd: () -> Unit,
     onDragCancel: () -> Unit
 ) {
-    var showCreateDialog by remember { mutableStateOf(false) }
-    
     val distinctCharacters = remember(characters) { 
         characters.filter { it.id.isNotBlank() }.distinctBy { it.id.trim() }.sortedBy { it.name }
     }
 
-    if (showCreateDialog) {
-        AddItemToCharacterDialog(
-            characters = distinctCharacters,
-            onDismiss = { showCreateDialog = false },
-            onSave = onAddItem
-        )
-    }
-
     Column(modifier = Modifier.fillMaxSize()) {
-        CategoryHeader("Items Library", LocalDndColors.current.item, Icons.Default.ShoppingBag, { showCreateDialog = true })
+        CategoryHeader("Items", LocalDndColors.current.item, Icons.Default.ShoppingBag, onCreateNew)
         
         if (distinctCharacters.isEmpty()) {
             EmptyLibraryState("No characters found to assign items", LocalDndColors.current.item)

@@ -77,6 +77,39 @@ class DndApiDataSource(
     private val ruleCache = mutableMapOf<String, RuleDto>()
     private val ruleSectionCache = mutableMapOf<String, RuleSectionDto>()
 
+    fun clearCache() {
+        listCache.clear()
+        abilityScoreCache.clear()
+        alignmentCache.clear()
+        backgroundCache.clear()
+        classCache.clear()
+        classLevelCache.clear()
+        raceCache.clear()
+        subraceCache.clear()
+        subclassCache.clear()
+        traitCache.clear()
+        featureCache.clear()
+        featCache.clear()
+        skillApiCache.clear()
+        proficiencyCache.clear()
+        languageCache.clear()
+        spellCache.clear()
+        schoolCache.clear()
+        weaponDtoCache.clear()
+        armorCache.clear()
+        gearCache.clear()
+        packCache.clear()
+        equipCategoryCache.clear()
+        magicItemCache.clear()
+        weaponPropertyCache.clear()
+        monsterCache.clear()
+        conditionCache.clear()
+        damageTypeCache.clear()
+        ruleCache.clear()
+        ruleSectionCache.clear()
+        storage.clearApiCache()
+    }
+
     // ── Character Data ────────────────────────────────────────────────────────
 
     suspend fun getAbilityScores(): Result<ApiReferenceListDto> =

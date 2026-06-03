@@ -23,6 +23,10 @@ data class Item(
     val description: String = "",
     val equipped: Boolean = false,
     val imageUrl: String? = null,
+    val cost: String = "0 gp",
+    val weight: Double = 0.0,
+    val type: String = "Gear", // e.g. "Armor", "Weapon", "Gear"
+    val properties: List<String> = emptyList()
 ) {
     val displayImageUrl: String? get() = ImageUrlHelper.process(imageUrl)
 }

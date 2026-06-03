@@ -17,7 +17,23 @@ data class Monster(
     val challengeRating: String = "1",
     val type: String = "Humanoid",
     val alignment: String = "Neutral",
-    val size: String = "Medium"
+    val size: String = "Medium",
+    val proficiencies: List<String> = emptyList(),
+    val conditionImmunities: List<String> = emptyList(),
+    val damageImmunities: List<String> = emptyList(),
+    val damageResistances: List<String> = emptyList(),
+    val damageVulnerabilities: List<String> = emptyList(),
+    val languages: List<String> = emptyList(),
+    val specialAbilities: List<MonsterAction> = emptyList(),
+    val actions: List<MonsterAction> = emptyList(),
+    val legendaryActions: List<MonsterAction> = emptyList(),
+    val reactions: List<MonsterAction> = emptyList()
 ) {
     val displayImageUrl: String? get() = ImageUrlHelper.process(imageUrl)
 }
+
+@Serializable
+data class MonsterAction(
+    val name: String,
+    val description: String
+)

@@ -68,6 +68,10 @@ class WasmCharacterStorage : CharacterStorage {
     override fun getApiCache(key: String): String? {
         return null
     }
+
+    override fun clearApiCache() {
+        // Wasm implementation placeholder
+    }
 }
 
 actual val platformModule = module {

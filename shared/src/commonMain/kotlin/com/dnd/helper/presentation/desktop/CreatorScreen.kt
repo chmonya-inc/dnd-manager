@@ -230,16 +230,13 @@ fun CreatorScreen(
                             onCreated()
                         }
                     )
-                    is CreatorType.Item -> ItemCreateForm(
-                        existing = type.existingItem,
-                        initialOwnerId = type.ownerId,
-                        onBackClick = { 
+                    is CreatorType.Item -> com.dnd.helper.presentation.itemcreate.ItemCreateScreen(
+                        existingItem = type.existingItem,
+                        ownerId = type.ownerId,
+                        viewModel = koinInject(),
+                        onNavigateBack = { 
                             selectedType = null
                             onBack()
-                        },
-                        onCreated = { 
-                            selectedType = null
-                            onCreated()
                         }
                     )
                     is CreatorType.Npc -> NpcCreateForm(

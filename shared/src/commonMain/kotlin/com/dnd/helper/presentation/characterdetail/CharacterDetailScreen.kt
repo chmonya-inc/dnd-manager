@@ -1,6 +1,7 @@
 package com.dnd.helper.presentation.characterdetail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -305,23 +306,56 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
             value = edited.race,
             onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(race = it))) },
             label = { Text("Race") },
-            modifier = Modifier.fillMaxWidth(0.33f)
+            modifier = Modifier.weight(1f)
         )
+        OutlinedTextField(
+            value = edited.subrace,
+            onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(subrace = it))) },
+            label = { Text("Subrace") },
+            modifier = Modifier.weight(1f)
+        )
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = edited.characterClass,
             onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(characterClass = it))) },
             label = { Text("Class") },
-            modifier = Modifier.fillMaxWidth(0.33f)
+            modifier = Modifier.weight(1f)
         )
         OutlinedTextField(
-            value = edited.level.toString(),
-            onValueChange = {
-                val value = it.toIntOrNull() ?: 0
-                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = value)))
-            },
-            label = { Text("Lvl") },
-            modifier = Modifier.fillMaxWidth(0.33f),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            value = edited.subclass,
+            onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(subclass = it))) },
+            label = { Text("Subclass") },
+            modifier = Modifier.weight(1f)
+        )
+        Row(
+            modifier = Modifier.weight(0.6f).height(56.dp).border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.extraSmall),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = (edited.level - 1).coerceAtLeast(1)))) }) {
+                Icon(Icons.Default.Remove, null)
+            }
+            Text("Lvl ${edited.level}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+            IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = (edited.level + 1).coerceAtMost(20)))) }) {
+                Icon(Icons.Default.Add, null)
+            }
+        }
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = edited.background,
+            onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(background = it))) },
+            label = { Text("Background") },
+            modifier = Modifier.weight(1f)
+        )
+        OutlinedTextField(
+            value = edited.alignment,
+            onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(alignment = it))) },
+            label = { Text("Alignment") },
+            modifier = Modifier.weight(1f)
         )
     }
     Spacer(modifier = Modifier.height(8.dp))

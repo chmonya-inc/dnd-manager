@@ -51,6 +51,7 @@ interface CharacterRepository {
 
     suspend fun getMonsters(forceRefresh: Boolean = false): Result<List<Monster>>
     suspend fun saveMonster(monster: Monster): Result<Unit>
+    suspend fun saveItem(item: Item): Result<Unit>
     suspend fun deleteMonster(id: String): Result<Unit>
 
     suspend fun getNpcs(forceRefresh: Boolean = false): Result<List<Npc>>

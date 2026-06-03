@@ -8,9 +8,11 @@ sealed interface CharacterCreateEvent {
     data class NameChanged(val value: String) : CharacterCreateEvent
     data class PlayerNameChanged(val value: String) : CharacterCreateEvent
     data class RaceChanged(val value: String) : CharacterCreateEvent
+    data class SubraceChanged(val value: String) : CharacterCreateEvent
     data class ClassChanged(val value: String) : CharacterCreateEvent
     data class SubclassChanged(val value: String) : CharacterCreateEvent
     data class BackgroundChanged(val value: String) : CharacterCreateEvent
+    data class AlignmentChanged(val value: String) : CharacterCreateEvent
     data class LevelChanged(val value: String) : CharacterCreateEvent
     data class ExperiencePointsChanged(val value: String) : CharacterCreateEvent
     data class DescriptionChanged(val value: String) : CharacterCreateEvent
@@ -53,21 +55,33 @@ sealed interface CharacterCreateEvent {
 
     // Proficiencies
     data class SavingThrowsChanged(val value: String) : CharacterCreateEvent
-    data class SkillsChanged(val value: String) : CharacterCreateEvent
     data class ArmorProficienciesChanged(val value: String) : CharacterCreateEvent
-    data class WeaponProficienciesChanged(val value: String) : CharacterCreateEvent
-    data class ToolProficienciesChanged(val value: String) : CharacterCreateEvent
-    data class LanguagesChanged(val value: String) : CharacterCreateEvent
-
-    // Items
-    data object AddItem : CharacterCreateEvent
-    data class RemoveItem(val index: Int) : CharacterCreateEvent
-    data class ItemNameChanged(val index: Int, val value: String) : CharacterCreateEvent
+    
+    // Multi-select actions
+    data class AddLanguage(val value: String) : CharacterCreateEvent
+    data class RemoveLanguage(val value: String) : CharacterCreateEvent
+    data class AddProficiencySkill(val value: String) : CharacterCreateEvent
+    data class RemoveProficiencySkill(val value: String) : CharacterCreateEvent
+    data class AddProficiencyWeapon(val value: String) : CharacterCreateEvent
+    data class RemoveProficiencyWeapon(val value: String) : CharacterCreateEvent
+    data class AddProficiencyTool(val value: String) : CharacterCreateEvent
+    data class RemoveProficiencyTool(val value: String) : CharacterCreateEvent
+    data class AddClassFeature(val value: String) : CharacterCreateEvent
+    data class RemoveClassFeature(val value: String) : CharacterCreateEvent
+    data class AddRacialTrait(val value: String) : CharacterCreateEvent
+    data class RemoveRacialTrait(val value: String) : CharacterCreateEvent
+    data class AddFeat(val value: String) : CharacterCreateEvent
+    data class RemoveFeat(val value: String) : CharacterCreateEvent
     data class ItemSlotChanged(val index: Int, val value: EquipmentSlot?) : CharacterCreateEvent
     data class ItemRarityChanged(val index: Int, val value: ItemRarity) : CharacterCreateEvent
     data class ItemDescriptionChanged(val index: Int, val value: String) : CharacterCreateEvent
     data class ItemImageUrlChanged(val index: Int, val value: String) : CharacterCreateEvent
     data class ItemEquippedChanged(val index: Int, val value: Boolean) : CharacterCreateEvent
+
+    // Items
+    data object AddItem : CharacterCreateEvent
+    data class RemoveItem(val index: Int) : CharacterCreateEvent
+    data class ItemNameChanged(val index: Int, val value: String) : CharacterCreateEvent
 
     // Weapons
     data object AddWeapon : CharacterCreateEvent
@@ -95,9 +109,6 @@ sealed interface CharacterCreateEvent {
     data class SkillIsPassiveChanged(val index: Int, val value: Boolean) : CharacterCreateEvent
 
     // Features
-    data class ClassFeaturesChanged(val value: String) : CharacterCreateEvent
-    data class RacialTraitsChanged(val value: String) : CharacterCreateEvent
-    data class FeatsChanged(val value: String) : CharacterCreateEvent
 
     data object SaveCharacter : CharacterCreateEvent
 

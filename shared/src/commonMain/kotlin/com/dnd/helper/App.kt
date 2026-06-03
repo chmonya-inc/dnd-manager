@@ -104,7 +104,9 @@ val appModule = module {
     factory { com.dnd.helper.presentation.desktop.RulesLibraryViewModel(get()) }
     factory { CharacterListViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>(), get<com.dnd.helper.domain.storage.CharacterStorage>()) }
     factory { StartViewModel(get()) }
-    factory { CharacterCreateViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>()) }
+    factory { CharacterCreateViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>(), get<com.dnd.helper.data.remote.DndApiDataSource>()) }
+    factory { com.dnd.helper.presentation.monstercreate.MonsterCreateViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>(), get<com.dnd.helper.data.remote.DndApiDataSource>()) }
+    factory { com.dnd.helper.presentation.itemcreate.ItemCreateViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>(), get<com.dnd.helper.data.remote.DndApiDataSource>()) }
     factory { (characterId: String) ->
         CharacterDetailViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>(), characterId)
     }

@@ -51,7 +51,7 @@ data class OptionDto(
     val item: ApiReferenceDto? = null,
     // action
     val action_name: String? = null,
-    val count: Double? = null,
+    val count: kotlinx.serialization.json.JsonElement? = null,
     val type: String? = null, // "melee" | "ranged" | "ability" | "magic"
     // multiple
     val items: List<OptionDto>? = null,

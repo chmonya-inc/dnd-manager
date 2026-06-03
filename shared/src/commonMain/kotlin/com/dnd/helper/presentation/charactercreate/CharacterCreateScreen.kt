@@ -1,71 +1,31 @@
 package com.dnd.helper.presentation.charactercreate
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoFixHigh
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.HealthAndSafety
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material.icons.filled.SportsMartialArts
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dnd.helper.domain.model.EquipmentSlot
-import com.dnd.helper.domain.model.ItemRarity
+import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.random.Random
-
-// Ability score colors
-private val StrColor = Color(0xFFEF5350)
-private val DexColor = Color(0xFF66BB6A)
-private val ConColor = Color(0xFFFFA726)
-private val IntColor = Color(0xFF42A5F5)
-private val WisColor = Color(0xFFAB47BC)
-private val ChaColor = Color(0xFFEC407A)
+import com.dnd.helper.data.remote.dto.common.ApiReferenceDto
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,8 +33,6 @@ fun CharacterCreateScreen(
     onBackClick: () -> Unit,
     onCharacterCreated: () -> Unit,
 ) {
-    // Generate a unique key for each "session" of creating a character 
-    // to ensure Koin/ViewModelStore gives us a fresh ViewModel every time.
     val viewModelKey = remember { Random.nextLong().toString() }
     val viewModel: CharacterCreateViewModel = koinViewModel(key = viewModelKey)
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -84,893 +42,555 @@ fun CharacterCreateScreen(
         return
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Create Character") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                        )
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+    Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(bottom = 60.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ===== Basic Info =====
-            item { SectionHeader(icon = Icons.Default.Person, title = "Basic Info", accent = MaterialTheme.colorScheme.primary) }
-            item {
-                CardSection {
-                    OutlinedTextField(
-                        value = state.name,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.NameChanged(it)) },
-                        label = { Text("Character Name *") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
+            // COLUMN 1: Basic Info
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    DesktopCardSection(title = "Basic Info", icon = Icons.Default.Person) {
+                        // Image Generator Area
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                                .background(Color.Black.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (state.imageUrl.isNotBlank() && !state.imageUrl.startsWith("generating")) {
+                                AsyncImage(
+                                    model = state.imageUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                            
+                            if (state.imageUrl.startsWith("generating")) {
+                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            } else {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Button(
+                                        onClick = { viewModel.onEvent(CharacterCreateEvent.GenerateImage) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
+                                    ) {
+                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Generate AI Image")
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
-                            value = state.playerName,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.PlayerNameChanged(it)) },
-                            label = { Text("Player") },
-                            modifier = Modifier.weight(1f)
+                            value = state.aiPrompt,
+                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiPromptChanged(it)) },
+                            label = { Text("AI Prompt (Auto-generated)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 2
                         )
-                        OutlinedTextField(
-                            value = state.race,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.RaceChanged(it)) },
-                            label = { Text("Race") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.characterClass,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ClassChanged(it)) },
-                            label = { Text("Class") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = state.subclass,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SubclassChanged(it)) },
-                            label = { Text("Subclass") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = state.aiWidth.toString(),
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(it.toIntOrNull() ?: 1024, state.aiHeight)) },
+                                label = { Text("Width") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = state.aiHeight.toString(),
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(state.aiWidth, it.toIntOrNull() ?: 1024)) },
+                                label = { Text("Height") },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(Modifier.height(16.dp))
+                        
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = state.name,
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.NameChanged(it)) },
+                                label = { Text("Character Name") },
+                                modifier = Modifier.weight(2f),
+                                singleLine = true
+                            )
+                            Row(
+                                modifier = Modifier.weight(1f).height(56.dp).border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.extraSmall),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                IconButton(onClick = { viewModel.onEvent(CharacterCreateEvent.LevelChanged((state.level.toIntOrNull() ?: 1).minus(1).coerceAtLeast(1).toString())) }) {
+                                    Icon(Icons.Default.Remove, null)
+                                }
+                                Text("Lvl ${state.level}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                IconButton(onClick = { viewModel.onEvent(CharacterCreateEvent.LevelChanged((state.level.toIntOrNull() ?: 1).plus(1).coerceAtMost(20).toString())) }) {
+                                    Icon(Icons.Default.Add, null)
+                                }
+                            }
+                        }
+                        
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            DropdownMenuField(
+                                label = "Race",
+                                value = state.race,
+                                options = state.availableRaces,
+                                optionLabel = { it.name },
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.RaceChanged(it)) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            DropdownMenuField(
+                                label = "Subrace",
+                                value = state.subrace,
+                                options = state.availableSubraces,
+                                optionLabel = { it.name },
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.SubraceChanged(it)) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            DropdownMenuField(
+                                label = "Class",
+                                value = state.characterClass,
+                                options = state.availableClasses,
+                                optionLabel = { it.name },
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.ClassChanged(it)) },
+                                modifier = Modifier.weight(1f)
+                            )
+                            DropdownMenuField(
+                                label = "Subclass",
+                                value = state.subclass,
+                                options = state.availableSubclasses,
+                                optionLabel = { it.name },
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.SubclassChanged(it)) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        DropdownMenuField(
+                            label = "Background",
                             value = state.background,
+                            options = state.availableBackgrounds,
+                            optionLabel = { it.name },
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.BackgroundChanged(it)) },
-                            label = { Text("Background") },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth()
                         )
+
+                        DropdownMenuField(
+                            label = "Alignment",
+                            value = state.alignment,
+                            options = state.availableAlignments,
+                            optionLabel = { it.name },
+                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.AlignmentChanged(it)) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        MultiSelectDropdownField(
+                            label = "Language",
+                            selectedItems = state.selectedLanguages,
+                            options = state.availableLanguages,
+                            optionLabel = { it.name },
+                            onAdd = { viewModel.onEvent(CharacterCreateEvent.AddLanguage(it)) },
+                            onRemove = { viewModel.onEvent(CharacterCreateEvent.RemoveLanguage(it)) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
                         OutlinedTextField(
-                            value = state.level,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.LevelChanged(it)) },
-                            label = { Text("Level") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
+                            value = state.description,
+                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.DescriptionChanged(it)) },
+                            label = { Text("Description") },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3
                         )
                     }
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
-                        value = state.experiencePoints,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.ExperiencePointsChanged(it)) },
-                        label = { Text("XP") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
-                        value = state.description,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.DescriptionChanged(it)) },
-                        label = { Text("Bio / Description") },
-                        minLines = 2,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
                 }
             }
 
-            // ===== Appearance =====
-            item { SectionHeader(icon = Icons.Default.Face, title = "Appearance & Visuals", accent = MaterialTheme.colorScheme.secondary) }
-            item {
-                CardSection {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = state.imageUrl,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ImageUrlChanged(it)) },
-                            label = { Text("Image URL") },
-                            modifier = Modifier.weight(1f),
-                            shape = MaterialTheme.shapes.medium
-                        )
-                        OutlinedTextField(
-                            value = state.aiWidth.toString(),
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(it.toIntOrNull() ?: state.aiWidth, state.aiHeight)) },
-                            label = { Text("W") },
-                            modifier = Modifier.width(70.dp),
-                            shape = MaterialTheme.shapes.small,
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                        )
-                        OutlinedTextField(
-                            value = state.aiHeight.toString(),
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(state.aiWidth, it.toIntOrNull() ?: state.aiHeight)) },
-                            label = { Text("H") },
-                            modifier = Modifier.width(70.dp),
-                            shape = MaterialTheme.shapes.small,
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                        )
-                        IconButton(
-                            onClick = { viewModel.onEvent(CharacterCreateEvent.GenerateImage) },
-                            enabled = state.imageUrl != "url will appear after generation"
-                        ) {
-                            if (state.imageUrl == "url will appear after generation") {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.AutoFixHigh, contentDescription = "Generate Image", tint = MaterialTheme.colorScheme.primary)
+            // COLUMN 2: Ability Scores
+            LazyColumn(
+                modifier = Modifier.weight(1.3f).fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    DesktopCardSection(title = "Ability Scores") {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                AbilityScoreBox("STR", state.strength, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.StrengthChanged(it)) }
+                                AbilityScoreBox("DEX", state.dexterity, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.DexterityChanged(it)) }
+                                AbilityScoreBox("CON", state.constitution, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.ConstitutionChanged(it)) }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                AbilityScoreBox("INT", state.intelligence, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.IntelligenceChanged(it)) }
+                                AbilityScoreBox("WIS", state.wisdom, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.WisdomChanged(it)) }
+                                AbilityScoreBox("CHA", state.charisma, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.CharismaChanged(it)) }
                             }
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = state.aiPrompt,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiPromptChanged(it)) },
-                        label = { Text("AI Generation Prompt") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 3,
-                        shape = MaterialTheme.shapes.medium,
-                        placeholder = { Text("Detailed description for AI generation...") }
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    Spacer(Modifier.height(16.dp))
                 }
-            }
-
-            item {
-                CardSection {
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.age,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.AgeChanged(it)) },
-                            label = { Text("Age") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = state.gender,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.GenderChanged(it)) },
-                            label = { Text("Gender") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.height,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.HeightChanged(it)) },
-                            label = { Text("Height") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = state.weight,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeightChanged(it)) },
-                            label = { Text("Weight") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.eyes,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.EyesChanged(it)) },
-                            label = { Text("Eyes") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = state.hair,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.HairChanged(it)) },
-                            label = { Text("Hair") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
-                        value = state.skin,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkinChanged(it)) },
-                        label = { Text("Skin") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            // ===== Ability Scores =====
-            item { SectionHeader(icon = Icons.Default.FitnessCenter, title = "Ability Scores", accent = StrColor) }
-            item {
-                CardSection {
-                    TwoColumnRow {
-                        StatCard("STR", state.strength, StrColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.StrengthChanged(it)) }
-                        StatCard("DEX", state.dexterity, DexColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.DexterityChanged(it)) }
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        StatCard("CON", state.constitution, ConColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.ConstitutionChanged(it)) }
-                        StatCard("INT", state.intelligence, IntColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.IntelligenceChanged(it)) }
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        StatCard("WIS", state.wisdom, WisColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.WisdomChanged(it)) }
-                        StatCard("CHA", state.charisma, ChaColor, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.CharismaChanged(it)) }
+                item {
+                    DesktopCardSection(title = "Combat & HP") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = state.maxHp,
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.MaxHpChanged(it)) },
+                                label = { Text("Max HP") },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = state.armorClass,
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.ArmorClassChanged(it)) },
+                                label = { Text("Armor Class") },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = state.initiative,
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.InitiativeChanged(it)) },
+                                label = { Text("Initiative") },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true
+                            )
+                            OutlinedTextField(
+                                value = state.speed,
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.SpeedChanged(it)) },
+                                label = { Text("Speed") },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true
+                            )
+                        }
                     }
                 }
             }
 
-            // ===== HP & Combat =====
-            item { SectionHeader(icon = Icons.Default.Shield, title = "Combat", accent = ConColor) }
-            item {
-                CardSection {
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.maxHp,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.MaxHpChanged(it)) },
-                            label = { Text("Max HP") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
+            // COLUMN 3: Proficiencies & Features
+            LazyColumn(
+                modifier = Modifier.weight(1.3f).fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    DesktopCardSection(title = "Proficiencies") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = state.savingThrows,
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.SavingThrowsChanged(it)) },
+                                label = { Text("Saving Throws") },
+                                modifier = Modifier.weight(1f),
+                            )
+                            OutlinedTextField(
+                                value = state.hitDice,
+                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.HitDiceChanged(it)) },
+                                label = { Text("Hit Die") },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(8.dp))
+                        MultiSelectDropdownField(
+                            label = "Skill",
+                            selectedItems = state.selectedSkills,
+                            options = state.availableSkills,
+                            optionLabel = { it.name },
+                            onAdd = { viewModel.onEvent(CharacterCreateEvent.AddProficiencySkill(it)) },
+                            onRemove = { viewModel.onEvent(CharacterCreateEvent.RemoveProficiencySkill(it)) },
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        OutlinedTextField(
-                            value = state.currentHp,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.CurrentHpChanged(it)) },
-                            label = { Text("Current HP") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.tempHp,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.TempHpChanged(it)) },
-                            label = { Text("Temp HP") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = state.armorClass,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ArmorClassChanged(it)) },
-                            label = { Text("AC") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.initiative,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.InitiativeChanged(it)) },
-                            label = { Text("Initiative") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = state.speed,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SpeedChanged(it)) },
-                            label = { Text("Speed") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.proficiencyBonus,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ProficiencyBonusChanged(it)) },
-                            label = { Text("Prof. Bonus") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = state.hitDice,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.HitDiceChanged(it)) },
-                            label = { Text("Hit Dice") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
-                        value = state.hitDiceCurrent,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.HitDiceCurrentChanged(it)) },
-                        label = { Text("Hit Dice Left") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            // ===== Status =====
-            item { SectionHeader(icon = Icons.Default.HealthAndSafety, title = "Status", accent = WisColor) }
-            item {
-                CardSection {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("Inspiration", style = MaterialTheme.typography.bodyMedium)
-                        Switch(
-                            checked = state.inspiration,
-                            onCheckedChange = { viewModel.onEvent(CharacterCreateEvent.InspirationChanged(it)) },
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.exhaustion,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ExhaustionChanged(it)) },
-                            label = { Text("Exhaustion (0-6)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = state.deathSaveSuccesses,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.DeathSaveSuccessesChanged(it)) },
-                            label = { Text("DS Successes") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.deathSaveFailures,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.DeathSaveFailuresChanged(it)) },
-                            label = { Text("DS Failures") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = state.conditions,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ConditionsChanged(it)) },
-                            label = { Text("Conditions") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-
-            // ===== Proficiencies =====
-            item { SectionHeader(icon = Icons.Default.School, title = "Proficiencies", accent = IntColor) }
-            item {
-                CardSection {
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.savingThrows,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SavingThrowsChanged(it)) },
-                            label = { Text("Saving Throws") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = state.skills,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillsChanged(it)) },
-                            label = { Text("Skills") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
+                        Spacer(Modifier.height(8.dp))
+                        
                         OutlinedTextField(
                             value = state.armorProficiencies,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ArmorProficienciesChanged(it)) },
                             label = { Text("Armor") },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        OutlinedTextField(
-                            value = state.weaponProficiencies,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponProficienciesChanged(it)) },
-                            label = { Text("Weapons") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = state.toolProficiencies,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ToolProficienciesChanged(it)) },
-                            label = { Text("Tools") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = state.languages,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.LanguagesChanged(it)) },
-                            label = { Text("Languages") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
+                        Spacer(Modifier.height(8.dp))
 
-            // ===== Items =====
-            item { SectionHeader(icon = Icons.Default.ShoppingBag, title = "Items", accent = MaterialTheme.colorScheme.tertiary) }
-            itemsIndexed(state.items) { index, item ->
-                CardSection {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("Item #${index + 1}", style = MaterialTheme.typography.labelLarge)
-                        IconButton(onClick = { viewModel.onEvent(CharacterCreateEvent.RemoveItem(index)) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Remove")
-                        }
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = item.name,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.ItemNameChanged(index, it)) },
-                        label = { Text("Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    TwoColumnRow {
-                        CompactSlotDropdown(
-                            selected = item.slot,
-                            onSelect = { viewModel.onEvent(CharacterCreateEvent.ItemSlotChanged(index, it)) },
-                            modifier = Modifier.weight(1f)
+                        MultiSelectDropdownField(
+                            label = "Weapon Proficiency",
+                            selectedItems = state.selectedWeapons,
+                            options = state.availableEquipment,
+                            optionLabel = { it.name },
+                            onAdd = { viewModel.onEvent(CharacterCreateEvent.AddProficiencyWeapon(it)) },
+                            onRemove = { viewModel.onEvent(CharacterCreateEvent.RemoveProficiencyWeapon(it)) },
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        CompactRarityDropdown(
-                            selected = item.rarity,
-                            onSelect = { viewModel.onEvent(CharacterCreateEvent.ItemRarityChanged(index, it)) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = item.description,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.ItemDescriptionChanged(index, it)) },
-                        label = { Text("Description") },
-                        minLines = 2,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        OutlinedTextField(
-                            value = item.imageUrl ?: "",
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ItemImageUrlChanged(index, it)) },
-                            label = { Text("Image URL") },
-                            modifier = Modifier.weight(1f),
-                        )
-                        IconButton(
-                            onClick = { viewModel.onEvent(CharacterCreateEvent.GenerateItemImage(index)) },
-                            enabled = item.imageUrl != "url will appear after generation"
-                        ) {
-                            if (item.imageUrl == "url will appear after generation") {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.AutoFixHigh, "Generate")
-                            }
-                        }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = item.equipped,
-                            onCheckedChange = { viewModel.onEvent(CharacterCreateEvent.ItemEquippedChanged(index, it)) },
-                        )
-                        Text("Equipped", style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
-            item {
-                Button(
-                    onClick = { viewModel.onEvent(CharacterCreateEvent.AddItem) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Icon(Icons.Default.Add, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add Item")
-                }
-            }
+                        Spacer(Modifier.height(8.dp))
 
-            // ===== Weapons =====
-            item { SectionHeader(icon = Icons.Default.SportsMartialArts, title = "Weapons", accent = StrColor) }
-            itemsIndexed(state.weapons) { index, weapon ->
-                CardSection {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("Weapon #${index + 1}", style = MaterialTheme.typography.labelLarge)
-                        IconButton(onClick = { viewModel.onEvent(CharacterCreateEvent.RemoveWeapon(index)) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Remove")
-                        }
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = weapon.name,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponNameChanged(index, it)) },
-                        label = { Text("Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = weapon.attackBonus,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponAttackBonusChanged(index, it)) },
-                            label = { Text("Attack Bonus") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = weapon.damage,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponDamageChanged(index, it)) },
-                            label = { Text("Damage") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = weapon.damageType,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponDamageTypeChanged(index, it)) },
-                            label = { Text("Damage Type") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = weapon.notes,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.WeaponNotesChanged(index, it)) },
-                            label = { Text("Notes") },
-                            modifier = Modifier.weight(1f)
+                        MultiSelectDropdownField(
+                            label = "Tool Proficiency",
+                            selectedItems = state.selectedTools,
+                            options = state.availableEquipment,
+                            optionLabel = { it.name },
+                            onAdd = { viewModel.onEvent(CharacterCreateEvent.AddProficiencyTool(it)) },
+                            onRemove = { viewModel.onEvent(CharacterCreateEvent.RemoveProficiencyTool(it)) },
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
-            }
-            item {
-                Button(
-                    onClick = { viewModel.onEvent(CharacterCreateEvent.AddWeapon) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Icon(Icons.Default.Add, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add Weapon")
-                }
-            }
 
-            // ===== Skills =====
-            item { SectionHeader(icon = Icons.Default.AutoFixHigh, title = "Skills & Spells", accent = ChaColor) }
-            itemsIndexed(state.skillList) { index, skill ->
-                CardSection {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("Skill #${index + 1}", style = MaterialTheme.typography.labelLarge)
-                        IconButton(onClick = { viewModel.onEvent(CharacterCreateEvent.RemoveSkill(index)) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Remove")
-                        }
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = skill.name,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillNameChanged(index, it)) },
-                        label = { Text("Name") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = skill.damage,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillDamageChanged(index, it)) },
-                            label = { Text("Damage") },
-                            modifier = Modifier.weight(1f)
+                item {
+                    DesktopCardSection(title = "Features & Traits") {
+                        MultiSelectDropdownField(
+                            label = "Class Feature",
+                            selectedItems = state.selectedClassFeatures,
+                            options = state.availableFeatures,
+                            optionLabel = { it.name },
+                            onAdd = { viewModel.onEvent(CharacterCreateEvent.AddClassFeature(it)) },
+                            onRemove = { viewModel.onEvent(CharacterCreateEvent.RemoveClassFeature(it)) },
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        OutlinedTextField(
-                            value = skill.damageType,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillDamageTypeChanged(index, it)) },
-                            label = { Text("Damage Type") },
-                            modifier = Modifier.weight(1f)
+                        Spacer(Modifier.height(8.dp))
+                        MultiSelectDropdownField(
+                            label = "Racial Trait",
+                            selectedItems = state.selectedRacialTraits,
+                            options = state.availableTraits,
+                            optionLabel = { it.name },
+                            onAdd = { viewModel.onEvent(CharacterCreateEvent.AddRacialTrait(it)) },
+                            onRemove = { viewModel.onEvent(CharacterCreateEvent.RemoveRacialTrait(it)) },
+                            modifier = Modifier.fillMaxWidth()
                         )
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = skill.resourceCost,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillResourceCostChanged(index, it)) },
-                            label = { Text("Cost (e.g. 1 Action)") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = skill.range,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillRangeChanged(index, it)) },
-                            label = { Text("Range") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = skill.castingTime,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillCastingTimeChanged(index, it)) },
-                            label = { Text("Casting Time") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = skill.duration,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillDurationChanged(index, it)) },
-                            label = { Text("Duration") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = skill.level.toString(),
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillLevelChanged(index, it)) },
-                            label = { Text("Level") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = skill.school,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillSchoolChanged(index, it)) },
-                            label = { Text("School") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    TwoColumnRow {
-                        OutlinedTextField(
-                            value = skill.iconUrl ?: "",
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillIconNameChanged(index, it)) },
-                            label = { Text("Icon URL") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Checkbox(
-                                checked = skill.isPassive,
-                                onCheckedChange = { viewModel.onEvent(CharacterCreateEvent.SkillIsPassiveChanged(index, it)) },
-                            )
-                            Text("Passive", style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                    Spacer(Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = skill.description,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.SkillDescriptionChanged(index, it)) },
-                        label = { Text("Description") },
-                        minLines = 2,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-            item {
-                Button(
-                    onClick = { viewModel.onEvent(CharacterCreateEvent.AddSkill) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Icon(Icons.Default.Add, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add Skill")
-                }
-            }
-
-            // ===== Features =====
-            item { SectionHeader(icon = Icons.Default.Star, title = "Features & Traits", accent = MaterialTheme.colorScheme.secondary) }
-            item {
-                CardSection {
-                    OutlinedTextField(
-                        value = state.classFeatures,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.ClassFeaturesChanged(it)) },
-                        label = { Text("Class Features (one per line)") },
-                        minLines = 3,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
-                        value = state.racialTraits,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.RacialTraitsChanged(it)) },
-                        label = { Text("Racial Traits (one per line)") },
-                        minLines = 3,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
-                        value = state.feats,
-                        onValueChange = { viewModel.onEvent(CharacterCreateEvent.FeatsChanged(it)) },
-                        label = { Text("Feats (one per line)") },
-                        minLines = 2,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            // Error
-            item {
-                AnimatedVisibility(visible = state.error != null) {
-                    state.error?.let { error ->
-                        Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(vertical = 8.dp),
+                        Spacer(Modifier.height(8.dp))
+                        MultiSelectDropdownField(
+                            label = "Feat",
+                            selectedItems = state.selectedFeats,
+                            options = state.availableFeats,
+                            optionLabel = { it.name },
+                            onAdd = { viewModel.onEvent(CharacterCreateEvent.AddFeat(it)) },
+                            onRemove = { viewModel.onEvent(CharacterCreateEvent.RemoveFeat(it)) },
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
             }
-
-            // Save button
-            item {
-                Button(
-                    onClick = { viewModel.onEvent(CharacterCreateEvent.SaveCharacter) },
-                    enabled = !state.isSaving,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    if (state.isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.padding(end = 8.dp).size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp,
-                        )
-                        Text("Saving...")
-                    } else {
-                        Text("Create Character")
-                    }
-                }
-            }
-
-            item { Spacer(Modifier.height(24.dp)) }
         }
-    }
-}
-
-// ===== Helper Composables =====
-
-@Composable
-private fun SectionHeader(icon: ImageVector, title: String, accent: Color) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(MaterialTheme.shapes.small)
-                    .background(accent.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center,
+        
+        // Save Button at bottom right
+        Column(
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            horizontalAlignment = Alignment.End
+        ) {
+            val errorMsg = state.error
+            if (!errorMsg.isNullOrBlank()) {
+                Text(
+                    text = errorMsg,
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            Button(
+                onClick = { viewModel.onEvent(CharacterCreateEvent.SaveCharacter) },
+                enabled = !state.isSaving
             ) {
-                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
+                if (state.isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text("Save Character", fontWeight = FontWeight.Bold)
             }
-            Spacer(Modifier.width(10.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = accent,
-                fontWeight = FontWeight.Bold,
-            )
         }
-        Box(
-            modifier = Modifier
-                .width(100.dp)
-                .height(2.dp)
-                .clip(MaterialTheme.shapes.extraSmall)
-                .background(accent.copy(alpha = 0.2f)),
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun <T> DropdownMenuField(
+    label: String,
+    value: String,
+    options: List<T>,
+    optionLabel: (T) -> String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
+            singleLine = true
         )
+        if (options.isNotEmpty()) {
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                options.forEach { option ->
+                    val text = optionLabel(option)
+                    DropdownMenuItem(
+                        text = { Text(text) },
+                        onClick = {
+                            onValueChange(text)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
-private fun CardSection(content: @Composable () -> Unit) {
+fun DesktopCardSection(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (icon != null) {
+                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 18.sp)
+            }
+            Spacer(Modifier.height(16.dp))
             content()
         }
     }
 }
 
 @Composable
-private fun TwoColumnRow(content: @Composable RowScope.() -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        content()
-    }
-}
-
-@Composable
-private fun StatCard(label: String, value: String, color: Color, modifier: Modifier = Modifier, onValueChange: (String) -> Unit) {
-    Column(
+fun AbilityScoreBox(label: String, value: String, modifier: Modifier = Modifier, onValueChange: (String) -> Unit) {
+    Box(
         modifier = modifier
-            .clip(MaterialTheme.shapes.medium)
-            .background(color.copy(alpha = 0.08f))
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
             .padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = color,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(Modifier.height(2.dp))
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            textStyle = MaterialTheme.typography.titleMedium.copy(
-                textAlign = TextAlign.Center,
-                color = color,
-                fontWeight = FontWeight.Bold,
-            ),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CompactSlotDropdown(selected: EquipmentSlot?, onSelect: (EquipmentSlot?) -> Unit, modifier: Modifier = Modifier) {
-    var expanded by remember { mutableStateOf(false) }
-    val options = listOf(null) + EquipmentSlot.entries
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }, modifier = modifier) {
-        OutlinedTextField(
-            value = selected?.name?.replace("_", " ")?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "None",
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Slot", style = MaterialTheme.typography.labelSmall) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth(),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(option?.name?.replace("_", " ")?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "None") },
-                    onClick = { onSelect(option); expanded = false },
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                textStyle = LocalTextStyle.current.copy(textAlign = androidx.compose.ui.text.style.TextAlign.Center, fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                modifier = Modifier.width(60.dp).padding(top = 4.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary
                 )
-            }
+            )
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-private fun CompactRarityDropdown(selected: ItemRarity, onSelect: (ItemRarity) -> Unit, modifier: Modifier = Modifier) {
+fun <T> MultiSelectDropdownField(
+    label: String,
+    selectedItems: List<String>,
+    options: List<T>,
+    optionLabel: (T) -> String,
+    onAdd: (String) -> Unit,
+    onRemove: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }, modifier = modifier) {
-        OutlinedTextField(
-            value = selected.name.lowercase().replaceFirstChar { it.uppercase() },
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Rarity", style = MaterialTheme.typography.labelSmall) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth(),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            ItemRarity.entries.forEach { rarity ->
-                DropdownMenuItem(
-                    text = { Text(rarity.name.lowercase().replaceFirstChar { it.uppercase() }) },
-                    onClick = { onSelect(rarity); expanded = false },
-                )
+    var searchText by remember { mutableStateOf("") }
+    
+    val filteredOptions = options.map(optionLabel).filter { 
+        it.contains(searchText, ignoreCase = true) && !selectedItems.contains(it) 
+    }
+
+    Column(modifier = modifier) {
+        if (selectedItems.isNotEmpty()) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                selectedItems.forEach { item ->
+                    InputChip(
+                        selected = true,
+                        onClick = { onRemove(item) },
+                        label = { Text(item) },
+                        trailingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.size(16.dp)) }
+                    )
+                }
+            }
+        }
+        
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = searchText,
+                onValueChange = { 
+                    searchText = it
+                    expanded = true
+                },
+                label = { Text("Add $label") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                singleLine = true
+            )
+            
+            if (filteredOptions.isNotEmpty()) {
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    filteredOptions.take(10).forEach { optionText ->
+                        DropdownMenuItem(
+                            text = { Text(optionText) },
+                            onClick = {
+                                onAdd(optionText)
+                                searchText = ""
+                                expanded = false
+                            }
+                        )
+                    }
+                    if (searchText.isNotBlank() && !filteredOptions.contains(searchText)) {
+                        DropdownMenuItem(
+                            text = { Text("Add custom: \"$searchText\"") },
+                            onClick = {
+                                onAdd(searchText)
+                                searchText = ""
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            } else if (searchText.isNotBlank()) {
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Add custom: \"$searchText\"") },
+                        onClick = {
+                            onAdd(searchText)
+                            searchText = ""
+                            expanded = false
+                        }
+                    )
+                }
             }
         }
     }

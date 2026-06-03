@@ -252,6 +252,8 @@ private fun MasterContent(
                         Spacer(Modifier.height(12.dp))
                         MasterDeathSaves(character, viewModel, state.lastDeathSaveRoll)
                     }
+                    Spacer(Modifier.height(16.dp))
+                    MasterCombatStatsRow(character)
                 }
             }
 
@@ -399,20 +401,53 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
             modifier = Modifier.weight(1f)
         )
         OutlinedTextField(
+            value = edited.subrace,
+            onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(subrace = it))) },
+            label = { Text("Subrace") },
+            modifier = Modifier.weight(1f)
+        )
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
             value = edited.characterClass,
             onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(characterClass = it))) },
             label = { Text("Class") },
             modifier = Modifier.weight(1f)
         )
         OutlinedTextField(
-            value = edited.level.toString(),
-            onValueChange = { 
-                val value = it.toIntOrNull() ?: 0
-                viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = value))) 
-            },
-            label = { Text("Lvl") },
-            modifier = Modifier.weight(0.5f),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            value = edited.subclass,
+            onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(subclass = it))) },
+            label = { Text("Subclass") },
+            modifier = Modifier.weight(1f)
+        )
+        Row(
+            modifier = Modifier.weight(0.6f).height(56.dp).border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.extraSmall),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = (edited.level - 1).coerceAtLeast(1)))) }) {
+                Icon(Icons.Default.Remove, null)
+            }
+            Text("Lvl ${edited.level}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+            IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = (edited.level + 1).coerceAtMost(20)))) }) {
+                Icon(Icons.Default.Add, null)
+            }
+        }
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = edited.background,
+            onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(background = it))) },
+            label = { Text("Background") },
+            modifier = Modifier.weight(1f)
+        )
+        OutlinedTextField(
+            value = edited.alignment,
+            onValueChange = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(alignment = it))) },
+            label = { Text("Alignment") },
+            modifier = Modifier.weight(1f)
         )
     }
     Spacer(modifier = Modifier.height(8.dp))
@@ -512,9 +547,10 @@ private fun MasterHeader(character: com.dnd.helper.domain.model.Character, viewM
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "${character.race} ${character.characterClass}",
+            text = "${character.subrace} ${character.race} • ${character.characterClass} ${if (character.subclass.isNotBlank()) "(${character.subclass})" else ""}".trim(),
             style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f)
         )
         Surface(
             color = MaterialTheme.colorScheme.secondaryContainer,
@@ -567,6 +603,55 @@ private fun MasterHeader(character: com.dnd.helper.domain.model.Character, viewM
             }
         }
     }
+    
+    if (character.background.isNotBlank()) {
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = "Background: ${character.background}",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+    if (character.alignment.isNotBlank()) {
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = "Alignment: ${character.alignment}",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun MasterCombatStatsRow(character: com.dnd.helper.domain.model.Character) {
+    val combat = character.combat
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Default.Shield, null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
+            Text(combat.armorClass.toString(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text("AC", style = MaterialTheme.typography.labelSmall)
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Default.Lightbulb, null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.secondary)
+            val initString = if (combat.initiative >= 0) "+${combat.initiative}" else "${combat.initiative}"
+            Text(initString, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+            Text("Initiative", style = MaterialTheme.typography.labelSmall)
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.AutoMirrored.Filled.DirectionsRun, null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.tertiary)
+            Text("${combat.speed} ft", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
+            Text("Speed", style = MaterialTheme.typography.labelSmall)
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Default.Star, null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.error)
+            Text("+${combat.proficiencyBonus}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+            Text("Prof Bonus", style = MaterialTheme.typography.labelSmall)
+        }
+    }
 }
 
 @Composable
@@ -594,8 +679,9 @@ private fun MasterHealthSection(character: com.dnd.helper.domain.model.Character
                     color = hpColor
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "${character.currentHp}",
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "${character.currentHp}",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
                         color = hpColor
@@ -612,6 +698,15 @@ private fun MasterHealthSection(character: com.dnd.helper.domain.model.Character
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (character.combat.tempHp > 0) {
+                        Text(
+                            text = "+${character.combat.tempHp} temp",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF1E88E5),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(
                         onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateMaxHp(-amount)) },
@@ -626,6 +721,18 @@ private fun MasterHealthSection(character: com.dnd.helper.domain.model.Character
                         Icon(Icons.Default.Add, null, modifier = Modifier.size(14.dp))
                     }
                 }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Hit Dice: ${character.combat.hitDiceCurrent}/${character.level} (${character.combat.hitDice})",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
             }
             Spacer(modifier = Modifier.height(4.dp))
             LinearProgressIndicator(
