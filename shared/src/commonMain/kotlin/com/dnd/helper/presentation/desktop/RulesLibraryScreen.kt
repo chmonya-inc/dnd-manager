@@ -54,19 +54,7 @@ fun RulesLibraryScreen(
 
         // Content
         Box(modifier = Modifier.fillMaxSize()) {
-            when (state.selectedCategory) {
-                RuleCategory.CharacterData -> CharacterDataFragment(state)
-                else -> {
-                    // Placeholders for other types
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "${state.selectedCategory.name} - Not Implemented Yet",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
+            CategoryDataFragment(state, state.selectedCategory)
             
             if (state.isLoading) {
                 Box(
@@ -84,24 +72,57 @@ fun RulesLibraryScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CharacterDataFragment(state: RulesLibraryState) {
-    var selectedType by remember { mutableStateOf("Classes") }
+fun CategoryDataFragment(state: RulesLibraryState, category: RuleCategory) {
+    val categoryItems: List<Pair<String, List<Any>>> = remember(state, category) {
+        when(category) {
+            RuleCategory.CharacterData -> listOf(
+                "Classes" to state.classes,
+                "Races" to state.races,
+                "Subraces" to state.subraces,
+                "Subclasses" to state.subclasses,
+                "Feats" to state.feats,
+                "Traits" to state.traits,
+                "Features" to state.features,
+                "Backgrounds" to state.backgrounds,
+                "Skills" to state.skills,
+                "Ability Scores" to state.abilityScores,
+                "Alignments" to state.alignments,
+                "Languages" to state.languages,
+                "Proficiencies" to state.proficiencies
+            )
+            RuleCategory.Spells -> listOf(
+                "Spells" to state.spells,
+                "Magic Schools" to state.magicSchools
+            )
+            RuleCategory.Equipment -> listOf(
+                "Equipment Categories" to state.equipmentCategories,
+                "Magic Items" to state.magicItems,
+                "Weapon Properties" to state.weaponProperties
+            )
+            RuleCategory.Monsters -> listOf(
+                "Monsters" to state.monsters
+            )
+            RuleCategory.Mechanics -> listOf(
+                "Conditions" to state.conditions,
+                "Damage Types" to state.damageTypes
+            )
+            RuleCategory.Rules -> listOf(
+                "Rules" to state.rules,
+                "Rule Sections" to state.ruleSections
+            )
+        }
+    }
 
-    val actualTypes = listOf(
-        "Classes" to state.classes,
-        "Races" to state.races,
-        "Subraces" to state.subraces,
-        "Subclasses" to state.subclasses,
-        "Feats" to state.feats,
-        "Traits" to state.traits,
-        "Features" to state.features,
-        "Backgrounds" to state.backgrounds,
-        "Skills" to state.skills,
-        "Ability Scores" to state.abilityScores,
-        "Alignments" to state.alignments,
-        "Languages" to state.languages,
-        "Proficiencies" to state.proficiencies
-    )
+    var selectedType by androidx.compose.runtime.saveable.rememberSaveable(categoryItems) { 
+        mutableStateOf(categoryItems.firstOrNull()?.first ?: "") 
+    }
+
+    // fallback if selection becomes invalid due to data loading
+    LaunchedEffect(categoryItems) {
+        if (categoryItems.isNotEmpty() && categoryItems.none { it.first == selectedType }) {
+            selectedType = categoryItems.first().first
+        }
+    }
 
     Row(modifier = Modifier.fillMaxSize()) {
         // Secondary sidebar
@@ -111,7 +132,7 @@ fun CharacterDataFragment(state: RulesLibraryState) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(actualTypes) { (type, list) ->
+            items(categoryItems) { (type, list) ->
                 val isSelected = selectedType == type
                 Surface(
                     onClick = { selectedType = type },
@@ -133,7 +154,7 @@ fun CharacterDataFragment(state: RulesLibraryState) {
         VerticalDivider()
 
         // List of items
-        val currentList = actualTypes.find { it.first == selectedType }?.second ?: emptyList<Any>()
+        val currentList = categoryItems.find { it.first == selectedType }?.second ?: emptyList<Any>()
         
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -200,6 +221,16 @@ private fun getDtoTitle(item: Any): String {
         is com.dnd.helper.data.remote.dto.character.AlignmentDto -> item.name
         is com.dnd.helper.data.remote.dto.character.LanguageDto -> item.name
         is com.dnd.helper.data.remote.dto.character.ProficiencyDto -> item.name
+        is com.dnd.helper.data.remote.dto.spell.SpellDto -> item.name
+        is com.dnd.helper.data.remote.dto.spell.MagicSchoolDto -> item.name
+        is com.dnd.helper.data.remote.dto.equipment.EquipmentCategoryDto -> item.name
+        is com.dnd.helper.data.remote.dto.equipment.MagicItemDto -> item.name
+        is com.dnd.helper.data.remote.dto.equipment.WeaponPropertyDto -> item.name
+        is com.dnd.helper.data.remote.dto.monster.MonsterDto -> item.name
+        is com.dnd.helper.data.remote.dto.game.ConditionDto -> item.name
+        is com.dnd.helper.data.remote.dto.game.DamageTypeDto -> item.name
+        is com.dnd.helper.data.remote.dto.game.RuleDto -> item.name
+        is com.dnd.helper.data.remote.dto.game.RuleSectionDto -> item.name
         else -> "Unknown"
     }
 }
@@ -219,6 +250,16 @@ private fun getDtoKey(item: Any): String {
         is com.dnd.helper.data.remote.dto.character.AlignmentDto -> "alignment_${item.index}"
         is com.dnd.helper.data.remote.dto.character.LanguageDto -> "language_${item.index}"
         is com.dnd.helper.data.remote.dto.character.ProficiencyDto -> "proficiency_${item.index}"
+        is com.dnd.helper.data.remote.dto.spell.SpellDto -> "spell_${item.index}"
+        is com.dnd.helper.data.remote.dto.spell.MagicSchoolDto -> "school_${item.index}"
+        is com.dnd.helper.data.remote.dto.equipment.EquipmentCategoryDto -> "equipcat_${item.index}"
+        is com.dnd.helper.data.remote.dto.equipment.MagicItemDto -> "magicitem_${item.index}"
+        is com.dnd.helper.data.remote.dto.equipment.WeaponPropertyDto -> "weaponprop_${item.index}"
+        is com.dnd.helper.data.remote.dto.monster.MonsterDto -> "monster_${item.index}"
+        is com.dnd.helper.data.remote.dto.game.ConditionDto -> "condition_${item.index}"
+        is com.dnd.helper.data.remote.dto.game.DamageTypeDto -> "damagetype_${item.index}"
+        is com.dnd.helper.data.remote.dto.game.RuleDto -> "rule_${item.index}"
+        is com.dnd.helper.data.remote.dto.game.RuleSectionDto -> "rulesection_${item.index}"
         else -> item.hashCode().toString()
     }
 }
@@ -310,13 +351,68 @@ private fun RenderDtoDetails(item: Any) {
         is com.dnd.helper.data.remote.dto.character.LanguageDto -> {
             DtoField("Type", item.type)
             if (item.script != null) DtoField("Script", item.script)
-            if (item.desc != null) DtoField("Description", item.desc)
+            if (!item.desc.isNullOrBlank()) DtoField("Description", item.desc)
             if (item.typical_speakers.isNotEmpty()) DtoField("Typical Speakers", item.typical_speakers.joinToString())
         }
         is com.dnd.helper.data.remote.dto.character.ProficiencyDto -> {
             DtoField("Type", item.type)
             if (item.classes.isNotEmpty()) DtoField("Classes", item.classes.joinToString { it.name })
             if (item.races.isNotEmpty()) DtoField("Races", item.races.joinToString { it.name })
+        }
+        is com.dnd.helper.data.remote.dto.spell.SpellDto -> {
+            DtoField("Level", if (item.level == 0) "Cantrip" else item.level.toString())
+            DtoField("School", item.school.name)
+            DtoField("Casting Time", item.casting_time)
+            DtoField("Range", item.range)
+            DtoField("Components", item.components.joinToString() + if (item.material != null) " (${item.material})" else "")
+            DtoField("Duration", item.duration + if (item.concentration) " (Concentration)" else "")
+            DtoField("Classes", item.classes.joinToString { it.name })
+            DtoField("Description", item.desc.joinToString("\n"))
+            if (item.higher_level.isNotEmpty()) DtoField("At Higher Levels", item.higher_level.joinToString("\n"))
+        }
+        is com.dnd.helper.data.remote.dto.spell.MagicSchoolDto -> {
+            DtoField("Description", item.desc)
+        }
+        is com.dnd.helper.data.remote.dto.equipment.EquipmentCategoryDto -> {
+            DtoField("Equipment Count", item.equipment.size.toString())
+            DtoField("Items", item.equipment.take(10).joinToString { it.name } + if (item.equipment.size > 10) "..." else "")
+        }
+        is com.dnd.helper.data.remote.dto.equipment.MagicItemDto -> {
+            DtoField("Category", item.equipment_category.name)
+            DtoField("Rarity", item.rarity.name)
+            DtoField("Description", item.desc.joinToString("\n"))
+        }
+        is com.dnd.helper.data.remote.dto.equipment.WeaponPropertyDto -> {
+            DtoField("Description", item.desc.joinToString("\n"))
+        }
+        is com.dnd.helper.data.remote.dto.monster.MonsterDto -> {
+            DtoField("Size & Type", "${item.size} ${item.type}${if (item.subtype != null) " (${item.subtype})" else ""}, ${item.alignment}")
+            DtoField("Armor Class", item.armor_class.firstOrNull()?.let { "${it.value} (${it.type})" } ?: "")
+            DtoField("Hit Points", "${item.hit_points} (${item.hit_dice})")
+            DtoField("Speed", listOfNotNull(
+                item.speed.walk?.let { "walk: $it" },
+                item.speed.burrow?.let { "burrow: $it" },
+                item.speed.climb?.let { "climb: $it" },
+                item.speed.fly?.let { "fly: $it" },
+                item.speed.swim?.let { "swim: $it" },
+                if (item.speed.hover == true) "hover" else null
+            ).joinToString())
+            DtoField("Stats", "STR: ${item.strength} | DEX: ${item.dexterity} | CON: ${item.constitution} | INT: ${item.intelligence} | WIS: ${item.wisdom} | CHA: ${item.charisma}")
+            DtoField("Challenge Rating", "${item.challenge_rating} (${item.xp} XP)")
+            if (item.desc.isNotEmpty()) DtoField("Description", item.desc.joinToString("\n"))
+        }
+        is com.dnd.helper.data.remote.dto.game.ConditionDto -> {
+            DtoField("Description", item.desc.joinToString("\n"))
+        }
+        is com.dnd.helper.data.remote.dto.game.DamageTypeDto -> {
+            DtoField("Description", item.desc.joinToString("\n"))
+        }
+        is com.dnd.helper.data.remote.dto.game.RuleDto -> {
+            DtoField("Description", item.desc)
+            if (item.subsections.isNotEmpty()) DtoField("Subsections", item.subsections.joinToString { it.name })
+        }
+        is com.dnd.helper.data.remote.dto.game.RuleSectionDto -> {
+            DtoField("Description", item.desc)
         }
     }
 }

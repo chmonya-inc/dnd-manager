@@ -4,6 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dnd.helper.data.remote.DndApiDataSource
 import com.dnd.helper.data.remote.dto.character.*
+import com.dnd.helper.data.remote.dto.spell.*
+import com.dnd.helper.data.remote.dto.equipment.*
+import com.dnd.helper.data.remote.dto.monster.*
+import com.dnd.helper.data.remote.dto.game.*
 import com.dnd.helper.domain.common.Result
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -34,6 +38,25 @@ data class RulesLibraryState(
     val skills: List<DndSkillDto> = emptyList(),
     val proficiencies: List<ProficiencyDto> = emptyList(),
     val languages: List<LanguageDto> = emptyList(),
+    // Spells
+    val spells: List<SpellDto> = emptyList(),
+    val magicSchools: List<MagicSchoolDto> = emptyList(),
+
+    // Equipment
+    val equipmentCategories: List<EquipmentCategoryDto> = emptyList(),
+    val magicItems: List<MagicItemDto> = emptyList(),
+    val weaponProperties: List<WeaponPropertyDto> = emptyList(),
+
+    // Monsters
+    val monsters: List<MonsterDto> = emptyList(),
+
+    // Mechanics
+    val conditions: List<ConditionDto> = emptyList(),
+    val damageTypes: List<DamageTypeDto> = emptyList(),
+
+    // Rules
+    val rules: List<RuleDto> = emptyList(),
+    val ruleSections: List<RuleSectionDto> = emptyList(),
 )
 
 class RulesLibraryViewModel(
@@ -44,18 +67,18 @@ class RulesLibraryViewModel(
     val state = _state.asStateFlow()
 
     init {
-        loadCharacterData()
+        loadData()
     }
 
     fun setCategory(category: RuleCategory) {
         _state.update { it.copy(selectedCategory = category) }
     }
 
-    private fun loadCharacterData() {
+    private fun loadData() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             
-            // Launch all categories concurrently
+            // Character Data
             val abilityScoresAsync = async { fetchAll({ api.getAbilityScores() }, { api.getAbilityScore(it) }) }
             val alignmentsAsync = async { fetchAll({ api.getAlignments() }, { api.getAlignment(it) }) }
             val backgroundsAsync = async { fetchAll({ api.getBackgrounds() }, { api.getBackground(it) }) }
@@ -69,6 +92,26 @@ class RulesLibraryViewModel(
             val skillsAsync = async { fetchAll({ api.getSkills() }, { api.getSkill(it) }) }
             val proficienciesAsync = async { fetchAll({ api.getProficiencies() }, { api.getProficiency(it) }) }
             val languagesAsync = async { fetchAll({ api.getLanguages() }, { api.getLanguage(it) }) }
+
+            // Spells
+            val spellsAsync = async { fetchAll({ api.getSpells() }, { api.getSpell(it) }) }
+            val magicSchoolsAsync = async { fetchAll({ api.getMagicSchools() }, { api.getMagicSchool(it) }) }
+
+            // Equipment
+            val equipmentCategoriesAsync = async { fetchAll({ api.getEquipmentCategories() }, { api.getEquipmentCategory(it) }) }
+            val magicItemsAsync = async { fetchAll({ api.getMagicItems() }, { api.getMagicItem(it) }) }
+            val weaponPropertiesAsync = async { fetchAll({ api.getWeaponProperties() }, { api.getWeaponProperty(it) }) }
+
+            // Monsters
+            val monstersAsync = async { fetchAll({ api.getMonsters() }, { api.getMonster(it) }) }
+
+            // Mechanics
+            val conditionsAsync = async { fetchAll({ api.getConditions() }, { api.getCondition(it) }) }
+            val damageTypesAsync = async { fetchAll({ api.getDamageTypes() }, { api.getDamageType(it) }) }
+
+            // Rules
+            val rulesAsync = async { fetchAll({ api.getRules() }, { api.getRule(it) }) }
+            val ruleSectionsAsync = async { fetchAll({ api.getRuleSections() }, { api.getRuleSection(it) }) }
 
             _state.update { it.copy(
                 abilityScores = abilityScoresAsync.await(),
@@ -84,6 +127,16 @@ class RulesLibraryViewModel(
                 skills = skillsAsync.await(),
                 proficiencies = proficienciesAsync.await(),
                 languages = languagesAsync.await(),
+                spells = spellsAsync.await(),
+                magicSchools = magicSchoolsAsync.await(),
+                equipmentCategories = equipmentCategoriesAsync.await(),
+                magicItems = magicItemsAsync.await(),
+                weaponProperties = weaponPropertiesAsync.await(),
+                monsters = monstersAsync.await(),
+                conditions = conditionsAsync.await(),
+                damageTypes = damageTypesAsync.await(),
+                rules = rulesAsync.await(),
+                ruleSections = ruleSectionsAsync.await(),
                 isLoading = false
             ) }
         }
