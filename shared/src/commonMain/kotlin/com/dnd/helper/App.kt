@@ -96,6 +96,7 @@ val appModule = module {
     }
 
     single { KtorRemoteDataSource(get(), get()) }
+    single { com.dnd.helper.data.remote.DndApiDataSource(get()) }
     single { com.dnd.helper.data.remote.AiImageService(get(), get()) }
     single<com.dnd.helper.domain.repository.EditingRepository> { com.dnd.helper.data.repository.EditingRepositoryImpl(get(), get()) }
     single<CharacterRepository> { CharacterRepositoryImpl(get(), get()) }
