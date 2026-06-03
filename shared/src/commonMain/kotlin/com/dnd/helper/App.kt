@@ -96,10 +96,12 @@ val appModule = module {
     }
 
     single { KtorRemoteDataSource(get(), get()) }
-    single { com.dnd.helper.data.remote.DndApiDataSource(get()) }
+    single { com.dnd.helper.data.remote.DndApiDataSource(get(), get()) }
     single { com.dnd.helper.data.remote.AiImageService(get(), get()) }
     single<com.dnd.helper.domain.repository.EditingRepository> { com.dnd.helper.data.repository.EditingRepositoryImpl(get(), get()) }
     single<CharacterRepository> { CharacterRepositoryImpl(get(), get()) }
+    factory { LibraryViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>()) }
+    factory { com.dnd.helper.presentation.desktop.RulesLibraryViewModel(get()) }
     factory { CharacterListViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>(), get<com.dnd.helper.domain.storage.CharacterStorage>()) }
     factory { StartViewModel(get()) }
     factory { CharacterCreateViewModel(get<CharacterRepository>(), get<com.dnd.helper.domain.repository.EditingRepository>()) }

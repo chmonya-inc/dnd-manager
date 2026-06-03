@@ -44,6 +44,7 @@ import kotlin.math.roundToInt
 sealed class DesktopTab(val title: String, val icon: ImageVector) {
     data object Characters : DesktopTab("Characters", Icons.Default.People)
     data object Library : DesktopTab("Library", Icons.AutoMirrored.Filled.LibraryBooks)
+    data object RulesLibrary : DesktopTab("D&D Rules", Icons.Default.MenuBook)
     data object Creator : DesktopTab("Creator", Icons.Default.AddCircle)
     data object Logs : DesktopTab("Logs", Icons.Default.History)
     data object Presenter : DesktopTab("Presenter", Icons.Default.Tv)
@@ -53,6 +54,7 @@ sealed class DesktopTab(val title: String, val icon: ImageVector) {
 private val primaryTabs = listOf(
     DesktopTab.Characters,
     DesktopTab.Library,
+    DesktopTab.RulesLibrary,
     DesktopTab.Creator,
     DesktopTab.Presenter,
 )
@@ -277,6 +279,7 @@ fun MainDesktopScreen() {
                                 selectedTab = DesktopTab.Creator
                             }
                         )
+                        DesktopTab.RulesLibrary -> RulesLibraryScreen()
                         DesktopTab.Creator -> CreatorScreen(
                             initialType = initialCreatorType,
                             onCreated = {

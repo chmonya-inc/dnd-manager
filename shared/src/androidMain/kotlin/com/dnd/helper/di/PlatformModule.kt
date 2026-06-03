@@ -65,6 +65,14 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
     override fun getGenerationSteps(): Int {
         return prefs.getInt("gen_steps", 20)
     }
+
+    override fun saveApiCache(key: String, json: String) {
+        // Android implementation placeholder
+    }
+
+    override fun getApiCache(key: String): String? {
+        return null
+    }
 }
 
 actual val platformModule = module {

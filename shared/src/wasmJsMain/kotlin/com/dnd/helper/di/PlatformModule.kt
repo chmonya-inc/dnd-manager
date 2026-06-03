@@ -60,6 +60,14 @@ class WasmCharacterStorage : CharacterStorage {
     override fun getGenerationSteps(): Int {
         return localStorage.getItem("gen_steps")?.toIntOrNull() ?: 20
     }
+
+    override fun saveApiCache(key: String, json: String) {
+        // Wasm implementation placeholder
+    }
+
+    override fun getApiCache(key: String): String? {
+        return null
+    }
 }
 
 actual val platformModule = module {

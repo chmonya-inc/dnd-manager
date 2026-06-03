@@ -15,4 +15,6 @@ interface CharacterStorage {
     fun getComfyUiWorkflow(): String?
     fun saveGenerationSteps(steps: Int)
     fun getGenerationSteps(): Int
+    fun saveApiCache(key: String, json: String)
+    fun getApiCache(key: String): String?
 }

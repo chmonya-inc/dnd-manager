@@ -195,6 +195,28 @@ class DesktopCharacterStorage : CharacterStorage {
     override fun getGenerationSteps(): Int {
         return prefs.getInt("gen_steps", 20)
     }
+
+    override fun saveApiCache(key: String, json: String) {
+        try {
+            val dir = java.io.File(System.getProperty("user.home"), ".dndhelper/cache")
+            if (!dir.exists()) dir.mkdirs()
+            // Clean the key to be a safe filename
+            val safeKey = key.replace(Regex("[^a-zA-Z0-9.-]"), "_")
+            java.io.File(dir, safeKey).writeText(json)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun getApiCache(key: String): String? {
+        return try {
+            val safeKey = key.replace(Regex("[^a-zA-Z0-9.-]"), "_")
+            val file = java.io.File(System.getProperty("user.home"), ".dndhelper/cache/$safeKey")
+            if (file.exists()) file.readText() else null
+        } catch (e: Exception) {
+            null
+        }
+    }
 }
 
 actual val platformModule = module {

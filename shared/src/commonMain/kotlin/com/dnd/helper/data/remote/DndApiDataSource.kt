@@ -27,7 +27,19 @@ import io.ktor.http.isSuccess
  * - The [httpClient] is the same Koin-managed client used by [KtorRemoteDataSource].
  *   It already has ContentNegotiation + JSON configured with ignoreUnknownKeys = true.
  */
-class DndApiDataSource(private val httpClient: HttpClient) {
+import com.dnd.helper.domain.storage.CharacterStorage
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+
+class DndApiDataSource(
+    private val httpClient: HttpClient,
+    private val storage: CharacterStorage
+) {
+
+    private val jsonParser = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     companion object {
         private const val BASE = "https://www.dnd5eapi.co/api/2014"
@@ -71,86 +83,86 @@ class DndApiDataSource(private val httpClient: HttpClient) {
         cachedList("ability-scores")
 
     suspend fun getAbilityScore(index: String): Result<AbilityScoreDto> =
-        cached(abilityScoreCache, index) { get("ability-scores/$index") }
+        cached(abilityScoreCache, index) { getSrd("ability-scores/$index") }
 
     suspend fun getAlignments(): Result<ApiReferenceListDto> =
         cachedList("alignments")
 
     suspend fun getAlignment(index: String): Result<AlignmentDto> =
-        cached(alignmentCache, index) { get("alignments/$index") }
+        cached(alignmentCache, index) { getSrd("alignments/$index") }
 
     suspend fun getBackgrounds(): Result<ApiReferenceListDto> =
         cachedList("backgrounds")
 
     suspend fun getBackground(index: String): Result<BackgroundDto> =
-        cached(backgroundCache, index) { get("backgrounds/$index") }
+        cached(backgroundCache, index) { getSrd("backgrounds/$index") }
 
     suspend fun getClasses(): Result<ApiReferenceListDto> =
         cachedList("classes")
 
     suspend fun getClass(index: String): Result<ClassDto> =
-        cached(classCache, index) { get("classes/$index") }
+        cached(classCache, index) { getSrd("classes/$index") }
 
     /**
      * Returns all 20 class levels for a given class (e.g. "wizard").
      * Results are cached per class index.
      */
     suspend fun getClassLevels(classIndex: String): Result<List<ClassLevelDto>> =
-        cached(classLevelCache, classIndex) { get("classes/$classIndex/levels") }
+        cached(classLevelCache, classIndex) { getSrd("classes/$classIndex/levels") }
 
     suspend fun getRaces(): Result<ApiReferenceListDto> =
         cachedList("races")
 
     suspend fun getRace(index: String): Result<RaceDto> =
-        cached(raceCache, index) { get("races/$index") }
+        cached(raceCache, index) { getSrd("races/$index") }
 
     suspend fun getSubraces(): Result<ApiReferenceListDto> =
         cachedList("subraces")
 
     suspend fun getSubrace(index: String): Result<SubraceDto> =
-        cached(subraceCache, index) { get("subraces/$index") }
+        cached(subraceCache, index) { getSrd("subraces/$index") }
 
     suspend fun getSubclasses(): Result<ApiReferenceListDto> =
         cachedList("subclasses")
 
     suspend fun getSubclass(index: String): Result<SubclassDto> =
-        cached(subclassCache, index) { get("subclasses/$index") }
+        cached(subclassCache, index) { getSrd("subclasses/$index") }
 
     suspend fun getTraits(): Result<ApiReferenceListDto> =
         cachedList("traits")
 
     suspend fun getTrait(index: String): Result<TraitDto> =
-        cached(traitCache, index) { get("traits/$index") }
+        cached(traitCache, index) { getSrd("traits/$index") }
 
     suspend fun getFeatures(): Result<ApiReferenceListDto> =
         cachedList("features")
 
     suspend fun getFeature(index: String): Result<FeatureDto> =
-        cached(featureCache, index) { get("features/$index") }
+        cached(featureCache, index) { getSrd("features/$index") }
 
     suspend fun getFeats(): Result<ApiReferenceListDto> =
         cachedList("feats")
 
     suspend fun getFeat(index: String): Result<FeatDto> =
-        cached(featCache, index) { get("feats/$index") }
+        cached(featCache, index) { getSrd("feats/$index") }
 
     suspend fun getSkills(): Result<ApiReferenceListDto> =
         cachedList("skills")
 
     suspend fun getSkill(index: String): Result<DndSkillDto> =
-        cached(skillApiCache, index) { get("skills/$index") }
+        cached(skillApiCache, index) { getSrd("skills/$index") }
 
     suspend fun getProficiencies(): Result<ApiReferenceListDto> =
         cachedList("proficiencies")
 
     suspend fun getProficiency(index: String): Result<ProficiencyDto> =
-        cached(proficiencyCache, index) { get("proficiencies/$index") }
+        cached(proficiencyCache, index) { getSrd("proficiencies/$index") }
 
     suspend fun getLanguages(): Result<ApiReferenceListDto> =
         cachedList("languages")
 
     suspend fun getLanguage(index: String): Result<LanguageDto> =
-        cached(languageCache, index) { get("languages/$index") }
+        cached(languageCache, index) { getSrd("languages/$index") }
 
     // ── Spells ────────────────────────────────────────────────────────────────
 
@@ -182,13 +194,13 @@ class DndApiDataSource(private val httpClient: HttpClient) {
     }
 
     suspend fun getSpell(index: String): Result<SpellDto> =
-        cached(spellCache, index) { get("spells/$index") }
+        cached(spellCache, index) { getSrd("spells/$index") }
 
     suspend fun getMagicSchools(): Result<ApiReferenceListDto> =
         cachedList("magic-schools")
 
     suspend fun getMagicSchool(index: String): Result<MagicSchoolDto> =
-        cached(schoolCache, index) { get("magic-schools/$index") }
+        cached(schoolCache, index) { getSrd("magic-schools/$index") }
 
     // ── Equipment ─────────────────────────────────────────────────────────────
 
@@ -200,46 +212,46 @@ class DndApiDataSource(private val httpClient: HttpClient) {
      * Use this for items in the "Weapon" equipment category.
      */
     suspend fun getWeapon(index: String): Result<WeaponDto> =
-        cached(weaponDtoCache, index) { get("equipment/$index") }
+        cached(weaponDtoCache, index) { getSrd("equipment/$index") }
 
     /**
      * Fetches a piece of equipment as an [ArmorDto].
      * Use this for items in the "Armor" equipment category.
      */
     suspend fun getArmor(index: String): Result<ArmorDto> =
-        cached(armorCache, index) { get("equipment/$index") }
+        cached(armorCache, index) { getSrd("equipment/$index") }
 
     /**
      * Fetches a piece of equipment as a [GearDto].
      * Use this for adventuring gear.
      */
     suspend fun getGear(index: String): Result<GearDto> =
-        cached(gearCache, index) { get("equipment/$index") }
+        cached(gearCache, index) { getSrd("equipment/$index") }
 
     /**
      * Fetches a piece of equipment as an [EquipmentPackDto].
      * Use this for packs (e.g. "explorer's pack").
      */
     suspend fun getEquipmentPack(index: String): Result<EquipmentPackDto> =
-        cached(packCache, index) { get("equipment/$index") }
+        cached(packCache, index) { getSrd("equipment/$index") }
 
     suspend fun getEquipmentCategories(): Result<ApiReferenceListDto> =
         cachedList("equipment-categories")
 
     suspend fun getEquipmentCategory(index: String): Result<EquipmentCategoryDto> =
-        cached(equipCategoryCache, index) { get("equipment-categories/$index") }
+        cached(equipCategoryCache, index) { getSrd("equipment-categories/$index") }
 
     suspend fun getMagicItems(): Result<ApiReferenceListDto> =
         cachedList("magic-items")
 
     suspend fun getMagicItem(index: String): Result<MagicItemDto> =
-        cached(magicItemCache, index) { get("magic-items/$index") }
+        cached(magicItemCache, index) { getSrd("magic-items/$index") }
 
     suspend fun getWeaponProperties(): Result<ApiReferenceListDto> =
         cachedList("weapon-properties")
 
     suspend fun getWeaponProperty(index: String): Result<WeaponPropertyDto> =
-        cached(weaponPropertyCache, index) { get("weapon-properties/$index") }
+        cached(weaponPropertyCache, index) { getSrd("weapon-properties/$index") }
 
     // ── Monsters ──────────────────────────────────────────────────────────────
 
@@ -259,7 +271,7 @@ class DndApiDataSource(private val httpClient: HttpClient) {
     }
 
     suspend fun getMonster(index: String): Result<MonsterDto> =
-        cached(monsterCache, index) { get("monsters/$index") }
+        cached(monsterCache, index) { getSrd("monsters/$index") }
 
     // ── Game Mechanics ────────────────────────────────────────────────────────
 
@@ -267,13 +279,13 @@ class DndApiDataSource(private val httpClient: HttpClient) {
         cachedList("conditions")
 
     suspend fun getCondition(index: String): Result<ConditionDto> =
-        cached(conditionCache, index) { get("conditions/$index") }
+        cached(conditionCache, index) { getSrd("conditions/$index") }
 
     suspend fun getDamageTypes(): Result<ApiReferenceListDto> =
         cachedList("damage-types")
 
     suspend fun getDamageType(index: String): Result<DamageTypeDto> =
-        cached(damageTypeCache, index) { get("damage-types/$index") }
+        cached(damageTypeCache, index) { getSrd("damage-types/$index") }
 
     // ── Rules ─────────────────────────────────────────────────────────────────
 
@@ -281,39 +293,75 @@ class DndApiDataSource(private val httpClient: HttpClient) {
         cachedList("rules")
 
     suspend fun getRule(index: String): Result<RuleDto> =
-        cached(ruleCache, index) { get("rules/$index") }
+        cached(ruleCache, index) { getSrd("rules/$index") }
 
     suspend fun getRuleSections(): Result<ApiReferenceListDto> =
         cachedList("rule-sections")
 
     suspend fun getRuleSection(index: String): Result<RuleSectionDto> =
-        cached(ruleSectionCache, index) { get("rule-sections/$index") }
+        cached(ruleSectionCache, index) { getSrd("rule-sections/$index") }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /** Cached fetch of a reference list (count + results). */
     private suspend fun cachedList(endpoint: String): Result<ApiReferenceListDto> {
+        val cacheKey = "list_${endpoint.replace("/", "_")}"
         listCache[endpoint]?.let { return Result.Success(it) }
-        return safeApiCall<ApiReferenceListDto> { httpClient.get("$BASE/$endpoint") }
-            .also { if (it is Result.Success) listCache[endpoint] = it.data }
+
+        // Try persistent cache
+        storage.getApiCache(cacheKey)?.let { jsonStr ->
+            try {
+                val decoded = jsonParser.decodeFromString<ApiReferenceListDto>(jsonStr)
+                listCache[endpoint] = decoded
+                return Result.Success(decoded)
+            } catch (e: Exception) {
+                // Parse error, ignore and fetch fresh
+            }
+        }
+
+        return safeApiCall<ApiReferenceListDto> { httpClient.getSrd(endpoint) }
+            .also { result -> 
+                if (result is Result.Success) {
+                    listCache[endpoint] = result.data
+                    storage.saveApiCache(cacheKey, jsonParser.encodeToString(result.data))
+                }
+            }
     }
 
     /**
      * Generic cached single-item fetch.
-     * [block] receives a helper lambda to build the URL path relative to [BASE].
+     * [fetch] receives a helper lambda to build the URL path relative to [BASE].
      */
     private suspend inline fun <reified T> cached(
         cache: MutableMap<String, T>,
         key: String,
         crossinline fetch: suspend HttpClient.() -> io.ktor.client.statement.HttpResponse,
     ): Result<T> {
+        val cacheKey = "item_${T::class.simpleName}_${key.replace("/", "_")}"
         cache[key]?.let { return Result.Success(it) }
+
+        // Try persistent cache
+        storage.getApiCache(cacheKey)?.let { jsonStr ->
+            try {
+                val decoded = jsonParser.decodeFromString<T>(jsonStr)
+                cache[key] = decoded
+                return Result.Success(decoded)
+            } catch (e: Exception) {
+                // Parse error, ignore and fetch fresh
+            }
+        }
+
         return safeApiCall<T> { httpClient.fetch() }
-            .also { if (it is Result.Success) cache[key] = it.data }
+            .also { result -> 
+                if (result is Result.Success) {
+                    cache[key] = result.data
+                    storage.saveApiCache(cacheKey, jsonParser.encodeToString(result.data))
+                }
+            }
     }
 
-    /** Convenience wrapper to build a full URL. */
-    private suspend fun HttpClient.get(path: String) =
+    /** Convenience wrapper to build a full URL for SRD resources. */
+    private suspend fun HttpClient.getSrd(path: String): io.ktor.client.statement.HttpResponse =
         this.get("$BASE/$path")
 
     /** Mirrors the [safeApiCall] pattern from [KtorRemoteDataSource]. */
