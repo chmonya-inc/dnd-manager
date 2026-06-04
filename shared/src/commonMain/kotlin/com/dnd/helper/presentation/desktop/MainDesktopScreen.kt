@@ -7,7 +7,6 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.*
@@ -30,7 +29,6 @@ import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
-import com.dnd.helper.presentation.desktop.NeuralNetworkScreen
 import com.dnd.helper.theme.AppTheme
 import com.dnd.helper.theme.ThemeViewModel
 import kotlinx.coroutines.launch
@@ -77,7 +75,6 @@ fun MainDesktopScreen() {
     var showNeuralNetwork by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var musicPlayerOffset by remember { mutableStateOf(IntOffset(0, 0)) }
-    var neuralNetworkOffset by remember { mutableStateOf(IntOffset(50, 50)) }
 
     // Track active session for forcing ViewModel recreation on session switch
     var activeTableId by remember { mutableStateOf<String?>(null) }
@@ -320,24 +317,6 @@ fun MainDesktopScreen() {
                                 }
                             },
                         onClose = { showMusicPlayer = false }
-                    )
-                }
-
-                if (showNeuralNetwork) {
-                    NeuralNetworkScreen(
-                        modifier = Modifier
-                            .offset { neuralNetworkOffset }
-                            .padding(16.dp)
-                            .pointerInput(Unit) {
-                                detectDragGestures { change, dragAmount ->
-                                    change.consume()
-                                    neuralNetworkOffset = IntOffset(
-                                        x = (neuralNetworkOffset.x + dragAmount.x).roundToInt().coerceIn(-1000, 1000),
-                                        y = (neuralNetworkOffset.y + dragAmount.y).roundToInt().coerceIn(-500, 500)
-                                    )
-                                }
-                            },
-                        onClose = { showNeuralNetwork = false }
                     )
                 }
             }

@@ -33,6 +33,7 @@ kotlin {
                 implementation(compose.ui)
                 implementation(compose.materialIconsExtended)
                 implementation(project(":shared"))
+                implementation(libs.koin.core)
             }
         }
     }
