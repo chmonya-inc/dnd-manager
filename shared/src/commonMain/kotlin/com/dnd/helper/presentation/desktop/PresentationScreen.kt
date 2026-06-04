@@ -94,15 +94,6 @@ fun PresentationScreen(
         viewModel.refreshAll()
     }
 
-    ExternalWindow(
-        isOpen = isWindowOpen,
-        onCloseRequest = { viewModel.setWindowOpen(false) }
-    ) {
-        com.dnd.helper.theme.DndHelperTheme {
-            PlayerViewContent(activeItems = activeItems, showStats = showStats)
-        }
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Surface(

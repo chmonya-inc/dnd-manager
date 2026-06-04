@@ -399,34 +399,40 @@ class LibraryViewModel(
                 }
             }
 
-            val charactersResult = repository.getCharacters(forceRefresh = false)
-            if (charactersResult is Result.Success) {
-                charactersResult.data.forEach { char ->
-                    var charModified = false
-                    var newCharImageUrl = char.imageUrl
+            // For characters, prefer the UI state if it has items (likely full objects)
+            val charactersToProcess = if (_state.value.characters.any { it.items.isNotEmpty() }) {
+                _state.value.characters
+            } else {
+                (repository.getCharacters(forceRefresh = false) as? Result.Success)?.data ?: emptyList()
+            }
 
-                    if (force || char.imageUrl.needsImageGeneration(activeTaskIds)) {
-                        val prompt = PromptGenerator.getFullPrompt("${char.name}, ${char.race} ${char.characterClass}. ${char.description}", GenerationType.CHARACTER)
-                        newCharImageUrl = editingRepository.startGeneration(char.id, "character", prompt, GenerationType.CHARACTER, customWidth ?: 1024, customHeight ?: 1024)
+            charactersToProcess.forEach { char ->
+                var charModified = false
+                var newCharImageUrl = char.imageUrl
+
+                if (force || char.imageUrl.needsImageGeneration(activeTaskIds)) {
+                    val prompt = PromptGenerator.getFullPrompt("${char.name}, ${char.race} ${char.characterClass}. ${char.description}", GenerationType.CHARACTER)
+                    newCharImageUrl = editingRepository.startGeneration(char.id, "character", prompt, GenerationType.CHARACTER, customWidth ?: 1024, customHeight ?: 1024)
+                    charModified = true
+                    generatedCount++
+                }
+
+                val updatedItems = char.items.map { item ->
+                    if ((force || item.imageUrl.needsImageGeneration(activeTaskIds)) && item.name.isNotBlank()) {
+                        val prompt = PromptGenerator.getFullPrompt("${item.name}, ${item.rarity}. ${item.description}", GenerationType.ITEM)
+                        val mockUrl = editingRepository.startGeneration("${char.id}:${item.id}", "item", prompt, GenerationType.ITEM, customWidth ?: 1024, customHeight ?: 1024)
                         charModified = true
                         generatedCount++
-                    }
+                        item.copy(imageUrl = mockUrl)
+                    } else item
+                }
 
-                    val updatedItems = char.items.map { item ->
-                        if ((force || item.imageUrl.needsImageGeneration(activeTaskIds)) && item.name.isNotBlank()) {
-                            val prompt = PromptGenerator.getFullPrompt("${item.name}, ${item.rarity}. ${item.description}", GenerationType.ITEM)
-                            val mockUrl = editingRepository.startGeneration("${char.id}:${item.id}", "item", prompt, GenerationType.ITEM, customWidth ?: 1024, customHeight ?: 1024)
-                            charModified = true
-                            generatedCount++
-                            item.copy(imageUrl = mockUrl)
-                        } else item
-                    }
-
-                    if (charModified) {
-                        val updatedChar = char.copy(imageUrl = newCharImageUrl, items = updatedItems)
-                        _state.update { it.copy(characters = it.characters.map { c -> if (c.id == char.id) updatedChar else c }) }
-                        launch { scheduleCharacterSave(updatedChar, "Generate Missing Images") }
-                    }
+                if (charModified) {
+                    val updatedChar = char.copy(imageUrl = newCharImageUrl, items = updatedItems)
+                    _state.update { it.copy(characters = it.characters.map { c -> if (c.id == char.id) updatedChar else c }) }
+                    // Update repository cache immediately so subsequent refreshes don't overwrite with old data
+                    repository.optimisticUpdate(updatedChar)
+                    launch { scheduleCharacterSave(updatedChar, "Generate Missing Images") }
                 }
             }
 
@@ -435,8 +441,9 @@ class LibraryViewModel(
                 details = if (generatedCount > 0) "Started generating $generatedCount missing images in background." else "No missing images found.",
                 success = true
             ))
-
-            refreshData(force = true)
+            
+            // Do NOT call refreshData(force = true) here as it will overwrite our optimistic updates 
+            // with old data from the server before the saves have completed (especially due to debounce).
         }
     }
 
