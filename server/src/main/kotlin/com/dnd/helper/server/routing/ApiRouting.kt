@@ -317,11 +317,24 @@ private suspend fun handleGetMonsters(sessionId: String): List<Monster> = dbQuer
             maxHp = it[Monsters.maxHp],
             currentHp = it[Monsters.currentHp],
             armorClass = it[Monsters.armorClass],
+            armorClassDetails = it[Monsters.armorClassDetails],
+            hitDice = it[Monsters.hitDice],
             speed = it[Monsters.speed],
+            speedDetails = it[Monsters.speedDetails],
             challengeRating = it[Monsters.challengeRating],
             type = it[Monsters.type],
             alignment = it[Monsters.alignment],
-            size = it[Monsters.size]
+            size = it[Monsters.size],
+            proficiencies = it[Monsters.proficiencies],
+            conditionImmunities = it[Monsters.conditionImmunities],
+            damageImmunities = it[Monsters.damageImmunities],
+            damageResistances = it[Monsters.damageResistances],
+            damageVulnerabilities = it[Monsters.damageVulnerabilities],
+            languages = it[Monsters.languages],
+            specialAbilities = it[Monsters.specialAbilities],
+            actions = it[Monsters.actions],
+            legendaryActions = it[Monsters.legendaryActions],
+            reactions = it[Monsters.reactions]
         )
     }
 }
@@ -338,11 +351,24 @@ private suspend fun handleSaveMonster(m: Monster?, sessionId: String) = dbQuery 
         it[maxHp] = m.maxHp
         it[currentHp] = m.currentHp
         it[armorClass] = m.armorClass
+        it[armorClassDetails] = m.armorClassDetails
+        it[hitDice] = m.hitDice
         it[speed] = m.speed
+        it[speedDetails] = m.speedDetails
         it[challengeRating] = m.challengeRating
         it[type] = m.type
         it[alignment] = m.alignment
         it[size] = m.size
+        it[proficiencies] = m.proficiencies
+        it[conditionImmunities] = m.conditionImmunities
+        it[damageImmunities] = m.damageImmunities
+        it[damageResistances] = m.damageResistances
+        it[damageVulnerabilities] = m.damageVulnerabilities
+        it[languages] = m.languages
+        it[specialAbilities] = m.specialAbilities
+        it[actions] = m.actions
+        it[legendaryActions] = m.legendaryActions
+        it[reactions] = m.reactions
     }
 }
 

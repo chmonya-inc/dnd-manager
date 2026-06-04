@@ -289,9 +289,8 @@ class LibraryViewModel(
 
         if (fromChar != null && toChar != null) {
             // 1. Optimistic UI update
-            val newItem = item.copy(id = "item-${kotlin.random.Random.nextInt()}")
             val updatedFromChar = fromChar.copy(items = fromChar.items.filter { it.id != item.id })
-            val updatedToChar = toChar.copy(items = toChar.items + newItem)
+            val updatedToChar = toChar.copy(items = toChar.items + item)
 
             _state.value = currentState.copy(
                 characters = currentState.characters.map {

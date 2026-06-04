@@ -71,6 +71,7 @@ fun LibraryScreen(
     var mousePosition by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     var dropTargetId by remember { mutableStateOf<String?>(null) }
     val characterBounds = remember { mutableStateMapOf<String, androidx.compose.ui.layout.LayoutCoordinates>() }
+    var rootLayoutCoordinates by remember { mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(null) }
     
     var showGenerateAllDialog by remember { mutableStateOf(false) }
     var forceRegenerate by remember { mutableStateOf(false) }
@@ -149,7 +150,7 @@ fun LibraryScreen(
         )
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().onGloballyPositioned { rootLayoutCoordinates = it }) {
         Column(modifier = Modifier.fillMaxSize()) {
             Surface(tonalElevation = 2.dp, shadowElevation = 2.dp) {
                 Row(
@@ -229,11 +230,14 @@ fun LibraryScreen(
                             onDrag = { pos -> 
                                 mousePosition = pos
                                 // Check for drop target
-                                dropTargetId = characterBounds.entries.find { (_, coords) ->
-                                    if (coords.isAttached) {
-                                        coords.boundsInWindow().contains(mousePosition)
-                                    } else false
-                                }?.key
+                                val rootCoords = rootLayoutCoordinates
+                                if (rootCoords != null) {
+                                    dropTargetId = characterBounds.entries.find { (_, coords) ->
+                                        if (coords.isAttached) {
+                                            rootCoords.localBoundingBoxOf(coords).contains(mousePosition)
+                                        } else false
+                                    }?.key
+                                }
                             },
                             onDragEnd = {
                                 val itemToMove = draggedItemInfo
@@ -247,7 +251,8 @@ fun LibraryScreen(
                             onDragCancel = {
                                 draggedItemInfo = null
                                 dropTargetId = null
-                            }
+                            },
+                            rootLayoutCoordinates = rootLayoutCoordinates
                         )
                         LibraryType.Mobs -> MonsterGrid(
                             monsters = state.monsters, 
@@ -645,7 +650,8 @@ private fun ItemLibraryGrid(
     onDragStart: (Triple<Item, String, String>) -> Unit,
     onDrag: (androidx.compose.ui.geometry.Offset) -> Unit,
     onDragEnd: () -> Unit,
-    onDragCancel: () -> Unit
+    onDragCancel: () -> Unit,
+    rootLayoutCoordinates: androidx.compose.ui.layout.LayoutCoordinates? = null
 ) {
     val distinctCharacters = remember(characters) { 
         characters.filter { it.id.isNotBlank() }.distinctBy { it.id.trim() }.sortedBy { it.name }
@@ -663,16 +669,17 @@ private fun ItemLibraryGrid(
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
                 items(distinctCharacters) { character ->
-                    Column {
+                    Column(
+                        modifier = Modifier.onGloballyPositioned { coords ->
+                            characterBounds[character.id] = coords
+                        }
+                    ) {
                         val isHighlighted = dropTargetId == character.id
                         val itemColor = LocalDndColors.current.item
                         Surface(
                             color = if (isHighlighted) itemColor.copy(alpha = 0.2f) else itemColor.copy(alpha = 0.1f),
                             shape = MaterialTheme.shapes.medium,
-                            border = if (isHighlighted) BorderStroke(2.dp, itemColor) else null,
-                            modifier = Modifier.onGloballyPositioned { coords ->
-                                characterBounds[character.id] = coords
-                            }
+                            border = if (isHighlighted) BorderStroke(2.dp, itemColor) else null
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -716,8 +723,10 @@ private fun ItemLibraryGrid(
                                                     onDragStart(Triple(item, character.id, character.name))
                                                 },
                                                 onDrag = { change, _ ->
-                                                    val base = itemCoords?.boundsInWindow()?.topLeft ?: androidx.compose.ui.geometry.Offset.Zero
-                                                    onDrag(base + change.position)
+                                                    val rootCoords = rootLayoutCoordinates
+                                                    if (rootCoords != null && itemCoords != null) {
+                                                        onDrag(rootCoords.localPositionOf(itemCoords!!, change.position))
+                                                    }
                                                 },
                                                 onDragEnd = onDragEnd,
                                                 onDragCancel = onDragCancel

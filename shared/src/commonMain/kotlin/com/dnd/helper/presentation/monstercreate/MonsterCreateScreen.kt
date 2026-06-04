@@ -1,11 +1,12 @@
 package com.dnd.helper.presentation.monstercreate
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,16 +14,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.dnd.helper.presentation.charactercreate.AbilityScoreBox
-import com.dnd.helper.presentation.charactercreate.DesktopCardSection
+import com.dnd.helper.data.remote.dto.common.ApiReferenceDto
+import com.dnd.helper.data.remote.dto.common.DamageDto
+import com.dnd.helper.data.remote.dto.common.DcDto
+import com.dnd.helper.data.remote.dto.monster.*
 import com.dnd.helper.presentation.charactercreate.DropdownMenuField
 import com.dnd.helper.presentation.charactercreate.MultiSelectDropdownField
+import com.dnd.helper.theme.dndColors
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.random.Random
 
@@ -31,215 +39,215 @@ import kotlin.random.Random
 fun MonsterCreateScreen(
     onBackClick: () -> Unit,
     onMonsterCreated: () -> Unit,
+    initialMonster: com.dnd.helper.domain.model.Monster? = null
 ) {
     val viewModelKey = remember { Random.nextLong().toString() }
     val viewModel: MonsterCreateViewModel = koinViewModel(key = viewModelKey)
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(initialMonster) {
+        initialMonster?.let { viewModel.onEvent(MonsterCreateEvent.LoadMonster(it)) }
+    }
+
+    var showActionDialog by remember { mutableStateOf(false) }
+    var actionTypeToEdit by remember { mutableStateOf("Action") }
 
     if (state.isSaved) {
         onMonsterCreated()
         return
     }
 
-    Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Scaffold(
+        containerColor = Color(0xFF0A0F0A), // Very dark green background
+        topBar = {
+            TopAppBar(
+                title = { Text(if (initialMonster == null) "Create Monster" else "Edit Monster", fontWeight = FontWeight.Bold, color = Color.White) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                    }
+                },
+                actions = {
+                    if (state.isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Color(0xFF4CAF50))
+                    } else {
+                        Button(
+                            onClick = { viewModel.onEvent(MonsterCreateEvent.SaveMonster) },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                        ) {
+                            Text(if (initialMonster == null) "Create" else "Update")
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0A0F0A))
+            )
+        }
+    ) { padding ->
         Row(
-            modifier = Modifier.fillMaxSize().padding(bottom = 60.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // COLUMN 1: Basic Info & Stats
+            // COLUMN 1: Basic Info & Image (Weight 1)
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    DesktopCardSection(title = "Basic Info", icon = Icons.Default.Person) {
-                        // Image Generator Area
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
-                                .background(Color.Black.copy(alpha = 0.2f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (state.imageUrl.isNotBlank() && !state.imageUrl.startsWith("generating")) {
-                                AsyncImage(
-                                    model = state.imageUrl,
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                            
-                            if (state.imageUrl.startsWith("generating")) {
-                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                            } else {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Button(
+                    MonsterDesktopCardSection(title = "Basic Info", icon = Icons.Default.Person) {
+                        // Image Generator Area - Top Left integrated
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(150.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .border(1.dp, Color(0xFF2E7D32), RoundedCornerShape(8.dp))
+                                    .background(Color.Black),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (state.imageUrl.isNotBlank() && !state.imageUrl.startsWith("generating")) {
+                                    AsyncImage(
+                                        model = state.imageUrl,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                                
+                                if (state.imageUrl.startsWith("generating")) {
+                                    CircularProgressIndicator(color = Color(0xFF4CAF50))
+                                } else {
+                                    IconButton(
                                         onClick = { viewModel.onEvent(MonsterCreateEvent.GenerateImage) },
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
+                                        modifier = Modifier.background(Color(0xFF2E7D32).copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                                     ) {
-                                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Generate AI Image")
+                                        Icon(Icons.Default.AutoAwesome, contentDescription = "Generate", tint = Color.White)
                                     }
                                 }
                             }
+                            
+                            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                MonsterTextField(
+                                    value = state.name,
+                                    onValueChange = { viewModel.onEvent(MonsterCreateEvent.NameChanged(it)) },
+                                    label = "Monster Name"
+                                )
+                                MonsterTextField(
+                                    value = state.challengeRating,
+                                    onValueChange = { viewModel.onEvent(MonsterCreateEvent.ChallengeRatingChanged(it)) },
+                                    label = "CR"
+                                )
+                            }
                         }
 
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = state.aiPrompt,
-                            onValueChange = { viewModel.onEvent(MonsterCreateEvent.AiPromptChanged(it)) },
-                            label = { Text("AI Prompt (Auto-generated)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 2
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            OutlinedTextField(
-                                value = state.aiWidth.toString(),
-                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.AiSizeChanged(it.toIntOrNull() ?: 1024, state.aiHeight)) },
-                                label = { Text("Width") },
-                                modifier = Modifier.weight(1f)
-                            )
-                            OutlinedTextField(
-                                value = state.aiHeight.toString(),
-                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.AiSizeChanged(state.aiWidth, it.toIntOrNull() ?: 1024)) },
-                                label = { Text("Height") },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        Spacer(Modifier.height(16.dp))
-                        
-                        OutlinedTextField(
-                            value = state.name,
-                            onValueChange = { viewModel.onEvent(MonsterCreateEvent.NameChanged(it)) },
-                            label = { Text("Monster Name") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        
-                        Spacer(Modifier.height(8.dp))
-                        
-                        OutlinedTextField(
-                            value = state.description,
-                            onValueChange = { viewModel.onEvent(MonsterCreateEvent.DescriptionChanged(it)) },
-                            label = { Text("Description") },
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 3
-                        )
-                        
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(12.dp))
                         
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             DropdownMenuField(
-                                label = "Alignment",
-                                value = state.alignment,
-                                options = state.availableAlignments,
+                                label = "Type",
+                                value = state.type,
+                                options = listOf("Humanoid", "Beast", "Undead", "Fiend", "Dragon", "Construct").map { ApiReferenceDto(name = it) },
                                 optionLabel = { it.name },
-                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.AlignmentChanged(it)) },
+                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.TypeChanged(it)) },
                                 modifier = Modifier.weight(1f)
                             )
-                            OutlinedTextField(
-                                value = state.challengeRating,
-                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.ChallengeRatingChanged(it)) },
-                                label = { Text("CR") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
-                            )
-                        }
-                        
-                        Spacer(Modifier.height(8.dp))
-                        
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
-                                value = state.type,
-                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.TypeChanged(it)) },
-                                label = { Text("Type") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
-                            )
-                            OutlinedTextField(
+                            DropdownMenuField(
+                                label = "Size",
                                 value = state.size,
+                                options = listOf("Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan").map { ApiReferenceDto(name = it) },
+                                optionLabel = { it.name },
                                 onValueChange = { viewModel.onEvent(MonsterCreateEvent.SizeChanged(it)) },
-                                label = { Text("Size") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
+                                modifier = Modifier.weight(1f)
                             )
                         }
-                        
-                        Spacer(Modifier.height(16.dp))
-                        
-                        Text("Combat Stats", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
+
                         Spacer(Modifier.height(8.dp))
+                        
+                        DropdownMenuField(
+                            label = "Alignment",
+                            value = state.alignment,
+                            options = state.availableAlignments,
+                            optionLabel = { it.name },
+                            onValueChange = { viewModel.onEvent(MonsterCreateEvent.AlignmentChanged(it)) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
+                        Spacer(Modifier.height(8.dp))
+                        
+                        MonsterTextField(
+                            value = state.description,
+                            onValueChange = { viewModel.onEvent(MonsterCreateEvent.DescriptionChanged(it)) },
+                            label = "Background / Description",
+                            minLines = 3
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+                        Text("AI Generation Settings", fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50), fontSize = 14.sp)
+                        Spacer(Modifier.height(8.dp))
+                        
+                        MonsterTextField(
+                            value = state.aiPrompt,
+                            onValueChange = { viewModel.onEvent(MonsterCreateEvent.AiPromptChanged(it)) },
+                            label = "AI Prompt",
+                            minLines = 2
+                        )
                         
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
-                                value = state.maxHp,
-                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.MaxHpChanged(it)) },
-                                label = { Text("HP") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
+                            MonsterTextField(
+                                value = state.aiWidth.toString(),
+                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.AiSizeChanged(it.toIntOrNull() ?: 1024, state.aiHeight)) },
+                                label = "Width",
+                                modifier = Modifier.weight(1f)
                             )
-                            OutlinedTextField(
-                                value = state.armorClass,
-                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.ArmorClassChanged(it)) },
-                                label = { Text("AC") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
+                            MonsterTextField(
+                                value = state.aiHeight.toString(),
+                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.AiSizeChanged(state.aiWidth, it.toIntOrNull() ?: 1024)) },
+                                label = "Height",
+                                modifier = Modifier.weight(1f)
                             )
-                            OutlinedTextField(
-                                value = state.speed,
-                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.SpeedChanged(it)) },
-                                label = { Text("Speed") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
-                            )
-                        }
-                        
-                        Spacer(Modifier.height(16.dp))
-                        
-                        Text("Ability Scores", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
-                        Spacer(Modifier.height(8.dp))
-                        
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                            AbilityScoreBox("STR", state.strength, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.StrengthChanged(it)) }
-                            Spacer(Modifier.width(4.dp))
-                            AbilityScoreBox("DEX", state.dexterity, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.DexterityChanged(it)) }
-                            Spacer(Modifier.width(4.dp))
-                            AbilityScoreBox("CON", state.constitution, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.ConstitutionChanged(it)) }
-                            Spacer(Modifier.width(4.dp))
-                            AbilityScoreBox("INT", state.intelligence, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.IntelligenceChanged(it)) }
-                            Spacer(Modifier.width(4.dp))
-                            AbilityScoreBox("WIS", state.wisdom, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.WisdomChanged(it)) }
-                            Spacer(Modifier.width(4.dp))
-                            AbilityScoreBox("CHA", state.charisma, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.CharismaChanged(it)) }
                         }
                     }
                 }
             }
 
-            // COLUMN 2: Proficiencies and Multi-selects
+            // COLUMN 2: Stats & Proficiencies (Weight 1.2)
             LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxHeight(),
+                modifier = Modifier.weight(1.2f).fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    DesktopCardSection(title = "Traits & Immunities", icon = Icons.Default.Build) {
-                        MultiSelectDropdownField(
-                            label = "Languages",
-                            selectedItems = state.selectedLanguages,
-                            options = state.availableLanguages,
-                            optionLabel = { it.name },
-                            onAdd = { viewModel.onEvent(MonsterCreateEvent.AddLanguage(it)) },
-                            onRemove = { viewModel.onEvent(MonsterCreateEvent.RemoveLanguage(it)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        Spacer(Modifier.height(16.dp))
-                        
+                    MonsterDesktopCardSection(title = "Ability Scores", icon = Icons.Default.BarChart) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                MonsterAbilityScoreBox("STR", state.strength, dndColors.strength, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.StrengthChanged(it)) }
+                                MonsterAbilityScoreBox("DEX", state.dexterity, dndColors.dexterity, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.DexterityChanged(it)) }
+                                MonsterAbilityScoreBox("CON", state.constitution, dndColors.constitution, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.ConstitutionChanged(it)) }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                MonsterAbilityScoreBox("INT", state.intelligence, dndColors.intelligence, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.IntelligenceChanged(it)) }
+                                MonsterAbilityScoreBox("WIS", state.wisdom, dndColors.wisdom, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.WisdomChanged(it)) }
+                                MonsterAbilityScoreBox("CHA", state.charisma, dndColors.charisma, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.CharismaChanged(it)) }
+                            }
+                        }
+                    }
+                }
+                
+                item {
+                    MonsterDesktopCardSection(title = "Combat Stats") {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            MonsterTextField(value = state.maxHp, onValueChange = { viewModel.onEvent(MonsterCreateEvent.MaxHpChanged(it)) }, label = "HP", modifier = Modifier.weight(1f))
+                            MonsterTextField(value = state.armorClass, onValueChange = { viewModel.onEvent(MonsterCreateEvent.ArmorClassChanged(it)) }, label = "AC", modifier = Modifier.weight(1f))
+                            MonsterTextField(value = state.speed, onValueChange = { viewModel.onEvent(MonsterCreateEvent.SpeedChanged(it)) }, label = "Speed", modifier = Modifier.weight(1f))
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        MonsterTextField(value = state.hitDice, onValueChange = { viewModel.onEvent(MonsterCreateEvent.HitDiceChanged(it)) }, label = "Hit Die (e.g. 2d8+4)")
+                    }
+                }
+                
+                item {
+                    MonsterDesktopCardSection(title = "Immunities & Resistances") {
                         MultiSelectDropdownField(
                             label = "Condition Immunities",
                             selectedItems = state.selectedConditionImmunities,
@@ -249,9 +257,7 @@ fun MonsterCreateScreen(
                             onRemove = { viewModel.onEvent(MonsterCreateEvent.RemoveConditionImmunity(it)) },
                             modifier = Modifier.fillMaxWidth()
                         )
-                        
-                        Spacer(Modifier.height(16.dp))
-                        
+                        Spacer(Modifier.height(8.dp))
                         MultiSelectDropdownField(
                             label = "Damage Immunities",
                             selectedItems = state.selectedDamageImmunities,
@@ -261,185 +267,301 @@ fun MonsterCreateScreen(
                             onRemove = { viewModel.onEvent(MonsterCreateEvent.RemoveDamageImmunity(it)) },
                             modifier = Modifier.fillMaxWidth()
                         )
-                        
-                        Spacer(Modifier.height(16.dp))
-                        
-                        MultiSelectDropdownField(
-                            label = "Damage Resistances",
-                            selectedItems = state.selectedDamageResistances,
-                            options = state.availableDamageTypes,
-                            optionLabel = { it.name },
-                            onAdd = { viewModel.onEvent(MonsterCreateEvent.AddDamageResistance(it)) },
-                            onRemove = { viewModel.onEvent(MonsterCreateEvent.RemoveDamageResistance(it)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        Spacer(Modifier.height(16.dp))
-                        
-                        MultiSelectDropdownField(
-                            label = "Damage Vulnerabilities",
-                            selectedItems = state.selectedDamageVulnerabilities,
-                            options = state.availableDamageTypes,
-                            optionLabel = { it.name },
-                            onAdd = { viewModel.onEvent(MonsterCreateEvent.AddDamageVulnerability(it)) },
-                            onRemove = { viewModel.onEvent(MonsterCreateEvent.RemoveDamageVulnerability(it)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    }
+                }
+            }
+
+            // COLUMN 3: Actions & Features (Weight 1.5)
+            LazyColumn(
+                modifier = Modifier.weight(1.5f).fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    MonsterDesktopCardSection(
+                        title = "Special Abilities", 
+                        icon = Icons.Default.Star, 
+                        onAddClick = {
+                            actionTypeToEdit = "Special Ability"
+                            showActionDialog = true
+                        }
+                    ) {
+                        state.specialAbilities.forEach { ability ->
+                            MonsterActionRichItem(ability.name, ability.desc) { viewModel.onEvent(MonsterCreateEvent.RemoveSpecialAbility(ability)) }
+                        }
+                    }
+                }
+
+                item {
+                    MonsterDesktopCardSection(
+                        title = "Actions", 
+                        icon = Icons.Default.Gavel, 
+                        onAddClick = {
+                            actionTypeToEdit = "Action"
+                            showActionDialog = true
+                        }
+                    ) {
+                        state.actions.forEach { action ->
+                            MonsterActionRichItem(action.name, action.desc) { viewModel.onEvent(MonsterCreateEvent.RemoveAction(action)) }
+                        }
                     }
                 }
                 
                 item {
-                    DesktopCardSection(title = "Abilities & Actions", icon = Icons.Default.List) {
-                        MonsterActionEditor(
-                            title = "Special Abilities",
-                            actions = state.specialAbilities,
-                            onAdd = { viewModel.onEvent(MonsterCreateEvent.AddSpecialAbility(it)) },
-                            onRemove = { viewModel.onEvent(MonsterCreateEvent.RemoveSpecialAbility(it)) }
-                        )
-                        
-                        Spacer(Modifier.height(16.dp))
-                        
-                        MonsterActionEditor(
-                            title = "Actions",
-                            actions = state.actions,
-                            onAdd = { viewModel.onEvent(MonsterCreateEvent.AddAction(it)) },
-                            onRemove = { viewModel.onEvent(MonsterCreateEvent.RemoveAction(it)) }
-                        )
-                        
-                        Spacer(Modifier.height(16.dp))
-                        
-                        MonsterActionEditor(
-                            title = "Legendary Actions",
-                            actions = state.legendaryActions,
-                            onAdd = { viewModel.onEvent(MonsterCreateEvent.AddLegendaryAction(it)) },
-                            onRemove = { viewModel.onEvent(MonsterCreateEvent.RemoveLegendaryAction(it)) }
-                        )
-                        
-                        Spacer(Modifier.height(16.dp))
-                        
-                        MonsterActionEditor(
-                            title = "Reactions",
-                            actions = state.reactions,
-                            onAdd = { viewModel.onEvent(MonsterCreateEvent.AddReaction(it)) },
-                            onRemove = { viewModel.onEvent(MonsterCreateEvent.RemoveReaction(it)) }
-                        )
-                    }
-                }
-            }
-        }
-
-        // Bottom Bar
-        Surface(
-            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 8.dp,
-            shadowElevation = 8.dp
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(onClick = onBackClick) {
-                    Text("Cancel")
-                }
-                
-                if (state.error != null) {
-                    Text(state.error!!, color = MaterialTheme.colorScheme.error)
-                }
-
-                Button(
-                    onClick = { viewModel.onEvent(MonsterCreateEvent.SaveMonster) },
-                    enabled = !state.isSaving
-                ) {
-                    if (state.isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Saving...")
-                    } else {
-                        Icon(Icons.Default.Check, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Save Monster")
+                    MonsterDesktopCardSection(
+                        title = "Legendary Actions", 
+                        icon = Icons.Default.EmojiEvents, 
+                        onAddClick = {
+                            actionTypeToEdit = "Legendary Action"
+                            showActionDialog = true
+                        }
+                    ) {
+                        state.legendaryActions.forEach { action ->
+                            MonsterActionRichItem(action.name, action.desc) { viewModel.onEvent(MonsterCreateEvent.RemoveLegendaryAction(action)) }
+                        }
                     }
                 }
             }
         }
     }
+
+    if (showActionDialog) {
+        MonsterActionRichDialog(
+            type = actionTypeToEdit,
+            onDismiss = { showActionDialog = false },
+            onConfirm = { actionData ->
+                when (actionTypeToEdit) {
+                    "Special Ability" -> viewModel.onEvent(MonsterCreateEvent.AddSpecialAbility(actionData.toSpecialAbility()))
+                    "Action" -> viewModel.onEvent(MonsterCreateEvent.AddAction(actionData.toAction()))
+                    "Legendary Action" -> viewModel.onEvent(MonsterCreateEvent.AddLegendaryAction(actionData.toAction()))
+                    "Reaction" -> viewModel.onEvent(MonsterCreateEvent.AddReaction(actionData.toAction()))
+                }
+                showActionDialog = false
+            }
+        )
+    }
 }
 
 @Composable
-fun MonsterActionEditor(
+fun MonsterDesktopCardSection(
     title: String,
-    actions: List<com.dnd.helper.domain.model.MonsterAction>,
-    onAdd: (com.dnd.helper.domain.model.MonsterAction) -> Unit,
-    onRemove: (com.dnd.helper.domain.model.MonsterAction) -> Unit,
-    modifier: Modifier = Modifier
+    icon: ImageVector? = null,
+    onAddClick: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
-    var desc by remember { mutableStateOf("") }
-
-    Column(modifier = modifier) {
-        Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 16.sp)
-        Spacer(Modifier.height(8.dp))
-        
-        actions.forEach { action ->
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B241C)), // Dark forest green
+        border = BorderStroke(1.dp, Color(0xFF2E7D32)), // Neon green border
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                    .padding(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(action.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(action.description, fontSize = 12.sp)
-                }
-                IconButton(onClick = { onRemove(action) }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Remove", tint = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-        
-        Spacer(Modifier.height(8.dp))
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.small
-                )
-                Spacer(Modifier.height(4.dp))
-                OutlinedTextField(
-                    value = desc,
-                    onValueChange = { desc = it },
-                    label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.small,
-                    minLines = 2
-                )
-            }
-            
-            IconButton(
-                onClick = { 
-                    if (name.isNotBlank() && desc.isNotBlank()) {
-                        onAdd(com.dnd.helper.domain.model.MonsterAction(name, desc))
-                        name = ""
-                        desc = ""
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (icon != null) {
+                        Icon(icon, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
                     }
-                },
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(8.dp))
+                    Text(title, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50), fontSize = 18.sp)
+                }
+                if (onAddClick != null) {
+                    IconButton(onClick = onAddClick, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Add, contentDescription = "Add", tint = Color(0xFF4CAF50))
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            content()
+        }
+    }
+}
+
+@Composable
+fun MonsterAbilityScoreBox(
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    onValueChange: (String) -> Unit
+) {
+    Column(
+        modifier = modifier
+            .border(2.dp, color, RoundedCornerShape(12.dp))
+            .background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(label, fontWeight = FontWeight.Bold, color = color, fontSize = 12.sp)
+        val modStr = try {
+            val score = value.toIntOrNull() ?: 10
+            val mod = (score - 10) / 2
+            if (mod >= 0) "+$mod" else mod.toString()
+        } catch (_: Exception) { "+0" }
+        
+        Text(modStr, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 24.sp)
+        
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.width(50.dp).height(35.dp),
+            textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.Center, color = Color.Gray),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+    }
+}
+
+@Composable
+fun MonsterTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    minLines: Int = 1
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label, color = Color(0xFF4CAF50).copy(alpha = 0.7f)) },
+        modifier = modifier.fillMaxWidth(),
+        textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFF4CAF50),
+            unfocusedBorderColor = Color(0xFF2E7D32),
+            cursorColor = Color(0xFF4CAF50),
+            focusedContainerColor = Color.Black.copy(alpha = 0.2f),
+            unfocusedContainerColor = Color.Black.copy(alpha = 0.2f)
+        ),
+        minLines = minLines,
+        shape = RoundedCornerShape(8.dp)
+    )
+}
+
+@Composable
+fun MonsterActionRichItem(
+    name: String,
+    desc: String,
+    onDelete: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .background(Color.Black.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+            .border(1.dp, Color(0xFF2E7D32).copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(name, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50), fontSize = 14.sp)
+            Text(desc, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, maxLines = 3)
+        }
+        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFD32F2F).copy(alpha = 0.8f))
+        }
+    }
+}
+
+// Data structure for dialog
+data class ActionDialogData(
+    val name: String = "",
+    val desc: String = "",
+    val attackBonus: String = "",
+    val damageDice: String = "",
+    val damageType: String = "",
+    val dcValue: String = "",
+    val dcType: String = "STR"
+) {
+    fun toAction() = MonsterActionDto(
+        name = name,
+        desc = desc,
+        attack_bonus = attackBonus.toIntOrNull(),
+        dc = if (dcValue.isNotBlank()) DcDto(dc_type = ApiReferenceDto(name = dcType), dc_value = dcValue.toDoubleOrNull()) else null,
+        damage = if (damageDice.isNotBlank()) listOf(DamageDto(damage_dice = damageDice, damage_type = ApiReferenceDto(name = damageType))) else emptyList()
+    )
+
+    fun toSpecialAbility() = MonsterSpecialAbilityDto(
+        name = name,
+        desc = desc,
+        attack_bonus = attackBonus.toIntOrNull(),
+        dc = if (dcValue.isNotBlank()) DcDto(dc_type = ApiReferenceDto(name = dcType), dc_value = dcValue.toDoubleOrNull()) else null,
+        damage = if (damageDice.isNotBlank()) listOf(DamageDto(damage_dice = damageDice, damage_type = ApiReferenceDto(name = damageType))) else emptyList()
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MonsterActionRichDialog(
+    type: String,
+    onDismiss: () -> Unit,
+    onConfirm: (ActionDialogData) -> Unit
+) {
+    var data by remember { mutableStateOf(ActionDialogData()) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1B241C)),
+            border = BorderStroke(1.dp, Color(0xFF4CAF50)),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(0.9f).padding(vertical = 24.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add", tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text("Add $type", fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50), fontSize = 22.sp)
+                
+                MonsterTextField(value = data.name, onValueChange = { data = data.copy(name = it) }, label = "Name")
+                MonsterTextField(value = data.desc, onValueChange = { data = data.copy(desc = it) }, label = "Description", minLines = 3)
+                
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    MonsterTextField(
+                        value = data.attackBonus, 
+                        onValueChange = { data = data.copy(attackBonus = it) }, 
+                        label = "Atk Bonus", 
+                        modifier = Modifier.weight(1f)
+                    )
+                    MonsterTextField(
+                        value = data.damageDice, 
+                        onValueChange = { data = data.copy(damageDice = it) }, 
+                        label = "Dmg Dice", 
+                        modifier = Modifier.weight(1.5f)
+                    )
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    MonsterTextField(
+                        value = data.damageType, 
+                        onValueChange = { data = data.copy(damageType = it) }, 
+                        label = "Dmg Type", 
+                        modifier = Modifier.weight(1f)
+                    )
+                    MonsterTextField(
+                        value = data.dcValue, 
+                        onValueChange = { data = data.copy(dcValue = it) }, 
+                        label = "DC Value", 
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("Cancel", color = Color.Gray) }
+                    Button(
+                        onClick = { if (data.name.isNotBlank()) onConfirm(data) },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                        enabled = data.name.isNotBlank()
+                    ) {
+                        Text("Add")
+                    }
+                }
             }
         }
     }

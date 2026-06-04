@@ -79,7 +79,21 @@ class XlsxImporter(private val repository: CharacterRepository) {
             val align = row.getCell(11)?.getVal() ?: "Neutral"
             val size = row.getCell(12)?.getVal() ?: "Medium"
             
-            repository.saveMonster(Monster(id, name, desc, img, stats, maxHp, curHp, ac, speed, cr, type, align, size))
+            repository.saveMonster(Monster(
+                id = id,
+                name = name,
+                description = desc,
+                imageUrl = img,
+                stats = stats,
+                maxHp = maxHp,
+                currentHp = curHp,
+                armorClass = ac,
+                speed = speed,
+                challengeRating = cr,
+                type = type,
+                alignment = align,
+                size = size
+            ))
         }
     }
 

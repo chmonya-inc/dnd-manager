@@ -1,6 +1,7 @@
 package com.dnd.helper.presentation.monstercreate
 
 import com.dnd.helper.data.remote.dto.common.ApiReferenceDto
+import com.dnd.helper.data.remote.dto.monster.*
 
 data class MonsterCreateState(
     val name: String = "",
@@ -12,6 +13,7 @@ data class MonsterCreateState(
     val maxHp: String = "10",
     val armorClass: String = "10",
     val speed: String = "30",
+    val hitDice: String = "",
     
     val strength: String = "10",
     val dexterity: String = "10",
@@ -26,15 +28,17 @@ data class MonsterCreateState(
     val selectedDamageResistances: List<String> = emptyList(),
     val selectedDamageVulnerabilities: List<String> = emptyList(),
     
-    val specialAbilities: List<com.dnd.helper.domain.model.MonsterAction> = emptyList(),
-    val actions: List<com.dnd.helper.domain.model.MonsterAction> = emptyList(),
-    val legendaryActions: List<com.dnd.helper.domain.model.MonsterAction> = emptyList(),
-    val reactions: List<com.dnd.helper.domain.model.MonsterAction> = emptyList(),
+    val specialAbilities: List<MonsterSpecialAbilityDto> = emptyList(),
+    val actions: List<MonsterActionDto> = emptyList(),
+    val legendaryActions: List<MonsterActionDto> = emptyList(),
+    val reactions: List<MonsterActionDto> = emptyList(),
+    val monsterProficiencies: List<MonsterProficiencyDto> = emptyList(),
     
     val availableAlignments: List<ApiReferenceDto> = emptyList(),
     val availableLanguages: List<ApiReferenceDto> = emptyList(),
     val availableConditions: List<ApiReferenceDto> = emptyList(),
     val availableDamageTypes: List<ApiReferenceDto> = emptyList(),
+    val availableProficiencies: List<ApiReferenceDto> = emptyList(),
     
     val imageUrl: String = "",
     val aiPrompt: String = "",
