@@ -91,7 +91,11 @@ fun MainDesktopScreen(
         onCloseRequest = { presentationViewModel.setWindowOpen(false) }
     ) {
         com.dnd.helper.theme.DndHelperTheme {
-            PlayerViewContent(activeItems = activeItems, showStats = showStats)
+            PlayerViewContent(
+                activeItems = activeItems, 
+                showStats = showStats,
+                onCloseRequest = { presentationViewModel.setWindowOpen(false) }
+            )
         }
     }
 

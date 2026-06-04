@@ -26,13 +26,13 @@ actual fun ExternalWindow(
                 val bounds = screens[1].defaultConfiguration.bounds
                 Pair(
                     WindowPosition(bounds.x.dp, bounds.y.dp),
-                    WindowPlacement.Maximized
+                    WindowPlacement.Fullscreen
                 )
             } else {
-                // Only one screen, just maximize
+                // Only one screen, just fullscreen
                 Pair(
                     WindowPosition(Alignment.Center),
-                    WindowPlacement.Maximized
+                    WindowPlacement.Fullscreen
                 )
             }
         }
@@ -46,6 +46,7 @@ actual fun ExternalWindow(
             onCloseRequest = onCloseRequest,
             title = title,
             state = windowState,
+            undecorated = true, // Hide window title bar and controls for true immersion
             focusable = false // Hint to OS to not steal focus from the fullscreen main window
         ) {
             content()

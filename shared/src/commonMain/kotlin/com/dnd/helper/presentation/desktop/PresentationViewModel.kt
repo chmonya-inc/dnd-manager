@@ -322,10 +322,11 @@ class PresentationViewModel(
     fun updatePosition(id: String, x: Float, y: Float) {
         val index = activeItems.indexOfFirst { it.id == id }
         if (index != -1) {
-            val item = activeItems[index]
-            activeItems[index] = item.copy(
-                x = x.coerceIn(0f, 1000f), 
-                y = y.coerceIn(0f, 1000f)
+            // Allow all items to move into "overscan" areas (the area outside the 1000x1000 logical center)
+            // This is necessary to place tokens on maps that have been stretched to fill wide screens.
+            activeItems[index] = activeItems[index].copy(
+                x = x.coerceIn(-2000f, 2000f), 
+                y = y.coerceIn(-2000f, 2000f)
             )
         }
     }
@@ -334,9 +335,11 @@ class PresentationViewModel(
         val index = activeItems.indexOfFirst { it.id == id }
         if (index != -1) {
             val item = activeItems[index]
+            // Allow backgrounds to be much larger than the logical 1000x1000 canvas
+            val maxSide = if (item.isBackground) 5000f else 1000f
             activeItems[index] = item.copy(
-                width = width.coerceIn(10f, 1000f),
-                height = height.coerceIn(10f, 1000f)
+                width = width.coerceIn(10f, maxSide),
+                height = height.coerceIn(10f, maxSide)
             )
         }
     }
