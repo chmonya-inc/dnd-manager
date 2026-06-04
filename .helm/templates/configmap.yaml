@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Release.Name }}
+data:
+  POSTGRES_DB: "dndhelper"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "postgres"

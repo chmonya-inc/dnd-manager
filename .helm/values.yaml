@@ -1,0 +1,5 @@
+environments:
+  LOG_LEVEL: info
+web:
+  dns: true-steady-stinkbug.ngrok-free.app # TODO request hostname
+  port: 80

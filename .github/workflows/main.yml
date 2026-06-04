@@ -1,0 +1,43 @@
+name: Telegram Bot CI
+
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+env:
+  IMAGE_NAME: chmonya777/dndmanager
+  RELEASE_NAME: dndmanager
+
+jobs:
+  build:
+    runs-on: raspberrypi
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build image
+      run: |
+        sudo podman image build -f server.Dockerfile -t $IMAGE_NAME:$GITHUB_SHA .
+    - name: Login into dockerhub
+      run: |
+        sudo podman login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }} docker.io
+    - name: Push image
+      run: |
+        sudo podman push $IMAGE_NAME:$GITHUB_SHA
+    - name: Delete image locally
+      run: |
+        sudo podman rmi $IMAGE_NAME:$GITHUB_SHA
+  deploy:
+    needs: build
+    runs-on: raspberrypi
+    steps:
+    - name: Apply deployment
+      run: |
+        helm secrets upgrade $RELEASE_NAME .helm \
+          --install \
+          --set-string image.name=$IMAGE_NAME \
+          --set-string image.tag=$GITHUB_SHA \
+          -f .helm/values.yaml \
+          -n ${GITHUB_REPOSITORY_OWNER,,}
+    - name: Wait for deploy
+      run: kubectl rollout status deployment $RELEASE_NAME -n ${GITHUB_REPOSITORY_OWNER,,} --timeout=300s
