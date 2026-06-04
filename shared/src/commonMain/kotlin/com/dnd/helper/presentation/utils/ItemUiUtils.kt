@@ -31,6 +31,6 @@ fun slotToIcon(slot: EquipmentSlot): ImageVector = when (slot) {
 fun itemToIcon(item: Item): ImageVector = when {
     item.name.contains("Potion", ignoreCase = true) -> Icons.Default.FavoriteBorder
     item.name.contains("Scroll", ignoreCase = true) -> Icons.Default.Description
-    item.slot != null -> slotToIcon(item.slot)
+    item.slot != null -> slotToIcon(item.slot!!)
     else -> Icons.Default.ShoppingBag
 }

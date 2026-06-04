@@ -67,6 +67,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "DndHelper"
 include(":app")
+include(":models")
 include(":shared")
 include(":desktop")
 include(":web")

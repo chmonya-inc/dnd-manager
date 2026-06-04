@@ -305,8 +305,9 @@ private fun RenderDtoDetails(item: Any) {
             if (item.starting_equipment.isNotEmpty()) {
                 DtoField("Starting Equipment", item.starting_equipment.joinToString { "${it.quantity}x ${it.equipment.name}" })
             }
-            if (item.spellcasting != null) {
-                DtoField("Spellcasting Ability", item.spellcasting.spellcasting_ability.name)
+            val spellcasting = item.spellcasting
+            if (spellcasting != null) {
+                DtoField("Spellcasting Ability", spellcasting.spellcasting_ability.name)
             }
         }
         is com.dnd.helper.data.remote.dto.character.RaceDto -> {
@@ -347,7 +348,7 @@ private fun RenderDtoDetails(item: Any) {
         is com.dnd.helper.data.remote.dto.character.FeatureDto -> {
             DtoField("Level", item.level.toString())
             DtoField("Class", item.`class`.name)
-            if (item.subclass != null) DtoField("Subclass", item.subclass.name)
+            if (item.subclass != null) DtoField("Subclass", item.subclass!!.name)
             DtoField("Description", item.desc.joinToString("\n"))
             if (item.prerequisites.isNotEmpty()) {
                 DtoField("Prerequisites", item.prerequisites.joinToString { req ->
@@ -380,8 +381,8 @@ private fun RenderDtoDetails(item: Any) {
         }
         is com.dnd.helper.data.remote.dto.character.LanguageDto -> {
             DtoField("Type", item.type)
-            if (item.script != null) DtoField("Script", item.script)
-            if (!item.desc.isNullOrBlank()) DtoField("Description", item.desc)
+            if (item.script != null) DtoField("Script", item.script!!)
+            if (!item.desc.isNullOrBlank()) DtoField("Description", item.desc!!)
             if (item.typical_speakers.isNotEmpty()) DtoField("Typical Speakers", item.typical_speakers.joinToString())
         }
         is com.dnd.helper.data.remote.dto.character.ProficiencyDto -> {

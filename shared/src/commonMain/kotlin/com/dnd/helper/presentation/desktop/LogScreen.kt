@@ -102,7 +102,7 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
                     )
                     if (!log.details.isNullOrBlank()) {
                         Text(
-                            text = log.details,
+                            text = log.details ?: "",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                             modifier = Modifier.padding(vertical = 2.dp)

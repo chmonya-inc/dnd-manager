@@ -852,7 +852,7 @@ fun WorkspaceContainer(
                                             fontWeight = FontWeight.ExtraBold
                                         )
                                         if (!item.subInfo.isNullOrBlank()) {
-                                            Text(item.subInfo, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                            Text(item.subInfo ?: "", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                                         }
                                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.White.copy(alpha = 0.2f))
                                         
@@ -1155,16 +1155,18 @@ fun PlayerCard(
                 
                 if (!item.subInfo.isNullOrBlank()) {
                     Text(
-                        text = item.subInfo,
+                        text = item.subInfo ?: "",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.6f),
                         maxLines = 1
                     )
                 }
 
-                if (showStats && item.currentHp != null && item.maxHp != null) {
+                val currentHp = item.currentHp
+                val maxHp = item.maxHp
+                if (showStats && currentHp != null && maxHp != null) {
                     Spacer(Modifier.height(8.dp))
-                    val hpRatio = (item.currentHp.toFloat() / item.maxHp).coerceIn(0f, 1f)
+                    val hpRatio = (currentHp.toFloat() / maxHp).coerceIn(0f, 1f)
                     val hpColor = when {
                         hpRatio > 0.5f -> Color(0xFF66BB6A)
                         hpRatio > 0.2f -> Color(0xFFFFA726)
@@ -1222,7 +1224,7 @@ fun PlayerCard(
                                 trackColor = Color.White.copy(alpha = 0.1f)
                             )
                             Text(
-                                "${item.currentHp}", 
+                                "$currentHp", 
                                 style = MaterialTheme.typography.labelSmall, 
                                 color = Color.White,
                                 fontWeight = FontWeight.ExtraBold,
@@ -1266,21 +1268,22 @@ fun PlayerCard(
             }
 
             // Stats row (small pills at top)
-            if (showStats && item.stats != null) {
+            val stats = item.stats
+            if (showStats && stats != null) {
                 Column(
                     modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        StatPill("S", item.stats.strength)
-                        StatPill("D", item.stats.dexterity)
-                        StatPill("C", item.stats.constitution)
+                        StatPill("S", stats.strength)
+                        StatPill("D", stats.dexterity)
+                        StatPill("C", stats.constitution)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        StatPill("I", item.stats.intelligence)
-                        StatPill("W", item.stats.wisdom)
-                        StatPill("C", item.stats.charisma)
+                        StatPill("I", stats.intelligence)
+                        StatPill("W", stats.wisdom)
+                        StatPill("C", stats.charisma)
                     }
                 }
             }
