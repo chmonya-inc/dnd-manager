@@ -1,3 +1,5 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.multiplatform)
@@ -14,6 +16,9 @@ kotlin {
                 // Kotlin/Wasm runtime requires 'unsafe-eval' CSP; eval-based source maps
                 // trigger additional CSP violations in some browsers.
                 devtool = "source-map"
+                devServer?.apply {
+                    port = 8081
+                }
             }
         }
         binaries.executable()

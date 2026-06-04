@@ -79,6 +79,7 @@ actual val platformModule = module {
 }
 
 actual val isDesktop: Boolean = false
+actual val isWeb: Boolean = true
 
 actual fun openUrl(url: String) {
     kotlinx.browser.window.open(url, "_blank")

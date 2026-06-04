@@ -85,6 +85,7 @@ actual val platformModule = module {
 }
 
 actual val isDesktop: Boolean = false
+actual val isWeb: Boolean = false
 
 actual fun openUrl(url: String) {
     // Android implementation...

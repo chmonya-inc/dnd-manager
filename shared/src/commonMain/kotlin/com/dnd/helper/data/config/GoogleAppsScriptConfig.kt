@@ -1,6 +1,7 @@
 package com.dnd.helper.data.config
 
 import com.dnd.helper.di.isDesktop
+import com.dnd.helper.di.isWeb
 
 /**
  * Google Apps Script Web App URL.
@@ -9,9 +10,9 @@ import com.dnd.helper.di.isDesktop
  * (keys: `apps.script.url.android` and `apps.script.url.desktop`) into [GeneratedConfig].
  */
 object GoogleAppsScriptConfig {
-    val WEB_APP_URL = if (isDesktop) {
-        GeneratedConfig.WEB_APP_URL_DESKTOP
-    } else {
-        GeneratedConfig.WEB_APP_URL_ANDROID
+    val WEB_APP_URL = when {
+        isDesktop -> GeneratedConfig.WEB_APP_URL_DESKTOP
+        isWeb -> GeneratedConfig.WEB_APP_URL_DESKTOP // Web also uses localhost
+        else -> GeneratedConfig.WEB_APP_URL_ANDROID
     }
 }

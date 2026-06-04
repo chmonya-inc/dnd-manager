@@ -112,7 +112,7 @@ The app uses Google Sheets as its database. You must deploy the backend script f
    ```bash
    ./gradlew :web:wasmJsBrowserRun
    ```
-2. The app will open in your default browser (usually at `http://localhost:8080`).
+2. The app will open in your default browser (usually at `http://localhost:8081`).
 
 ## 📚 Architecture
 
