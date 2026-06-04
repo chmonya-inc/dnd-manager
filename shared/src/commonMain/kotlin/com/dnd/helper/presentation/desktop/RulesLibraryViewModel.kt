@@ -9,6 +9,7 @@ import com.dnd.helper.data.remote.dto.equipment.*
 import com.dnd.helper.data.remote.dto.monster.*
 import com.dnd.helper.data.remote.dto.game.*
 import com.dnd.helper.domain.common.Result
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,7 +81,7 @@ class RulesLibraryViewModel(
     }
 
     private fun loadData() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             _state.update { it.copy(isLoading = true) }
             
             // Character Data
