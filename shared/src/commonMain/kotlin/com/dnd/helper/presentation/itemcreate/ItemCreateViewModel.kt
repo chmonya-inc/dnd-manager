@@ -15,11 +15,12 @@ import kotlinx.coroutines.launch
 import com.dnd.helper.domain.repository.EditingRepository
 import com.dnd.helper.domain.repository.GenerationStatus
 import com.dnd.helper.data.remote.GenerationType
+import com.dnd.helper.data.remote.PromptGenerator
 
 class ItemCreateViewModel(
     private val repository: CharacterRepository,
     private val editingRepository: EditingRepository,
-    private val api: DndApiDataSource,
+    private val api: DndApiDataSource
 ) : ViewModel() {
 
     private val tempId = "temp-item-${kotlin.random.Random.nextInt(1000000, 9999999)}"
@@ -53,6 +54,7 @@ class ItemCreateViewModel(
                 currentState.copy(characterId = ownerId ?: "")
             }
         }
+        updateDefaultPrompt()
     }
 
     init {
@@ -98,8 +100,14 @@ class ItemCreateViewModel(
 
     fun onEvent(event: ItemCreateEvent) {
         when (event) {
-            is ItemCreateEvent.NameChanged -> _state.update { it.copy(name = event.name) }
-            is ItemCreateEvent.DescriptionChanged -> _state.update { it.copy(description = event.description) }
+            is ItemCreateEvent.NameChanged -> {
+                _state.update { it.copy(name = event.name) }
+                updateDefaultPrompt()
+            }
+            is ItemCreateEvent.DescriptionChanged -> {
+                _state.update { it.copy(description = event.description) }
+                updateDefaultPrompt()
+            }
             is ItemCreateEvent.SlotChanged -> _state.update { it.copy(slot = event.slot) }
             is ItemCreateEvent.RarityChanged -> _state.update { it.copy(rarity = event.rarity) }
             is ItemCreateEvent.CostChanged -> _state.update { it.copy(cost = event.cost) }
@@ -125,6 +133,15 @@ class ItemCreateViewModel(
             is ItemCreateEvent.OwnerChanged -> _state.update { it.copy(characterId = event.characterId) }
             ItemCreateEvent.SaveClicked -> saveItem()
             ItemCreateEvent.BackClicked -> { /* Handled by UI */ }
+        }
+    }
+
+    private fun updateDefaultPrompt() {
+        val s = _state.value
+        val promptText = "${s.name}. ${s.description}".trim()
+        if (promptText.isNotBlank()) {
+            val fullPrompt = PromptGenerator.getFullPrompt(promptText, GenerationType.ITEM)
+            _state.update { it.copy(aiPrompt = fullPrompt) }
         }
     }
 
@@ -182,7 +199,7 @@ class ItemCreateViewModel(
                 width = _state.value.aiWidth.toIntOrNull() ?: 1024,
                 height = _state.value.aiHeight.toIntOrNull() ?: 1024
             )
-            _state.value = _state.value.copy(imageUrl = "generating:$taskId")
+            _state.value = _state.value.copy(imageUrl = taskId)
         }
     }
 }

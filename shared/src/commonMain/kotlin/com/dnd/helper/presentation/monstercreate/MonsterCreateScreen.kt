@@ -4,6 +4,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -16,6 +17,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -391,30 +394,40 @@ fun MonsterAbilityScoreBox(
         modifier = modifier
             .border(2.dp, color, RoundedCornerShape(12.dp))
             .background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-            .padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(vertical = 12.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Text(label, fontWeight = FontWeight.Bold, color = color, fontSize = 12.sp)
+        
+        // Main editable score - using BasicTextField to remove default Material indicator and padding
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.width(60.dp).padding(vertical = 2.dp),
+            textStyle = TextStyle(
+                fontSize = 24.sp, 
+                fontWeight = FontWeight.Bold, 
+                color = Color.White, 
+                textAlign = TextAlign.Center
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            cursorBrush = SolidColor(color)
+        )
+
         val modStr = try {
             val score = value.toIntOrNull() ?: 10
             val mod = (score - 10) / 2
             if (mod >= 0) "+$mod" else mod.toString()
         } catch (_: Exception) { "+0" }
         
-        Text(modStr, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 24.sp)
-        
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.width(50.dp).height(35.dp),
-            textStyle = MaterialTheme.typography.bodySmall.copy(textAlign = TextAlign.Center, color = Color.Gray),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent
-            ),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        // Calculated modifier
+        Text(
+            text = "($modStr)", 
+            fontWeight = FontWeight.Medium, 
+            color = Color.Gray, 
+            fontSize = 14.sp
         )
     }
 }
