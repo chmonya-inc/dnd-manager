@@ -7,26 +7,30 @@ on:
     branches: master
 
 env:
-  IMAGE_NAME: chmonya777/dndmanager
   RELEASE_NAME: dndmanager
+  DOCKER_REGISTRY: chmonya777
 
 jobs:
   build:
     runs-on: raspberrypi
     steps:
     - uses: actions/checkout@v4
-    - name: Build image
-      run: |
-        sudo podman image build -f server.Dockerfile -t $IMAGE_NAME:$GITHUB_SHA .
     - name: Login into dockerhub
       run: |
         sudo podman login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_PASSWORD }} docker.io
+    - name: Build image
+      run: |
+        sudo podman image build -f server.Dockerfile --cache-from $DOCKER_REGISTRY/$RELEASE_NAME -t $DOCKER_REGISTRY/$RELEASE_NAME:$GITHUB_SHA .
+    - name: Tag as latest for future builds
+      run: |
+        sudo podman tag $IMAGE_NAME:$GITHUB_SHA $IMAGE_NAME:latest
     - name: Push image
       run: |
-        sudo podman push $IMAGE_NAME:$GITHUB_SHA
+        sudo podman push $DOCKER_REGISTRY/$RELEASE_NAME:$GITHUB_SHA && \
+        sudo podman push $DOCKER_REGISTRY/$RELEASE_NAME:latest
     - name: Delete image locally
       run: |
-        sudo podman rmi $IMAGE_NAME:$GITHUB_SHA
+        sudo podman rmi $DOCKER_REGISTRY/$RELEASE_NAME:$GITHUB_SHA $DOCKER_REGISTRY/$RELEASE_NAME:latest
   deploy:
     needs: build
     runs-on: raspberrypi
@@ -35,9 +39,9 @@ jobs:
       run: |
         helm secrets upgrade $RELEASE_NAME .helm \
           --install \
-          --set-string image.name=$IMAGE_NAME \
+          --set-string image.name=$DOCKER_REGISTRY/$RELEASE_NAME \
           --set-string image.tag=$GITHUB_SHA \
           -f .helm/values.yaml \
-          -n ${GITHUB_REPOSITORY_OWNER,,}
+          -n $RELEASE_NAME
     - name: Wait for deploy
-      run: kubectl rollout status deployment $RELEASE_NAME -n ${GITHUB_REPOSITORY_OWNER,,} --timeout=300s
+      run: kubectl rollout status deployment $RELEASE_NAME -n $RELEASE_NAME --timeout=300s
