@@ -27,4 +27,4 @@ spec:
               service:
                 name: "{{ .Release.Name }}-web"
                 port:
-                  number: "{{ .Values.web.port }}"
+                  number: {{ .Values.web.port | int  }}
