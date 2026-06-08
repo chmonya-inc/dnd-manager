@@ -30,6 +30,7 @@ import com.dnd.helper.theme.ThemeViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.request.header
+import io.ktor.http.ContentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -82,6 +83,7 @@ val appModule = module {
             install(WebSockets)
             install(io.ktor.client.plugins.DefaultRequest) {
                 header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                header("ngrok-skip-browser-warning", "true")
             }
             // Add logging to help diagnose server issues
             install(io.ktor.client.plugins.logging.Logging) {
