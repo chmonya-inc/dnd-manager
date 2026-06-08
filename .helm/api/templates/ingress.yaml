@@ -21,8 +21,8 @@ spec:
     - host: "{{ .Values.dns }}"
       http:
         paths:
-          - path: /
-            pathType: Prefix
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: {{ .Release.Name }}

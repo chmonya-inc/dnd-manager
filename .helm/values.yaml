@@ -1,5 +1,6 @@
 environments:
   LOG_LEVEL: info
+dns: "true-steady-stinkbug.ngrok-free.app"
 api:
   port: 9090
   db:
@@ -7,5 +8,4 @@ api:
     port: "5432"
     name: "dndhelper"
 web:
-  dns: "true-steady-stinkbug.ngrok-free.app"
-  port: "8081"
+  port: 8081
