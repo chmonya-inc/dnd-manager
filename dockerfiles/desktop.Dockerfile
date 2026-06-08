@@ -28,21 +28,3 @@ RUN chmod +x gradlew
 
 # Build only the web
 RUN ./gradlew :desktop:run --no-daemon
-
-# Stage 2: Runtime stage
-FROM eclipse-temurin:21-jre-alpine AS runtime
-
-RUN addgroup -S dndhelper && adduser -S dndhelper -G dndhelper
-
-WORKDIR /app
-
-COPY --from=build /app/web/build/install/web /app
-COPY --from=build /app/apps-script ./apps-script
-
-RUN chown -R dndhelper:dndhelper /app
-
-USER dndhelper
-
-EXPOSE 8081
-
-CMD ["./bin/web"]
