@@ -1,9 +1,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: "{{ .Release.Name }}-web"
+  name: {{ .Release.Name }}
   labels:
-    app: "{{ .Release.Name }}-web"
+    app: {{ .Release.Name }}
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: 100m
     nginx.ingress.kubernetes.io/proxy-buffer-size: 256k
@@ -25,6 +25,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: "{{ .Release.Name }}-web"
+                name: {{ .Release.Name }}
                 port:
                   number: {{ .Values.web.port | int  }}

@@ -39,7 +39,7 @@ jobs:
     steps:
     - name: Apply deployment
       run: |
-        helm secrets upgrade $RELEASE_NAME .helm/templates/api \
+        helm secrets upgrade $RELEASE_NAME .helm/api \
           --install \
           --set-string image.name=$IMAGE_NAME \
           --set-string image.tag=$GITHUB_SHA \

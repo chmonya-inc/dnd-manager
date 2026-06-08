@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: "{{ .Release.Name }}-api"
+  name: {{ .Release.Name }}
   labels:
-    app: "{{ .Release.Name }}-api"
+    app: {{ .Release.Name }}
 data:
   DB_HOST: "{{ .Values.api.db.host }}"
   DB_PORT: "{{ .Values.api.db.port }}"
