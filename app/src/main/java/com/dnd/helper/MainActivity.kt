@@ -11,7 +11,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            App(koinConfiguration = {
+            PlayerApp(koinConfiguration = {
                 androidContext(this@MainActivity)
             })
         }

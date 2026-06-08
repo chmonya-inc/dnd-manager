@@ -28,3 +28,6 @@ local.properties
 /desktop/kcef-bundle
 /references/
 /models/build/
+shared/core/build/
+shared/player/build/
+shared/desktop/build/

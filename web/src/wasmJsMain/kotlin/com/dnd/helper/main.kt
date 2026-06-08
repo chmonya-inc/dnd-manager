@@ -9,6 +9,6 @@ fun main() {
         title = "D&D Helper",
         canvasElementId = "ComposeTarget",
     ) {
-        App()
+        PlayerApp()
     }
 }

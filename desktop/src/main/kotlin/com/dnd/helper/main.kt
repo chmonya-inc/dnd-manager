@@ -17,7 +17,7 @@ fun main() = application {
         state = windowState
     ) {
         DndHelperTheme {
-            App()
+            DesktopApp()
         }
     }
 }
