@@ -7,7 +7,7 @@ on:
     branches: master
 
 env:
-  RELEASE_NAME: dndmanager
+  RELEASE_NAME: dndmanager-api
   IMAGE_NAME: chmonya777/dndmanager-api
   K8S_NAMESPACE: dndmanager
   DOCKERFILE: api.Dockerfile
@@ -39,7 +39,7 @@ jobs:
     steps:
     - name: Apply deployment
       run: |
-        helm secrets upgrade $RELEASE_NAME .helm \
+        helm secrets upgrade $RELEASE_NAME .helm\templates\api \
           --install \
           --set-string image.name=$IMAGE_NAME \
           --set-string image.tag=$GITHUB_SHA \
