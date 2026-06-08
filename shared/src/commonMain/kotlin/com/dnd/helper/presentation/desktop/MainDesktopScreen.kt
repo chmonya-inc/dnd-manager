@@ -65,7 +65,9 @@ private val secondaryTabs = listOf(
 private val tabs = primaryTabs + secondaryTabs
 
 @Composable
-fun MainDesktopScreen() {
+fun MainDesktopScreen(
+    presentationViewModel: PresentationViewModel = koinViewModel()
+) {
     var selectedTab by remember { mutableStateOf<DesktopTab>(DesktopTab.Characters) }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
     var initialCreatorType by remember { mutableStateOf<CreatorType?>(null) }
@@ -78,6 +80,24 @@ fun MainDesktopScreen() {
 
     // Track active session for forcing ViewModel recreation on session switch
     var activeTableId by remember { mutableStateOf<String?>(null) }
+
+    val isWindowOpen by presentationViewModel.isWindowOpen.collectAsState()
+    val showStats by presentationViewModel.showStats.collectAsState()
+    val activeItems = presentationViewModel.activeItems
+
+    // Secondary Window for Players - Persists across tab switching
+    ExternalWindow(
+        isOpen = isWindowOpen,
+        onCloseRequest = { presentationViewModel.setWindowOpen(false) }
+    ) {
+        com.dnd.helper.theme.DndHelperTheme {
+            PlayerViewContent(
+                activeItems = activeItems, 
+                showStats = showStats,
+                onCloseRequest = { presentationViewModel.setWindowOpen(false) }
+            )
+        }
+    }
 
     if (showDiceDialog) {
         DiceRollDialog(onDismiss = { showDiceDialog = false })

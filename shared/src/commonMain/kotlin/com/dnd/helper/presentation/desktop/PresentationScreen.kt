@@ -94,15 +94,6 @@ fun PresentationScreen(
         viewModel.refreshAll()
     }
 
-    ExternalWindow(
-        isOpen = isWindowOpen,
-        onCloseRequest = { viewModel.setWindowOpen(false) }
-    ) {
-        com.dnd.helper.theme.DndHelperTheme {
-            PlayerViewContent(activeItems = activeItems, showStats = showStats)
-        }
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Surface(
@@ -712,9 +703,20 @@ private fun FoldableSection(
 }
 
 @Composable
-fun PlayerViewContent(activeItems: List<PresentedItem>, showStats: Boolean = true) {
+fun PlayerViewContent(
+    activeItems: List<PresentedItem>, 
+    showStats: Boolean = true,
+    onCloseRequest: () -> Unit = {}
+) {
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .onPreviewKeyEvent {
+                if (it.key == Key.Escape && it.type == KeyEventType.KeyDown) {
+                    onCloseRequest()
+                    true
+                } else false
+            },
         color = Color.Black
     ) {
         WorkspaceContainer(
@@ -747,12 +749,12 @@ fun WorkspaceContainer(
         val canvasWidthPx = LOGICAL_CANVAS_SIZE * scale
         val canvasHeightPx = LOGICAL_CANVAS_SIZE * scale
 
-        Box(
-            modifier = Modifier.size(
-                width = (canvasWidthPx / androidx.compose.ui.platform.LocalDensity.current.density).dp,
-                height = (canvasHeightPx / androidx.compose.ui.platform.LocalDensity.current.density).dp
-            )
-        ) {
+        // Calculate centering offsets for the logical 1000x1000 area
+        val offsetX = (containerWidth - canvasWidthPx) / 2
+        val offsetY = (containerHeight - canvasHeightPx) / 2
+
+        // Use a Box that fills the whole available space so interactions aren't clipped
+        Box(modifier = Modifier.fillMaxSize()) {
             val sortedItems = activeItems.sortedByDescending { it.isBackground }
             
             sortedItems.forEach { item ->
@@ -799,6 +801,8 @@ fun WorkspaceContainer(
                         PresentationItem(
                             item = item,
                             canvasSizePx = canvasWidthPx,
+                            canvasOffsetX = offsetX,
+                            canvasOffsetY = offsetY,
                             categoryColor = categoryColor,
                             isFighting = isFighting.value,
                             onPositionChange = { x, y -> onItemPositionChange(item.id, x, y) },
@@ -818,8 +822,8 @@ fun WorkspaceContainer(
                             Box(
                                 modifier = Modifier
                                     .graphicsLayer {
-                                        translationX = item.x * pixelScale
-                                        translationY = item.y * pixelScale
+                                        translationX = (item.x * pixelScale) + offsetX
+                                        translationY = (item.y * pixelScale) + offsetY
                                     }
                                     .size(
                                         width = (item.width * pixelScale / androidx.compose.ui.platform.LocalDensity.current.density).dp,
@@ -879,6 +883,8 @@ fun WorkspaceContainer(
 fun PresentationItem(
     item: PresentedItem,
     canvasSizePx: Float,
+    canvasOffsetX: Float = 0f,
+    canvasOffsetY: Float = 0f,
     categoryColor: Color = Color.White,
     isFighting: Boolean = false,
     onPositionChange: (Float, Float) -> Unit = { _, _ -> },
@@ -931,8 +937,8 @@ fun PresentationItem(
     Box(
         modifier = Modifier
             .graphicsLayer {
-                translationX = (localX * pixelScale) + (if (isFighting) shakeX * density.density else 0f)
-                translationY = (localY * pixelScale) + (if (isFighting) shakeY * density.density else 0f)
+                translationX = (localX * pixelScale) + canvasOffsetX + (if (isFighting) shakeX * density.density else 0f)
+                translationY = (localY * pixelScale) + canvasOffsetY + (if (isFighting) shakeY * density.density else 0f)
                 scaleX = if (isFighting) 1.05f else 1f
                 scaleY = if (isFighting) 1.05f else 1f
             }
@@ -986,8 +992,14 @@ fun PresentationItem(
                                                 } else if (!isRightClick) {
                                                     val logicalDeltaX = dragAmount.x / pixelScale
                                                     val logicalDeltaY = dragAmount.y / pixelScale
-                                                    localX = (localX + logicalDeltaX).coerceIn(0f, LOGICAL_CANVAS_SIZE - localW)
-                                                    localY = (localY + logicalDeltaY).coerceIn(0f, LOGICAL_CANVAS_SIZE - localH)
+                                                    
+                                                    // Allow all items to be moved into "overscan" areas
+                                                    // This is needed for wide screens where the map covers the black bars.
+                                                    val minBound = -2000f
+                                                    val maxBound = 2000f
+                                                    
+                                                    localX = (localX + logicalDeltaX).coerceIn(minBound, maxBound)
+                                                    localY = (localY + logicalDeltaY).coerceIn(minBound, maxBound)
                                                     currentOnPositionChange(localX, localY)
                                                 }
                                             }
@@ -1039,8 +1051,14 @@ fun PresentationItem(
                             change.consume()
                             val logicalDeltaW = dragAmount.x / pixelScale
                             val logicalDeltaH = dragAmount.y / pixelScale
-                            localW = (localW + logicalDeltaW).coerceIn(50f, LOGICAL_CANVAS_SIZE - localX)
-                            localH = (localH + logicalDeltaH).coerceIn(50f, LOGICAL_CANVAS_SIZE - localY)
+                            
+                            // Allow items to be resized freely within a large range
+                            // Using a fixed large limit (2000f) for non-backgrounds so they don't accidentally cover the whole screen
+                            val maxWidth = if (item.isBackground) 5000f else 2000f
+                            val maxHeight = if (item.isBackground) 5000f else 2000f
+                            
+                            localW = (localW + logicalDeltaW).coerceIn(50f, maxWidth)
+                            localH = (localH + logicalDeltaH).coerceIn(50f, maxHeight)
                             currentOnSizeChange(localW, localH)
                         }
                     }
@@ -1327,7 +1345,11 @@ private fun StatPill(label: String, value: Int) {
 }
 
 @Composable
-fun LocationCard(item: PresentedItem, isDM: Boolean = false, onRemove: () -> Unit = {}) {
+fun LocationCard(
+    item: PresentedItem, 
+    isDM: Boolean = false, 
+    onRemove: () -> Unit = {}
+) {
     val title = item.title
     val imageUrl = item.imageUrl
     
@@ -1350,7 +1372,7 @@ fun LocationCard(item: PresentedItem, isDM: Boolean = false, onRemove: () -> Uni
                             translationX = item.offsetX * size.width
                             translationY = item.offsetY * size.height
                         },
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Fit
                 )
                 
                 Box(

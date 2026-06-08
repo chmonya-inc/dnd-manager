@@ -120,7 +120,10 @@ class CharacterCreateViewModel(
                     }
                 }
             }
-            is CharacterCreateEvent.SubraceChanged -> _state.value = _state.value.copy(subrace = event.value)
+            is CharacterCreateEvent.SubraceChanged -> {
+                _state.value = _state.value.copy(subrace = event.value)
+                updateDefaultPrompt()
+            }
             is CharacterCreateEvent.ClassChanged -> {
                 _state.value = _state.value.copy(characterClass = event.value, subclass = "")
                 updateDefaultPrompt()
@@ -134,9 +137,18 @@ class CharacterCreateViewModel(
                     }
                 }
             }
-            is CharacterCreateEvent.SubclassChanged -> _state.value = _state.value.copy(subclass = event.value)
-            is CharacterCreateEvent.BackgroundChanged -> _state.value = _state.value.copy(background = event.value)
-            is CharacterCreateEvent.AlignmentChanged -> _state.value = _state.value.copy(alignment = event.value)
+            is CharacterCreateEvent.SubclassChanged -> {
+                _state.value = _state.value.copy(subclass = event.value)
+                updateDefaultPrompt()
+            }
+            is CharacterCreateEvent.BackgroundChanged -> {
+                _state.value = _state.value.copy(background = event.value)
+                updateDefaultPrompt()
+            }
+            is CharacterCreateEvent.AlignmentChanged -> {
+                _state.value = _state.value.copy(alignment = event.value)
+                updateDefaultPrompt()
+            }
             is CharacterCreateEvent.LevelChanged -> _state.value = _state.value.copy(level = event.value)
             is CharacterCreateEvent.ExperiencePointsChanged -> _state.value = _state.value.copy(experiencePoints = event.value)
             is CharacterCreateEvent.DescriptionChanged -> {
@@ -182,13 +194,22 @@ class CharacterCreateViewModel(
 
             // Proficiencies
             is CharacterCreateEvent.SavingThrowsChanged -> _state.value = _state.value.copy(savingThrows = event.value)
-            is CharacterCreateEvent.ArmorProficienciesChanged -> _state.value = _state.value.copy(armorProficiencies = event.value)
+            is CharacterCreateEvent.ArmorProficienciesChanged -> {
+                _state.value = _state.value.copy(armorProficiencies = event.value)
+                updateDefaultPrompt()
+            }
             is CharacterCreateEvent.AddLanguage -> _state.value = _state.value.copy(selectedLanguages = _state.value.selectedLanguages + event.value)
             is CharacterCreateEvent.RemoveLanguage -> _state.value = _state.value.copy(selectedLanguages = _state.value.selectedLanguages - event.value)
             is CharacterCreateEvent.AddProficiencySkill -> _state.value = _state.value.copy(selectedSkills = _state.value.selectedSkills + event.value)
             is CharacterCreateEvent.RemoveProficiencySkill -> _state.value = _state.value.copy(selectedSkills = _state.value.selectedSkills - event.value)
-            is CharacterCreateEvent.AddProficiencyWeapon -> _state.value = _state.value.copy(selectedWeapons = _state.value.selectedWeapons + event.value)
-            is CharacterCreateEvent.RemoveProficiencyWeapon -> _state.value = _state.value.copy(selectedWeapons = _state.value.selectedWeapons - event.value)
+            is CharacterCreateEvent.AddProficiencyWeapon -> {
+                _state.value = _state.value.copy(selectedWeapons = _state.value.selectedWeapons + event.value)
+                updateDefaultPrompt()
+            }
+            is CharacterCreateEvent.RemoveProficiencyWeapon -> {
+                _state.value = _state.value.copy(selectedWeapons = _state.value.selectedWeapons - event.value)
+                updateDefaultPrompt()
+            }
             is CharacterCreateEvent.AddProficiencyTool -> _state.value = _state.value.copy(selectedTools = _state.value.selectedTools + event.value)
             is CharacterCreateEvent.RemoveProficiencyTool -> _state.value = _state.value.copy(selectedTools = _state.value.selectedTools - event.value)
 

@@ -9,6 +9,8 @@ import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.repository.EditingRepository
 import com.dnd.helper.domain.repository.GenerationStatus
 import com.dnd.helper.data.remote.DndApiDataSource
+import com.dnd.helper.data.remote.GenerationType
+import com.dnd.helper.data.remote.PromptGenerator
 import com.dnd.helper.data.remote.dto.monster.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -88,8 +90,14 @@ class MonsterCreateViewModel(
                 _state.value = _state.value.copy(type = event.value)
                 updateDefaultPrompt()
             }
-            is MonsterCreateEvent.AlignmentChanged -> _state.value = _state.value.copy(alignment = event.value)
-            is MonsterCreateEvent.SizeChanged -> _state.value = _state.value.copy(size = event.value)
+            is MonsterCreateEvent.AlignmentChanged -> {
+                _state.value = _state.value.copy(alignment = event.value)
+                updateDefaultPrompt()
+            }
+            is MonsterCreateEvent.SizeChanged -> {
+                _state.value = _state.value.copy(size = event.value)
+                updateDefaultPrompt()
+            }
             is MonsterCreateEvent.MaxHpChanged -> _state.value = _state.value.copy(maxHp = event.value)
             is MonsterCreateEvent.ArmorClassChanged -> _state.value = _state.value.copy(armorClass = event.value)
             is MonsterCreateEvent.SpeedChanged -> _state.value = _state.value.copy(speed = event.value)
@@ -175,13 +183,15 @@ class MonsterCreateViewModel(
                 imageUrl = monster.imageUrl ?: ""
             )
         }
+        updateDefaultPrompt()
     }
 
     private fun updateDefaultPrompt() {
         val s = _state.value
         val promptText = "${s.name}, ${s.size} ${s.type}, ${s.alignment}. ${s.description}".trim()
         if (promptText.isNotBlank()) {
-            _state.value = _state.value.copy(aiPrompt = promptText)
+            val fullPrompt = PromptGenerator.getFullPrompt(promptText, GenerationType.MONSTER)
+            _state.value = _state.value.copy(aiPrompt = fullPrompt)
         }
     }
 
@@ -193,7 +203,7 @@ class MonsterCreateViewModel(
                 entityId = tempId,
                 entityType = "monster",
                 prompt = _state.value.aiPrompt,
-                genType = com.dnd.helper.data.remote.GenerationType.MONSTER,
+                genType = GenerationType.MONSTER,
                 width = _state.value.aiWidth,
                 height = _state.value.aiHeight
             )
