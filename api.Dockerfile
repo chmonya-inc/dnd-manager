@@ -15,12 +15,12 @@ RUN mkdir -p desktop android web app shared server models
 # Copy build files (use simple COPY without shell redirection)
 COPY shared/build.gradle.kts shared
 COPY models/build.gradle.kts models
-COPY server/build.gradle.kts web
+COPY server/build.gradle.kts server
 
 # Copy source code - use simple COPY
 COPY shared/src shared/src
 COPY models/src models/src
-COPY server/src web/src
+COPY server/src server/src
 
 COPY apps-script apps-script
 
