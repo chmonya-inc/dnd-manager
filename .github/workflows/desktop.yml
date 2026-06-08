@@ -1,14 +1,14 @@
-name: DND Manager Api
+name: DND Manager Desktop
 
-on:
-  push:
-    branches: master
-  pull_request:
-    branches: master
+#on:
+#  push:
+#    branches: master
+#  pull_request:
+#    branches: master
 
 env:
-  RELEASE_NAME: dndmanager-api
-  IMAGE_NAME: chmonya777/dndmanager-api
+  RELEASE_NAME: dndmanager-desktop
+  IMAGE_NAME: chmonya777/dndmanager-desktop
   K8S_NAMESPACE: dndmanager
   DOCKERFILE: dockerfiles/desktop.Dockerfile
 
@@ -39,7 +39,7 @@ jobs:
     steps:
     - name: Apply deployment
       run: |
-        helm secrets upgrade $RELEASE_NAME .helm/api \
+        helm secrets upgrade $RELEASE_NAME .helm/desktop \
           --install \
           --set-string image.name=$IMAGE_NAME \
           --set-string image.tag=$GITHUB_SHA \
