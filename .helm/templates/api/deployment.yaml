@@ -20,7 +20,7 @@ spec:
       - name: regcred
       containers:
       - name: "{{ .Release.Name }}-api"
-        image: "{{ .Values.image.api.name }}:{{ .Values.image.api.tag }}"
+        image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"
         imagePullPolicy: IfNotPresent
         envFrom:
           - configMapRef:
