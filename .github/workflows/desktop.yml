@@ -10,7 +10,7 @@ env:
   RELEASE_NAME: dndmanager-api
   IMAGE_NAME: chmonya777/dndmanager-api
   K8S_NAMESPACE: dndmanager
-  DOCKERFILE: dockerfiles/api.Dockerfile
+  DOCKERFILE: dockerfiles/desktop.Dockerfile
 
 jobs:
   build:

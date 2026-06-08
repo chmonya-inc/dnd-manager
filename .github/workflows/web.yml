@@ -10,7 +10,7 @@ env:
   RELEASE_NAME: dndmanager-web
   IMAGE_NAME: chmonya777/dndmanager-web
   K8S_NAMESPACE: dndmanager
-  DOCKERFILE: web.Dockerfile
+  DOCKERFILE: dockerfiles/web.Dockerfile
 
 jobs:
   build:
