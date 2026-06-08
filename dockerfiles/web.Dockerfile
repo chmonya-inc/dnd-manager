@@ -7,7 +7,7 @@ WORKDIR /app
 COPY gradlew .
 COPY gradle gradle/
 COPY build.gradle.kts .
-COPY ../settings.gradle.kts .
+COPY settings.gradle.kts .
 
 # Create dummy module directories
 RUN mkdir -p desktop android web app shared server models
