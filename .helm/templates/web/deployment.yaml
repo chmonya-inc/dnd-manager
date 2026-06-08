@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-web"
+  labels:
+    app: "{{ .Release.Name }}-web"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-web"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-web"
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: "{{ .Release.Name }}-web"
+        image: "{{ .Values.image.web.name }}:{{ .Values.image.web.tag }}"
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - configMapRef:
+              name: "{{ .Release.Name }}-web"
+          - secretRef:
+              name: "{{ .Release.Name }}-web"

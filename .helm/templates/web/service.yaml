@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}
+  name: "{{ .Release.Name }}-web"
   labels:
-    app: {{ .Release.Name }}
+    app: "{{ .Release.Name }}-web"
 spec:
   ports:
     - protocol: TCP
       port: 80
       targetPort: 80
   selector:
-    app: {{ .Release.Name }}
+    app: "{{ .Release.Name }}-web"
   type: ClusterIP

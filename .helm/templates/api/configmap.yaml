@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Release.Name }}-api"
+  labels:
+    app: "{{ .Release.Name }}-api"
+data:
+  DB_HOST: "{{ .Values.api.db.host }}"
+  DB_PORT: "{{ .Values.api.db.port }}"
+  DB_NAME: "{{ .Values.api.db.name }}"

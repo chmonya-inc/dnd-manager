@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "{{ .Release.Name }}-api"
+  labels:
+    app: "{{ .Release.Name }}-api"
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "{{ .Release.Name }}-api"
+  template:
+    metadata:
+      labels:
+        app: "{{ .Release.Name }}-api"
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: "{{ .Release.Name }}-api"
+        image: "{{ .Values.image.api.name }}:{{ .Values.image.api.tag }}"
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - configMapRef:
+              name: "{{ .Release.Name }}-api"
+          - secretRef:
+              name: "{{ .Release.Name }}-api"

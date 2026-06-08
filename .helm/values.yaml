@@ -1,5 +1,11 @@
 environments:
   LOG_LEVEL: info
+api:
+  port: 9090
+  db:
+    host: "postgres"
+    port: "5432"
+    name: "dndhelper"
 web:
-  dns: true-steady-stinkbug.ngrok-free.app # TODO request hostname
-  port: 80
+  dns: "true-steady-stinkbug.ngrok-free.app"
+  port: "80"
