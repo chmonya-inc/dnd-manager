@@ -22,7 +22,7 @@ COPY shared/src shared/src
 COPY models/src models/src
 COPY server/src web/src
 
-COPY apps-script apps-script/
+COPY apps-script apps-script
 
 RUN chmod +x gradlew
 

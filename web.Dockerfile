@@ -22,12 +22,12 @@ COPY shared/src shared/src
 COPY models/src models/src
 COPY web/src web/src
 
-COPY apps-script apps-script/
+COPY apps-script apps-script
 
 RUN chmod +x gradlew
 
 # Build only the web
-RUN ./gradlew :web:installDist --no-daemon
+RUN ./gradlew :web:wasmJsBrowserRun --no-daemon
 
 # Stage 2: Runtime stage
 FROM eclipse-temurin:21-jre-alpine AS runtime
@@ -43,6 +43,6 @@ RUN chown -R dndhelper:dndhelper /app
 
 USER dndhelper
 
-EXPOSE 80
+EXPOSE 8081
 
 CMD ["./bin/web"]

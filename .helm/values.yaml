@@ -8,4 +8,4 @@ api:
     name: "dndhelper"
 web:
   dns: "true-steady-stinkbug.ngrok-free.app"
-  port: "80"
+  port: "8081"
