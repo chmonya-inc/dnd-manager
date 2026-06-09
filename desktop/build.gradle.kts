@@ -35,6 +35,8 @@ compose.desktop {
             )
             packageName = "D&D Helper"
             packageVersion = "1.0.0"
+
+            modules("java.net.http")
         }
     }
 }
