@@ -75,7 +75,6 @@ fun MainDesktopScreen(
     var showDiceDialog by remember { mutableStateOf(false) }
     var showSessionsDialog by remember { mutableStateOf(false) }
     var showMusicPlayer by remember { mutableStateOf(false) }
-    var showNeuralNetwork by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var musicPlayerOffset by remember { mutableStateOf(IntOffset(0, 0)) }
 
@@ -147,15 +146,6 @@ fun MainDesktopScreen(
             NavigationRail(
                 modifier = Modifier.fillMaxHeight(),
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                header = {
-                    Spacer(Modifier.height(8.dp))
-                    Icon(
-                        imageVector = Icons.Default.AutoFixHigh,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
             ) {
                 Column(
                     modifier = Modifier.fillMaxHeight().padding(bottom = 16.dp),
@@ -210,22 +200,6 @@ fun MainDesktopScreen(
                             imageVector = if (showMusicPlayer) Icons.Default.MusicNote else Icons.Default.MusicOff,
                             contentDescription = "Music",
                             tint = if (showMusicPlayer) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                    }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    // Neural Network Button
-                    FloatingActionButton(
-                        onClick = { showNeuralNetwork = !showNeuralNetwork },
-                        modifier = Modifier.size(48.dp),
-                        containerColor = if (showNeuralNetwork) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer,
-                        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Neural Network",
-                            tint = if (showNeuralNetwork) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onTertiaryContainer,
                         )
                     }
 

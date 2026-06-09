@@ -30,21 +30,35 @@ fun RulesLibraryScreen(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         ) {
             RuleCategory.entries.forEach { category ->
+                val hasQuery = state.searchQuery.isNotBlank()
+                val matchCount = if (hasQuery) {
+                    // Quick count matches in this category
+                    countCategoryMatches(state, category, state.searchQuery)
+                } else 0
+
                 NavigationRailItem(
                     selected = state.selectedCategory == category,
                     onClick = { viewModel.setCategory(category) },
                     icon = {
-                        Icon(
-                            imageVector = when(category) {
-                                RuleCategory.CharacterData -> Icons.Default.Person
-                                RuleCategory.Spells -> Icons.Default.AutoFixHigh
-                                RuleCategory.Equipment -> Icons.Default.Shield
-                                RuleCategory.Monsters -> Icons.Default.Pets
-                                RuleCategory.Mechanics -> Icons.Default.Build
-                                RuleCategory.Rules -> Icons.Default.MenuBook
-                            },
-                            contentDescription = category.name
-                        )
+                        BadgedBox(
+                            badge = {
+                                if (hasQuery && matchCount > 0) {
+                                    Badge { Text(matchCount.toString()) }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = when(category) {
+                                    RuleCategory.CharacterData -> Icons.Default.Person
+                                    RuleCategory.Spells -> Icons.Default.AutoFixHigh
+                                    RuleCategory.Equipment -> Icons.Default.Shield
+                                    RuleCategory.Monsters -> Icons.Default.Pets
+                                    RuleCategory.Mechanics -> Icons.Default.Build
+                                    RuleCategory.Rules -> Icons.Default.MenuBook
+                                },
+                                contentDescription = category.name
+                            )
+                        }
                     },
                     label = { Text(category.name, maxLines = 1) }
                 )
@@ -55,7 +69,29 @@ fun RulesLibraryScreen(
 
         // Content
         Box(modifier = Modifier.fillMaxSize()) {
-            CategoryDataFragment(state, state.selectedCategory)
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Search Bar
+                OutlinedTextField(
+                    value = state.searchQuery,
+                    onValueChange = { viewModel.setSearchQuery(it) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    placeholder = { Text("Search rules, spells, monsters...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (state.searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear search")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium
+                )
+                
+                CategoryDataFragment(state, state.selectedCategory)
+            }
             
             if (state.isLoading) {
                 Box(
@@ -84,45 +120,66 @@ fun RulesLibraryScreen(
     }
 }
 
+private fun countCategoryMatches(state: RulesLibraryState, category: RuleCategory, query: String): Int {
+    val lists = when(category) {
+        RuleCategory.CharacterData -> listOf(state.classes, state.races, state.subraces, state.subclasses, state.feats, state.traits, state.features, state.backgrounds, state.skills, state.abilityScores, state.alignments, state.languages, state.proficiencies)
+        RuleCategory.Spells -> listOf(state.spells, state.magicSchools)
+        RuleCategory.Equipment -> listOf(state.equipmentCategories, state.magicItems, state.weaponProperties)
+        RuleCategory.Monsters -> listOf(state.monsters)
+        RuleCategory.Mechanics -> listOf(state.conditions, state.damageTypes)
+        RuleCategory.Rules -> listOf(state.rules, state.ruleSections)
+    }
+    return lists.sumOf { list ->
+        list.count { getDtoTitle(it).contains(query, ignoreCase = true) }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryDataFragment(state: RulesLibraryState, category: RuleCategory) {
-    val categoryItems: List<Pair<String, List<Any>>> = remember(state, category) {
+    val query = state.searchQuery
+
+    val categoryItems: List<Pair<String, List<Any>>> = remember(state, category, query) {
+        val filter: (Any) -> Boolean = { item ->
+            if (query.isBlank()) true
+            else getDtoTitle(item).contains(query, ignoreCase = true)
+        }
+
         when(category) {
             RuleCategory.CharacterData -> listOf(
-                "Classes" to state.classes,
-                "Races" to state.races,
-                "Subraces" to state.subraces,
-                "Subclasses" to state.subclasses,
-                "Feats" to state.feats,
-                "Traits" to state.traits,
-                "Features" to state.features,
-                "Backgrounds" to state.backgrounds,
-                "Skills" to state.skills,
-                "Ability Scores" to state.abilityScores,
-                "Alignments" to state.alignments,
-                "Languages" to state.languages,
-                "Proficiencies" to state.proficiencies
+                "Classes" to state.classes.filter(filter),
+                "Races" to state.races.filter(filter),
+                "Subraces" to state.subraces.filter(filter),
+                "Subclasses" to state.subclasses.filter(filter),
+                "Feats" to state.feats.filter(filter),
+                "Traits" to state.traits.filter(filter),
+                "Features" to state.features.filter(filter),
+                "Backgrounds" to state.backgrounds.filter(filter),
+                "Skills" to state.skills.filter(filter),
+                "Ability Scores" to state.abilityScores.filter(filter),
+                "Alignments" to state.alignments.filter(filter),
+                "Languages" to state.languages.filter(filter),
+                "Proficiencies" to state.proficiencies.filter(filter)
             )
             RuleCategory.Spells -> listOf(
-                "Spells" to state.spells,
-                "Magic Schools" to state.magicSchools
+                "Spells" to state.spells.filter(filter),
+                "Magic Schools" to state.magicSchools.filter(filter)
             )
             RuleCategory.Equipment -> listOf(
-                "Equipment Categories" to state.equipmentCategories,
-                "Magic Items" to state.magicItems,
-                "Weapon Properties" to state.weaponProperties
+                "Equipment Categories" to state.equipmentCategories.filter(filter),
+                "Magic Items" to state.magicItems.filter(filter),
+                "Weapon Properties" to state.weaponProperties.filter(filter)
             )
             RuleCategory.Monsters -> listOf(
-                "Monsters" to state.monsters
+                "Monsters" to state.monsters.filter(filter)
             )
             RuleCategory.Mechanics -> listOf(
-                "Conditions" to state.conditions,
-                "Damage Types" to state.damageTypes
+                "Conditions" to state.conditions.filter(filter),
+                "Damage Types" to state.damageTypes.filter(filter)
             )
             RuleCategory.Rules -> listOf(
-                "Rules" to state.rules,
-                "Rule Sections" to state.ruleSections
+                "Rules" to state.rules.filter(filter),
+                "Rule Sections" to state.ruleSections.filter(filter)
             )
         }
     }
@@ -131,10 +188,15 @@ fun CategoryDataFragment(state: RulesLibraryState, category: RuleCategory) {
         mutableStateOf(categoryItems.firstOrNull()?.first ?: "") 
     }
 
-    // fallback if selection becomes invalid due to data loading
-    LaunchedEffect(categoryItems) {
-        if (categoryItems.isNotEmpty() && categoryItems.none { it.first == selectedType }) {
-            selectedType = categoryItems.first().first
+    val filteredCategoryItems = remember(categoryItems) {
+        if (query.isBlank()) categoryItems
+        else categoryItems.filter { it.second.isNotEmpty() }
+    }
+
+    // fallback if selection becomes invalid due to data loading or search
+    LaunchedEffect(filteredCategoryItems) {
+        if (filteredCategoryItems.isNotEmpty() && filteredCategoryItems.none { it.first == selectedType }) {
+            selectedType = filteredCategoryItems.first().first
         }
     }
 
@@ -146,7 +208,7 @@ fun CategoryDataFragment(state: RulesLibraryState, category: RuleCategory) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(categoryItems) { (type, list) ->
+            items(filteredCategoryItems) { (type, list) ->
                 val isSelected = selectedType == type
                 Surface(
                     onClick = { selectedType = type },

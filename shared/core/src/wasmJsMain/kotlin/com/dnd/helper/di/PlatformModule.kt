@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class WasmCharacterStorage : CharacterStorage {
     private val _serverAddressFlow = MutableStateFlow(getServerAddress())
+    private val _tableIdFlow = MutableStateFlow(getTableId())
 
     override fun saveCharacterId(id: String) {
         localStorage.setItem("last_character_id", id)
@@ -21,10 +22,15 @@ class WasmCharacterStorage : CharacterStorage {
 
     override fun saveTableId(id: String) {
         localStorage.setItem("last_table_id", id)
+        _tableIdFlow.value = id
     }
 
     override fun getTableId(): String? {
         return localStorage.getItem("last_table_id")
+    }
+
+    override fun getTableIdFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _tableIdFlow.asStateFlow()
     }
 
     override fun saveSessions(sessionsJson: String) {

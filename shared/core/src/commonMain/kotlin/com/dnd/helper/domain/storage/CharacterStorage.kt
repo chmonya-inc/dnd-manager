@@ -7,6 +7,7 @@ interface CharacterStorage {
     fun getCharacterId(): String?
     fun saveTableId(id: String)
     fun getTableId(): String?
+    fun getTableIdFlow(): kotlinx.coroutines.flow.Flow<String?>
     fun saveSessions(sessionsJson: String)
     fun getSessions(): String?
     fun saveTheme(themeName: String)

@@ -14,6 +14,7 @@ import org.koin.dsl.module
 class AndroidCharacterStorage(context: Context) : CharacterStorage {
     private val prefs = context.getSharedPreferences("dnd_helper_prefs", Context.MODE_PRIVATE)
     private val _serverAddressFlow = MutableStateFlow(getServerAddress())
+    private val _tableIdFlow = MutableStateFlow(getTableId())
 
     override fun saveCharacterId(id: String) {
         prefs.edit().putString("last_character_id", id).apply()
@@ -25,10 +26,15 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
 
     override fun saveTableId(id: String) {
         prefs.edit().putString("last_table_id", id).apply()
+        _tableIdFlow.value = id
     }
 
     override fun getTableId(): String? {
         return prefs.getString("last_table_id", null)
+    }
+
+    override fun getTableIdFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _tableIdFlow.asStateFlow()
     }
 
     override fun saveSessions(sessionsJson: String) {

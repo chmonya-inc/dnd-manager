@@ -143,6 +143,7 @@ class DesktopAudioPlayer : AudioPlayer {
 class DesktopCharacterStorage : CharacterStorage {
     private val prefs = Preferences.userRoot().node("com.dnd.helper")
     private val _serverAddressFlow = kotlinx.coroutines.flow.MutableStateFlow(getServerAddress())
+    private val _tableIdFlow = kotlinx.coroutines.flow.MutableStateFlow(getTableId())
 
     override fun saveCharacterId(id: String) {
         prefs.put("last_character_id", id)
@@ -154,10 +155,15 @@ class DesktopCharacterStorage : CharacterStorage {
 
     override fun saveTableId(id: String) {
         prefs.put("last_table_id", id)
+        _tableIdFlow.value = id
     }
 
     override fun getTableId(): String? {
         return prefs.get("last_table_id", null)
+    }
+
+    override fun getTableIdFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _tableIdFlow.asStateFlow()
     }
 
     override fun saveSessions(sessionsJson: String) {

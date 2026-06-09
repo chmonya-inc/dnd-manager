@@ -10,10 +10,7 @@ import com.dnd.helper.domain.storage.CharacterStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class CharacterRepositoryImpl(
@@ -23,18 +20,17 @@ class CharacterRepositoryImpl(
 
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    override val remoteUpdates: SharedFlow<String> = dataSource.observeUpdates()
+        .shareIn(repositoryScope, SharingStarted.Eagerly, replay = 0)
+
     init {
         repositoryScope.launch {
-            storage.getServerAddressFlow().collect {
-                println("[CharacterRepository] Server address changed, clearing caches")
-                charactersCache = null
-                heavyCharacterCache.clear()
-                locationsCache = null
-                battlefieldsCache = null
-                monstersCache = null
-                npcsCache = null
-                musicCache = null
-                eventsCache = null
+            combine(
+                storage.getServerAddressFlow(),
+                storage.getTableIdFlow()
+            ) { _, _ -> }.collect {
+                println("[CharacterRepository] Server address or Table ID changed, clearing caches")
+                clearCaches()
                 
                 // Trigger refresh in all observing ViewModels
                 _characterUpdates.tryEmit("all")
@@ -42,6 +38,40 @@ class CharacterRepositoryImpl(
                 _monsterUpdates.tryEmit("all")
                 _locationUpdates.tryEmit("all")
                 _battlefieldUpdates.tryEmit("all")
+            }
+        }
+
+        repositoryScope.launch {
+            remoteUpdates.collect { updateMessage ->
+                val parts = updateMessage.split(":")
+                val updateType = parts[0]
+                val entityId = if (parts.size > 1) parts[1] else null
+
+                println("[CharacterRepository] Remote update received: $updateMessage")
+                
+                when (updateType) {
+                    "characters" -> {
+                        charactersCache = null
+                        if (entityId != null) heavyCharacterCache.remove(entityId)
+                        _characterUpdates.tryEmit(entityId ?: "all")
+                    }
+                    "npcs" -> {
+                        npcsCache = null
+                        _npcUpdates.tryEmit(entityId ?: "all")
+                    }
+                    "monsters" -> {
+                        monstersCache = null
+                        _monsterUpdates.tryEmit(entityId ?: "all")
+                    }
+                    "locations" -> {
+                        locationsCache = null
+                        _locationUpdates.tryEmit(entityId ?: "all")
+                    }
+                    "battlefields" -> {
+                        battlefieldsCache = null
+                        _battlefieldUpdates.tryEmit(entityId ?: "all")
+                    }
+                }
             }
         }
     }
@@ -61,7 +91,16 @@ class CharacterRepositoryImpl(
     private val _battlefieldUpdates = MutableSharedFlow<String>(extraBufferCapacity = 1)
     override val battlefieldUpdates: SharedFlow<String> = _battlefieldUpdates.asSharedFlow()
 
-    override val remoteUpdates: Flow<String> = dataSource.observeUpdates()
+    private fun clearCaches() {
+        charactersCache = null
+        heavyCharacterCache.clear()
+        locationsCache = null
+        battlefieldsCache = null
+        monstersCache = null
+        npcsCache = null
+        musicCache = null
+        eventsCache = null
+    }
 
     // Simple in-memory caches to make UI instant
     private var charactersCache: List<Character>? = null

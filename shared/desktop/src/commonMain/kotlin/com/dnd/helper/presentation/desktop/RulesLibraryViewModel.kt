@@ -23,6 +23,7 @@ enum class RuleCategory {
 
 data class RulesLibraryState(
     val selectedCategory: RuleCategory = RuleCategory.CharacterData,
+    val searchQuery: String = "",
     val isLoading: Boolean = false,
     
     // Character Data
@@ -73,6 +74,10 @@ class RulesLibraryViewModel(
 
     fun setCategory(category: RuleCategory) {
         _state.update { it.copy(selectedCategory = category) }
+    }
+
+    fun setSearchQuery(query: String) {
+        _state.update { it.copy(searchQuery = query) }
     }
 
     fun reload() {

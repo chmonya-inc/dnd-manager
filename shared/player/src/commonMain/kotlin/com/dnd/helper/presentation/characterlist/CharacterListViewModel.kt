@@ -77,28 +77,14 @@ class CharacterListViewModel(
             }
         }
 
-        // Listen for local updates (immediate refresh for cross-screen changes)
+        // Listen for local and remote updates via the repository's update flow
         viewModelScope.launch {
             repository.characterUpdates.collect { updatedId ->
-                println("[CharacterList] Received local update for $updatedId — reloading list")
-                loadCharacters(forceRefresh = true)
-            }
-        }
-
-        // Listen for remote updates via WebSocket
-        viewModelScope.launch {
-            repository.remoteUpdates.collect { updateMessage ->
-                val parts = updateMessage.split(":")
-                val updateType = parts[0]
-                val entityId = if (parts.size > 1) parts[1] else null
-
-                if (updateType == "characters") {
-                    if (pendingSaveCount > 0) {
-                        println("[CharacterList] Remote update received but we have $pendingSaveCount pending saves — skipping reload.")
-                    } else {
-                        println("[CharacterList] Remote update received via WebSocket for $entityId, reloading characters...")
-                        loadCharacters(forceRefresh = true)
-                    }
+                if (pendingSaveCount > 0) {
+                    println("[CharacterList] Update received for $updatedId but we have $pendingSaveCount pending saves — skipping reload.")
+                } else {
+                    println("[CharacterList] Received update for $updatedId — reloading list")
+                    loadCharacters(forceRefresh = true)
                 }
             }
         }

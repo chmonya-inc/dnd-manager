@@ -46,11 +46,17 @@ class KtorRemoteDataSource(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun observeUpdates(): Flow<String> = storage.getServerAddressFlow().flatMapLatest { address ->
+    fun observeUpdates(): Flow<String> = kotlinx.coroutines.flow.combine(
+        storage.getServerAddressFlow(),
+        storage.getTableIdFlow()
+    ) { address, tableId ->
+        address to tableId
+    }.flatMapLatest { (address, tableId) ->
         flow {
             while (true) {
                 try {
-                    val url = "${wsUrl(address)}/api/${sessionId()}/ws"
+                    val currentTableId = tableId ?: "default"
+                    val url = "${wsUrl(address)}/api/$currentTableId/ws"
                     println("[KtorRemoteDataSource] Connecting to WebSocket: $url")
                     httpClient.webSocket(url) {
                         // Send a "check" message every 1 second to trigger update notifications
