@@ -18,8 +18,9 @@ COPY models/build.gradle.kts models
 COPY web/build.gradle.kts web
 
 # Copy source code - use simple COPY
-COPY shared/src shared/src
 COPY models/src models/src
+COPY shared/core/src shared/core/src
+COPY shared/player/src shared/player/src
 COPY web/src web/src
 
 COPY apps-script apps-script
@@ -29,7 +30,7 @@ COPY properties/web.properties ./local.properties
 RUN chmod +x gradlew
 
 # Build only the web
-RUN ./gradlew :web:wasmJsBrowserRun --no-daemon
+RUN ./gradlew :web:wasmJsBrowserDistribution --no-daemon
 
 # Stage 2: Runtime stage
 FROM eclipse-temurin:21-jre-alpine AS runtime
