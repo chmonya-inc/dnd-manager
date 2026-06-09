@@ -280,13 +280,15 @@ fun CharacterDetailScreen(
                 Text(text = state.error!!, color = MaterialTheme.colorScheme.error)
             } else {
                 state.character?.let { character ->
+                    val effectiveMasterMode = if (isDesktop) state.isMasterMode else false
+                    
                     when (selectedTab) {
                         0 -> OverviewTab(character, viewModel::onEvent, state.lastDeathSaveRoll)
                         1 -> StatsTab(character)
-                        2 -> InventoryTab(items = character.items, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
-                        3 -> CombatTab(character, isMasterMode = state.isMasterMode)
-                        4 -> SpellsTab(character.spells)
-                        5 -> FeaturesTab(character, isMasterMode = state.isMasterMode)
+                        2 -> InventoryTab(items = character.items, onEvent = viewModel::onEvent, isMasterMode = effectiveMasterMode)
+                        3 -> CombatTab(character, isMasterMode = effectiveMasterMode)
+                        4 -> SpellsTab(character.spells, onEvent = viewModel::onEvent, isMasterMode = effectiveMasterMode)
+                        5 -> FeaturesTab(character, isMasterMode = effectiveMasterMode)
                     }
                 }
             }

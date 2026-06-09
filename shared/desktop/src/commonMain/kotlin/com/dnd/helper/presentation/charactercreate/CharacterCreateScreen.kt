@@ -640,7 +640,7 @@ fun <T> DropdownMenuField(
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
-                modifier = Modifier.background(Color(0xFF1B241C))
+                modifier = Modifier.background(Color(0xFF1B241C)).heightIn(max = 400.dp)
             ) {
                 options.forEach { option ->
                     val text = optionLabel(option)
@@ -724,9 +724,9 @@ fun <T> MultiSelectDropdownField(
                 ExposedDropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
-                    modifier = Modifier.background(Color(0xFF1B241C))
+                    modifier = Modifier.background(Color(0xFF1B241C)).heightIn(max = 400.dp)
                 ) {
-                    filteredOptions.take(10).forEach { optionText ->
+                    filteredOptions.forEach { optionText ->
                         DropdownMenuItem(
                             text = { Text(optionText, color = Color.White) },
                             onClick = {
@@ -751,7 +751,7 @@ fun <T> MultiSelectDropdownField(
                 ExposedDropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
-                    modifier = Modifier.background(Color(0xFF1B241C))
+                    modifier = Modifier.background(Color(0xFF1B241C)).heightIn(max = 400.dp)
                 ) {
                     DropdownMenuItem(
                         text = { Text("Add custom: \"$searchText\"", color = Color.White) },

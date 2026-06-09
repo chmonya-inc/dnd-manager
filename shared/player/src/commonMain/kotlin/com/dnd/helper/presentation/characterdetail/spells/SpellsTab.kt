@@ -31,7 +31,7 @@ import com.dnd.helper.domain.model.Spell
 fun SpellsTab(
     spells: List<Spell>,
     onEvent: (com.dnd.helper.presentation.characterdetail.CharacterDetailEvent) -> Unit = {},
-    isMasterMode: Boolean = true,
+    isMasterMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     var selectedSpell by remember { mutableStateOf<Spell?>(null) }

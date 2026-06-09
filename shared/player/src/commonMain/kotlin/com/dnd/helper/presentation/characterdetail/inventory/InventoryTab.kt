@@ -39,7 +39,7 @@ import com.dnd.helper.presentation.utils.toColor
 fun InventoryTab(
     items: List<Item>,
     onEvent: (CharacterDetailEvent) -> Unit,
-    isMasterMode: Boolean = true,
+    isMasterMode: Boolean = false,
 ) {
     val equippedItems = remember(items) {
         items.filter { it.equipped }.associateBy { it.slot }

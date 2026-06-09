@@ -118,7 +118,6 @@ fun SpellDetailDialog(
 
                 if (isMasterMode) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = editedSpell.name, onValueChange = { editedSpell = editedSpell.copy(name = it); onUpdate(editedSpell) }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
                         OutlinedTextField(value = editedSpell.iconUrl ?: "", onValueChange = { editedSpell = editedSpell.copy(iconUrl = it.ifBlank { null }); onUpdate(editedSpell) }, label = { Text("Icon URL") }, modifier = Modifier.fillMaxWidth())
                         
                         // AI Generation Section
@@ -171,7 +170,7 @@ fun SpellDetailDialog(
                     // Simplified View for Players
                     if (editedSpell.school.isNotBlank()) {
                         SpellTag(editedSpell.school, getSpellDamageColor(editedSpell.damageType).copy(alpha = 0.15f))
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(12.dp))
                     }
 
                     if (editedSpell.damage.isNotBlank()) {
