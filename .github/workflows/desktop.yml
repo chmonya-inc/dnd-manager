@@ -7,16 +7,19 @@ jobs:
   manual-approval:
     name: Manual Approval
     runs-on: ubuntu-latest
-    if: success() # Only proceed if terraform-plan job succeeds
-
     permissions:
       issues: write
-
     steps:
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Await Manual Approval
         uses: trstringer/manual-approval@v1
         with:
-          secret: ${{ github.TOKEN }}
+          secret: ${{ steps.generate_token.outputs.token }}
           approvers: dnd-manager-developers
           minimum-approvals: 1
           issue-title: "Manual Approval Required for build"
