@@ -10,7 +10,7 @@ COPY build.gradle.kts .
 COPY settings.gradle.kts .
 
 # Create dummy module directories
-RUN mkdir -p desktop android web app shared server models
+RUN mkdir -p desktop android web app shared/core shared/player server models
 
 # Copy build files (use simple COPY without shell redirection)
 COPY models/build.gradle.kts models
