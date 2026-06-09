@@ -1,8 +1,8 @@
 name: DND Manager Api
 
 on:
-  push:
-    branches: api
+  pull-request:
+    branches: master
 
 env:
   RELEASE_NAME: dndmanager-api
@@ -11,7 +11,29 @@ env:
   DOCKERFILE: dockerfiles/api.Dockerfile
 
 jobs:
+  manual-approval:
+    name: Manual Approval
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: Await Manual Approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ steps.generate_token.outputs.token }}
+          approvers: dnd-manager-developers
+          minimum-approvals: 1
+          issue-title: "Api build"
+          issue-body: "Please approve or deny the build"
+
   build:
+    needs: manual-approval
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout
@@ -34,6 +56,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/arm64
+
   deploy:
     needs: build
     runs-on: raspberrypi
