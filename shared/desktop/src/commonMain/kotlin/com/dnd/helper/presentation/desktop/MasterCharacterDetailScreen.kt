@@ -309,7 +309,7 @@ private fun MasterContent(
             }
 
             Spacer(Modifier.height(16.dp))
-            ExpandableSection(title = "Biography & Notes", icon = Icons.AutoMirrored.Filled.Notes, color = MaterialTheme.colorScheme.secondary, initialExpanded = false) {
+            ExpandableSection(title = "Biography", icon = Icons.AutoMirrored.Filled.Notes, color = MaterialTheme.colorScheme.secondary, initialExpanded = false) {
                 if (state.isMasterMode) {
                     OutlinedTextField(
                         value = character.description,

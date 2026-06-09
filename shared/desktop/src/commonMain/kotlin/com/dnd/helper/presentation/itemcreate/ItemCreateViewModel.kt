@@ -17,6 +17,9 @@ import com.dnd.helper.domain.repository.GenerationStatus
 import com.dnd.helper.data.remote.GenerationType
 import com.dnd.helper.data.remote.PromptGenerator
 
+import com.dnd.helper.domain.common.AppError
+import com.dnd.helper.domain.common.toUserMessage
+
 class ItemCreateViewModel(
     private val repository: CharacterRepository,
     private val editingRepository: EditingRepository,
@@ -60,16 +63,22 @@ class ItemCreateViewModel(
     init {
         viewModelScope.launch {
             editingRepository.activeTasks.collect { tasks ->
-                val myTasks = tasks.filter { it.entityId == tempId }
-                myTasks.forEach { task ->
+                tasks.forEach { task ->
                     if (task.status == GenerationStatus.COMPLETED && task.resultUrl != null) {
+                        var changed = false
                         _state.update { currentState ->
                             if (task.entityType == "item" && currentState.imageUrl == "generating:${task.id}") {
+                                changed = true
                                 currentState.copy(imageUrl = task.resultUrl!!)
                             } else currentState
                         }
-                    } else if (task.status == GenerationStatus.FAILED) {
-                        // could show error
+                        
+                        // If the image was successfully generated while this screen is open,
+                        // and we already have a character owner, auto-save the update 
+                        // so the parent screen picks it up immediately.
+                        if (changed && _state.value.characterId.isNotBlank()) {
+                            saveItem()
+                        }
                     }
                 }
             }
@@ -163,43 +172,54 @@ class ItemCreateViewModel(
                 weight = weightDouble,
                 type = currentState.type,
                 properties = currentState.properties,
-                imageUrl = currentState.imageUrl.takeIf { !it.startsWith("generating:") && it.isNotBlank() }
+                imageUrl = currentState.imageUrl.takeIf { it.isNotBlank() }
             )
-            
-            val result = repository.saveItem(itemToSave)
             
             // Also assign to character if needed
             val char = currentState.characters.find { it.id == currentState.characterId }
-            if (char != null) {
-                val newItems = if (currentState.itemId != null) {
-                    char.items.map { if (it.id == currentState.itemId) itemToSave else it }
+            val result = if (char != null) {
+                val itemExists = char.items.any { it.id == itemToSave.id }
+                val newItems = if (itemExists) {
+                    char.items.map { if (it.id == itemToSave.id) itemToSave else it }
                 } else {
                     char.items + itemToSave
                 }
                 repository.saveCharacter(char.copy(items = newItems))
+            } else {
+                // If no character, we can't save the item since it's connected to character
+                Result.Error(AppError.Unknown("Item must have an owner to be saved"))
             }
             
             if (result is Result.Success) {
                 _state.update { it.copy(isSaving = false, isSaveSuccessful = true) }
             } else {
-                _state.update { it.copy(isSaving = false, saveError = "Failed to save item") }
+                val error = when (result) {
+                    is Result.Error -> result.error.toUserMessage()
+                    else -> "Failed to save item"
+                }
+                _state.update { it.copy(isSaving = false, saveError = error) }
             }
         }
     }
 
     private fun generateImage() {
-        if (_state.value.aiPrompt.isBlank()) return
+        val s = _state.value
+        if (s.aiPrompt.isBlank()) return
         
+        val actualId = s.itemId ?: tempId
+        val charId = s.characterId.ifBlank { "item-only" }
+        val entityId = "$charId:$actualId"
+
         viewModelScope.launch {
             val taskId = editingRepository.startGeneration(
-                entityId = tempId,
+                entityId = entityId,
                 entityType = "item",
-                prompt = _state.value.aiPrompt,
+                prompt = s.aiPrompt,
                 genType = GenerationType.ITEM,
-                width = _state.value.aiWidth.toIntOrNull() ?: 1024,
-                height = _state.value.aiHeight.toIntOrNull() ?: 1024
+                width = s.aiWidth.toIntOrNull() ?: 1024,
+                height = s.aiHeight.toIntOrNull() ?: 1024
             )
-            _state.value = _state.value.copy(imageUrl = taskId)
+            _state.update { it.copy(imageUrl = taskId) }
         }
     }
 }

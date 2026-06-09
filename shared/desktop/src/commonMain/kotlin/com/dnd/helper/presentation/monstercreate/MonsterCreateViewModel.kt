@@ -35,10 +35,16 @@ class MonsterCreateViewModel(
                 val myTasks = tasks.filter { it.entityId == tempId }
                 myTasks.forEach { task ->
                     if (task.status == GenerationStatus.COMPLETED && task.resultUrl != null) {
+                        var changed = false
                         _state.update { currentState ->
                             if (task.entityType == "monster" && (currentState.imageUrl == task.id || currentState.imageUrl == "generating:${task.id}")) {
+                                changed = true
                                 currentState.copy(imageUrl = task.resultUrl!!)
                             } else currentState
+                        }
+                        // If it's a real monster (not a temporary fresh one), auto-save the image update
+                        if (changed && !tempId.startsWith("temp-monster-")) {
+                            saveMonster()
                         }
                     } else if (task.status == GenerationStatus.FAILED) {
                         _state.update { currentState ->
@@ -196,16 +202,17 @@ class MonsterCreateViewModel(
     }
 
     private fun generateImage() {
-        if (_state.value.aiPrompt.isBlank()) return
+        val s = _state.value
+        if (s.aiPrompt.isBlank()) return
         
         viewModelScope.launch {
             val taskId = editingRepository.startGeneration(
                 entityId = tempId,
                 entityType = "monster",
-                prompt = _state.value.aiPrompt,
+                prompt = s.aiPrompt,
                 genType = GenerationType.MONSTER,
-                width = _state.value.aiWidth,
-                height = _state.value.aiHeight
+                width = s.aiWidth,
+                height = s.aiHeight
             )
             _state.value = _state.value.copy(imageUrl = taskId)
         }
@@ -220,7 +227,7 @@ class MonsterCreateViewModel(
                 id = tempId,
                 name = s.name.ifBlank { "Unknown Monster" },
                 description = s.description,
-                imageUrl = s.imageUrl.takeIf { !it.startsWith("generating:") && it.isNotBlank() },
+                imageUrl = s.imageUrl.takeIf { it.isNotBlank() },
                 stats = CharacterStats(
                     strength = s.strength.toIntOrNull() ?: 10,
                     dexterity = s.dexterity.toIntOrNull() ?: 10,

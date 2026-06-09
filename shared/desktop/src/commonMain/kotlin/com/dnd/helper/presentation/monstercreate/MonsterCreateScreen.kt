@@ -62,15 +62,16 @@ fun MonsterCreateScreen(
 
     Scaffold(
         containerColor = Color(0xFF0A0F0A), // Very dark green background
-        topBar = {
-            TopAppBar(
-                title = { Text(if (initialMonster == null) "Create Monster" else "Edit Monster", fontWeight = FontWeight.Bold, color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                actions = {
+        bottomBar = {
+            BottomAppBar(
+                containerColor = Color(0xFF0A0F0A),
+                contentPadding = PaddingValues(horizontal = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     if (state.isSaving) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Color(0xFF4CAF50))
                     } else {
@@ -78,12 +79,11 @@ fun MonsterCreateScreen(
                             onClick = { viewModel.onEvent(MonsterCreateEvent.SaveMonster) },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                         ) {
-                            Text(if (initialMonster == null) "Create" else "Update")
+                            Text(if (initialMonster == null) "Create Monster" else "Update Monster")
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0A0F0A))
-            )
+                }
+            }
         }
     ) { padding ->
         Row(
@@ -141,6 +141,11 @@ fun MonsterCreateScreen(
                                     value = state.challengeRating,
                                     onValueChange = { viewModel.onEvent(MonsterCreateEvent.ChallengeRatingChanged(it)) },
                                     label = "CR"
+                                )
+                                MonsterTextField(
+                                    value = state.imageUrl,
+                                    onValueChange = { viewModel.onEvent(MonsterCreateEvent.ImageUrlChanged(it)) },
+                                    label = "Image URL"
                                 )
                             }
                         }

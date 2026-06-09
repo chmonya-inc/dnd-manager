@@ -21,7 +21,6 @@ import com.dnd.helper.presentation.characterdetail.CharacterDetailEvent
 @Composable
 fun FeaturesTab(
     character: Character,
-    onEvent: (CharacterDetailEvent) -> Unit = {},
     isMasterMode: Boolean = false,
 ) {
     Column(
@@ -112,13 +111,6 @@ fun FeaturesTab(
         FeatureSection(
             title = "Feats",
             items = character.features.feats,
-            isMasterMode = isMasterMode
-        )
-
-        // Notes
-        NotesSection(
-            notes = character.notes,
-            onEvent = onEvent,
             isMasterMode = isMasterMode
         )
 
@@ -244,96 +236,6 @@ private fun FeatureSection(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun NotesSection(
-    notes: List<Note>,
-    onEvent: (CharacterDetailEvent) -> Unit,
-    isMasterMode: Boolean
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Personal Notes",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        IconButton(onClick = { onEvent(CharacterDetailEvent.AddNote) }) {
-            Icon(Icons.Default.Add, contentDescription = "Add Note")
-        }
-    }
-
-    if (notes.isEmpty()) {
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "No notes yet",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                )
-            }
-        }
-    } else {
-        notes.forEach { note ->
-            NoteCard(note = note, onEvent = onEvent, isMasterMode = isMasterMode)
-        }
-    }
-}
-
-@Composable
-private fun NoteCard(
-    note: Note,
-    onEvent: (CharacterDetailEvent) -> Unit,
-    isMasterMode: Boolean
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                OutlinedTextField(
-                    value = note.title,
-                    onValueChange = { onEvent(CharacterDetailEvent.UpdateNote(note.copy(title = it))) },
-                    placeholder = { Text("Note Title") },
-                    textStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedBorderColor = Color.Transparent
-                    )
-                )
-                IconButton(onClick = { onEvent(CharacterDetailEvent.RemoveNote(note.id)) }) {
-                    Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
-                }
-            }
-            
-            OutlinedTextField(
-                value = note.content,
-                onValueChange = { onEvent(CharacterDetailEvent.UpdateNote(note.copy(content = it))) },
-                placeholder = { Text("Add content here...") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 2,
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = Color.Transparent
-                )
-            )
         }
     }
 }

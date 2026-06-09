@@ -145,14 +145,6 @@ class KtorRemoteDataSource(
     suspend fun deleteMonster(id: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/monsters/$id") }
 
-    suspend fun saveItem(item: Item): Result<Unit> =
-        safeApiCall {
-            httpClient.post("${baseUrl()}/api/${sessionId()}/items") {
-                contentType(ContentType.Application.Json)
-                setBody(item)
-            }
-        }
-
     suspend fun getNpcs(): Result<List<Npc>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/npcs") }
 

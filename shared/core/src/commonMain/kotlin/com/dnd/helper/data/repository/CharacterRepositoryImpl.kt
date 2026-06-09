@@ -280,12 +280,6 @@ class CharacterRepositoryImpl(
         return result
     }
 
-    override suspend fun saveItem(item: Item): Result<Unit> {
-        val result = dataSource.saveItem(item)
-        // triggerItemUpdate(item.id) // if applicable
-        return result
-    }
-
     override suspend fun deleteMonster(id: String): Result<Unit> {
         val result = dataSource.deleteMonster(id)
         if (result is Result.Success) monstersCache = null

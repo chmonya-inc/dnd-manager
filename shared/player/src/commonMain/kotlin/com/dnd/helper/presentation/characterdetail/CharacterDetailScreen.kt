@@ -285,7 +285,7 @@ fun CharacterDetailScreen(
                         1 -> StatsTab(character)
                         2 -> InventoryTab(items = character.items, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
                         3 -> CombatTab(character, isMasterMode = state.isMasterMode)
-                        4 -> FeaturesTab(character, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
+                        4 -> FeaturesTab(character, isMasterMode = state.isMasterMode)
                         5 -> SkillsTab(character, isMasterMode = state.isMasterMode)
                     }
                 }

@@ -39,19 +39,6 @@ fun ItemCreateScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(if (state.itemId == null) "Create Item" else "Edit Item") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        viewModel.onEvent(ItemCreateEvent.BackClicked)
-                        onNavigateBack()
-                    }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
         bottomBar = {
             BottomAppBar {
                 Button(

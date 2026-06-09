@@ -91,6 +91,14 @@ fun CharacterCreateScreen(
 
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
+                            value = state.imageUrl,
+                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.ImageUrlChanged(it)) },
+                            label = { Text("Image URL") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
                             value = state.aiPrompt,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiPromptChanged(it)) },
                             label = { Text("AI Prompt (Auto-generated)") },

@@ -68,22 +68,28 @@ class CharacterDetailViewModel(
                         val resultUrl = if (task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED) task.resultUrl else ""
                         
                         if (task.entityType == "character") {
+                            var updatedChar: com.dnd.helper.domain.model.Character? = null
                             _state.update { currentState ->
                                 var nextState = currentState
                                 // Update main character
                                 if (currentState.character?.imageUrl == "generating:${task.id}") {
                                     val updated = currentState.character.copy(imageUrl = resultUrl)
                                     nextState = nextState.copy(character = updated)
+                                    updatedChar = updated
                                 }
                                 // Update edited character
                                 if (currentState.editedCharacter?.imageUrl == "generating:${task.id}") {
-                                    nextState = nextState.copy(editedCharacter = currentState.editedCharacter.copy(imageUrl = resultUrl))
+                                    val updated = currentState.editedCharacter.copy(imageUrl = resultUrl)
+                                    nextState = nextState.copy(editedCharacter = updated)
+                                    if (updatedChar == null) updatedChar = updated
                                 }
                                 nextState
                             }
+                            updatedChar?.let { scheduleDebouncedSave(it) }
                         } else if (task.entityType == "item") {
                             val itemId = task.entityId.substringAfter(":")
                             
+                            var updatedChar: com.dnd.helper.domain.model.Character? = null
                             _state.update { currentState ->
                                 var nextState = currentState
                                 // Update in main character
@@ -92,17 +98,21 @@ class CharacterDetailViewModel(
                                         val newItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
                                         val updated = char.copy(items = newItems)
                                         nextState = nextState.copy(character = updated)
+                                        updatedChar = updated
                                     }
                                 }
                                 // Update in edited character
                                 currentState.editedCharacter?.let { char ->
                                     if (char.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
                                         val newItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
-                                        nextState = nextState.copy(editedCharacter = char.copy(items = newItems))
+                                        val updated = char.copy(items = newItems)
+                                        nextState = nextState.copy(editedCharacter = updated)
+                                        if (updatedChar == null) updatedChar = updated
                                     }
                                 }
                                 nextState
                             }
+                            updatedChar?.let { scheduleDebouncedSave(it) }
                         }
                     }
                 }
