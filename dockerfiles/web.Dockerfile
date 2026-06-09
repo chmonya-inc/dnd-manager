@@ -24,8 +24,6 @@ COPY shared/core/src shared/core/src
 COPY shared/player/src shared/player/src
 COPY web/src web/src
 
-COPY apps-script apps-script
-
 COPY properties/web.properties ./local.properties
 
 RUN chmod +x gradlew
@@ -34,19 +32,12 @@ RUN chmod +x gradlew
 RUN ./gradlew :web:wasmJsBrowserDistribution --no-daemon
 
 # Stage 2: Runtime stage
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM nginx:alpine AS runtime
 
-RUN addgroup -S dndhelper && adduser -S dndhelper -G dndhelper
-
-WORKDIR /app
-
-COPY --from=build /app/web/build/install/web /app
-COPY --from=build /app/apps-script ./apps-script
+COPY --from=build /app/web/build/dist/wasmJs/productionExecutable /usr/share/nginx/html
 
 RUN chown -R dndhelper:dndhelper /app
 
-USER dndhelper
-
 EXPOSE 8081
 
-CMD ["./bin/web"]
+CMD ["nginx", "-g", "daemon off;"]

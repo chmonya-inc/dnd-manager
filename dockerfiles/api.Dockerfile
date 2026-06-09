@@ -22,8 +22,6 @@ COPY shared/src shared/src
 COPY models/src models/src
 COPY server/src server/src
 
-COPY apps-script apps-script
-
 RUN chmod +x gradlew
 
 # Build only the server
@@ -37,7 +35,6 @@ RUN addgroup -S dndhelper && adduser -S dndhelper -G dndhelper
 WORKDIR /app
 
 COPY --from=build /app/server/build/install/server /app
-COPY --from=build /app/apps-script ./apps-script
 
 RUN chown -R dndhelper:dndhelper /app
 
