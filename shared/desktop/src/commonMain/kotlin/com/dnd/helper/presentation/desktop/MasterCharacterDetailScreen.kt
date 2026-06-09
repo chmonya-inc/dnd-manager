@@ -39,7 +39,7 @@ import com.dnd.helper.presentation.characterdetail.CharacterDetailState
 import com.dnd.helper.presentation.characterdetail.combat.CombatTab
 import com.dnd.helper.presentation.characterdetail.features.FeaturesTab
 import com.dnd.helper.presentation.characterdetail.inventory.InventoryTab
-import com.dnd.helper.presentation.characterdetail.skills.SkillsTab
+import com.dnd.helper.presentation.characterdetail.spells.SpellsTab
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -56,6 +56,7 @@ private val NotesColor = Color(0xFF795548) // Brown for notes
 @Composable
 fun MasterCharacterDetailScreen(
     viewModel: CharacterDetailViewModel,
+    onEditClick: (com.dnd.helper.domain.model.Character) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -117,13 +118,7 @@ fun MasterCharacterDetailScreen(
                         }) {
                             Icon(imageVector = Icons.Default.Tv, contentDescription = "Present")
                         }
-                        IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.ToggleMasterMode) }) {
-                            Icon(
-                                imageVector = if (state.isMasterMode) Icons.Default.LockOpen else Icons.Default.Lock,
-                                contentDescription = "Master Mode",
-                                tint = if (state.isMasterMode) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                            )
-                        }
+                        
                         if (state.isEditing) {
                             IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.SaveChanges) }) {
                                 Icon(imageVector = Icons.Default.Check, contentDescription = "Save", tint = Color(0xFF4CAF50))
@@ -141,7 +136,9 @@ fun MasterCharacterDetailScreen(
                                     )
                                 }
                             }
-                            IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.ToggleEdit) }) {
+                            IconButton(onClick = { 
+                                state.character?.let { onEditClick(it) }
+                            }) {
                                 Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
                             }
                             IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.Refresh) }) {
@@ -262,16 +259,15 @@ private fun MasterContent(
                     EditFields(displayChar, state, viewModel)
                 }
             } else {
-                // Middle Column: Stats and Skills
+                // Middle Column: Stats and Spells
                 Column(modifier = Modifier.weight(1.2f)) {
                     ExpandableSection(title = "Core Stats", icon = Icons.Default.FitnessCenter, color = StatsColor, initialExpanded = true) {
                         MasterStatsGrid(character, viewModel)
                     }
                     Spacer(Modifier.height(12.dp))
-                    ExpandableSection(title = "Skills & Proficiencies", icon = Icons.Default.AutoFixHigh, color = SkillsColor, initialExpanded = true) {
-                        // Constrain height to avoid infinity constraint crash with nested LazyVerticalGrid
-                        Box(modifier = Modifier.heightIn(max = 450.dp)) {
-                            SkillsTab(character, viewModel::onEvent, isMasterMode = state.isMasterMode)
+                    ExpandableSection(title = "Spells & Magic", icon = Icons.Default.AutoFixHigh, color = CombatColor, initialExpanded = true) {
+                        Box(modifier = Modifier.heightIn(max = 700.dp)) {
+                            SpellsTab(spells = character.spells, onEvent = viewModel::onEvent, isMasterMode = true)
                         }
                     }
                 }
@@ -288,13 +284,12 @@ private fun MasterContent(
                     ExpandableSection(title = "Equipment & Items", icon = Icons.Default.ShoppingBag, color = InventoryColor, initialExpanded = true) {
                         // Constrain height to avoid infinity constraint crash with nested LazyVerticalGrid
                         Box(modifier = Modifier.heightIn(max = 450.dp)) {
-                            InventoryTab(items = character.items, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
+                            InventoryTab(items = character.items, onEvent = viewModel::onEvent, isMasterMode = true)
                         }
                     }
                     Spacer(Modifier.height(12.dp))
                     ExpandableSection(title = "Features & Traits", icon = Icons.Default.Star, color = FeaturesColor, initialExpanded = false) {
-                        // FeaturesTab internally uses a verticalScroll.
-                        Box(modifier = Modifier.heightIn(max = 500.dp)) {
+                        Box(modifier = Modifier.heightIn(max = 450.dp)) {
                             FeaturesTab(character, isMasterMode = state.isMasterMode)
                         }
                     }

@@ -48,6 +48,30 @@ class CharacterListViewModel(
                                 val newChars = currentState.characters.map { if (it.id == task.entityId) it.copy(imageUrl = resultUrl) else it }
                                 _state.value = currentState.copy(characters = newChars)
                             }
+                        } else if (task.entityType == "item") {
+                            val parts = task.entityId.split(":")
+                            if (parts.size == 2) {
+                                val charId = parts[0]
+                                val itemId = parts[1]
+                                val char = currentState.characters.find { it.id == charId }
+                                if (char != null && char.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
+                                    val newItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
+                                    val newChars = currentState.characters.map { if (it.id == charId) it.copy(items = newItems) else it }
+                                    _state.value = currentState.copy(characters = newChars)
+                                }
+                            }
+                        } else if (task.entityType == "spell") {
+                            val parts = task.entityId.split(":")
+                            if (parts.size == 2) {
+                                val charId = parts[0]
+                                val spellId = parts[1]
+                                val char = currentState.characters.find { it.id == charId }
+                                if (char != null && char.spells.any { it.id == spellId && it.iconUrl == "generating:${task.id}" }) {
+                                    val newSpells = char.spells.map { if (it.id == spellId) it.copy(iconUrl = resultUrl) else it }
+                                    val newChars = currentState.characters.map { if (it.id == charId) it.copy(spells = newSpells) else it }
+                                    _state.value = currentState.copy(characters = newChars)
+                                }
+                            }
                         }
                     }
             }
@@ -86,7 +110,7 @@ class CharacterListViewModel(
             when (val result = repository.getInitialData()) {
                 is Result.Success -> {
                     _state.value = _state.value.copy(
-                        characters = result.data.characters,
+                        characters = result.data.characters.sortedBy { it.name },
                         isLoading = false,
                     )
                 }
@@ -180,7 +204,7 @@ class CharacterListViewModel(
             when (val result = repository.getCharacters(forceRefresh = forceRefresh)) {
                 is Result.Success -> {
                     _state.value = _state.value.copy(
-                        characters = result.data,
+                        characters = result.data.sortedBy { it.name },
                         isLoading = false,
                     )
                 }

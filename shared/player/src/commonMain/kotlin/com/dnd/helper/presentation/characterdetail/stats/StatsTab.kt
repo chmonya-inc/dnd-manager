@@ -116,44 +116,33 @@ fun StatsTab(character: Character) {
             color = MaterialTheme.colorScheme.primary
         )
 
-        val abilitiesForSkills = listOf("strength", "dexterity", "intelligence", "wisdom", "charisma")
-        val abilityLabels = mapOf(
-            "strength" to "Strength",
-            "dexterity" to "Dexterity",
-            "intelligence" to "Intelligence",
-            "wisdom" to "Wisdom",
-            "charisma" to "Charisma"
-        )
-
-        abilitiesForSkills.forEach { ability ->
-            val skills = DndSkill.byAbility(ability)
-            if (skills.isNotEmpty()) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = abilityLabels[ability] ?: ability,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                        skills.forEach { skill ->
-                            val abilityMod = stats.modifier(ability)
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                val allSkills = DndSkill.entries
+                allSkills.chunked(2).forEach { rowSkills ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        rowSkills.forEach { skill ->
+                            val abilityMod = stats.modifier(skill.ability)
                             val proficient = proficiencies.skills.any {
                                 it.equals(skill.name, ignoreCase = true) ||
                                 it.equals(skill.displayName, ignoreCase = true)
                             }
                             val total = abilityMod + (if (proficient) profBonus else 0)
-                            SaveOrSkillRow(
-                                label = skill.displayName,
-                                modifier = total,
-                                proficient = proficient,
-                                profBonus = profBonus
-                            )
+                            
+                            Box(modifier = Modifier.weight(1f)) {
+                                SaveOrSkillRow(
+                                    label = skill.displayName,
+                                    modifier = total,
+                                    proficient = proficient,
+                                    profBonus = profBonus
+                                )
+                            }
+                        }
+                        if (rowSkills.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }

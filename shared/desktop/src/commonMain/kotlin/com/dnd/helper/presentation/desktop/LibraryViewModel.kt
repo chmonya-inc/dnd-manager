@@ -166,23 +166,23 @@ class LibraryViewModel(
             when (_state.value.selectedType) {
                 LibraryType.Locations -> {
                     val result = repository.getLocations(forceRefresh = force)
-                    if (result is Result.Success) _state.value = _state.value.copy(locations = result.data, isLoading = false)
+                    if (result is Result.Success) _state.value = _state.value.copy(locations = result.data.sortedBy { it.name }, isLoading = false)
                 }
                 LibraryType.Battlefields -> {
                     val result = repository.getBattlefields(forceRefresh = force)
-                    if (result is Result.Success) _state.value = _state.value.copy(battlefields = result.data, isLoading = false)
+                    if (result is Result.Success) _state.value = _state.value.copy(battlefields = result.data.sortedBy { it.name }, isLoading = false)
                 }
                 LibraryType.Mobs -> {
                     val result = repository.getMonsters(forceRefresh = force)
-                    if (result is Result.Success) _state.value = _state.value.copy(monsters = result.data, isLoading = false)
+                    if (result is Result.Success) _state.value = _state.value.copy(monsters = result.data.sortedBy { it.name }, isLoading = false)
                 }
                 LibraryType.Npcs -> {
                     val result = repository.getNpcs(forceRefresh = force)
-                    if (result is Result.Success) _state.value = _state.value.copy(npcs = result.data, isLoading = false)
+                    if (result is Result.Success) _state.value = _state.value.copy(npcs = result.data.sortedBy { it.name }, isLoading = false)
                 }
                 LibraryType.Items, LibraryType.Templates -> {
                     val result = repository.getCharacters(forceRefresh = force)
-                    if (result is Result.Success) _state.value = _state.value.copy(characters = result.data, isLoading = false)
+                    if (result is Result.Success) _state.value = _state.value.copy(characters = result.data.sortedBy { it.name }, isLoading = false)
                 }
             }
         }

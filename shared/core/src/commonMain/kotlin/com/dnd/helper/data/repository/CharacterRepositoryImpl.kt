@@ -137,7 +137,7 @@ class CharacterRepositoryImpl(
                     newChar.copy(
                         items = heavy.items,
                         weapons = heavy.weapons,
-                        skills = heavy.skills,
+                        spells = heavy.spells,
                         features = heavy.features,
                         proficiencies = heavy.proficiencies,
                         notes = heavy.notes

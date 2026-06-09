@@ -1,16 +1,12 @@
 package com.dnd.helper.presentation.charactercreate
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,10 +22,12 @@ import org.koin.compose.viewmodel.koinViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.random.Random
 import com.dnd.helper.data.remote.dto.common.ApiReferenceDto
+import com.dnd.helper.theme.dndColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CharacterCreateScreen(
+    existingCharacter: com.dnd.helper.domain.model.Character? = null,
     onBackClick: () -> Unit,
     onCharacterCreated: () -> Unit,
 ) {
@@ -37,14 +35,56 @@ fun CharacterCreateScreen(
     val viewModel: CharacterCreateViewModel = koinViewModel(key = viewModelKey)
     val state by viewModel.state.collectAsStateWithLifecycle()
 
+    LaunchedEffect(existingCharacter) {
+        existingCharacter?.let { viewModel.onEvent(CharacterCreateEvent.LoadCharacter(it)) }
+    }
+
     if (state.isSaved) {
         onCharacterCreated()
         return
     }
 
-    Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Scaffold(
+        containerColor = Color(0xFF0A0F0A), // Dark background like monster creator
+        bottomBar = {
+            BottomAppBar(
+                containerColor = Color(0xFF0A0F0A),
+                contentPadding = PaddingValues(horizontal = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val errorMsg = state.error
+                    if (!errorMsg.isNullOrBlank()) {
+                        Text(
+                            text = errorMsg,
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(end = 16.dp)
+                        )
+                    }
+                    Button(
+                        onClick = { viewModel.onEvent(CharacterCreateEvent.SaveCharacter) },
+                        enabled = !state.isSaving,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                    ) {
+                        if (state.isSaving) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                            Spacer(Modifier.width(8.dp))
+                        }
+                        Text(if (existingCharacter == null) "Create Character" else "Update Character", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    ) { padding ->
         Row(
-            modifier = Modifier.fillMaxSize().padding(bottom = 60.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // COLUMN 1: Basic Info
@@ -60,7 +100,7 @@ fun CharacterCreateScreen(
                                 .fillMaxWidth()
                                 .height(200.dp)
                                 .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                                .border(1.dp, Color(0xFF2E7D32), RoundedCornerShape(8.dp))
                                 .background(Color.Black.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
                         ) {
@@ -74,12 +114,12 @@ fun CharacterCreateScreen(
                             }
                             
                             if (state.imageUrl.startsWith("generating")) {
-                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                CircularProgressIndicator(color = Color(0xFF4CAF50))
                             } else {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Button(
                                         onClick = { viewModel.onEvent(CharacterCreateEvent.GenerateImage) },
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f), contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32).copy(alpha = 0.8f), contentColor = Color.White)
                                     ) {
                                         Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
                                         Spacer(Modifier.width(8.dp))
@@ -90,32 +130,29 @@ fun CharacterCreateScreen(
                         }
 
                         Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
+                        CharacterTextField(
                             value = state.imageUrl,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ImageUrlChanged(it)) },
-                            label = { Text("Image URL") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            label = "Image URL"
                         )
                         Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
+                        CharacterTextField(
                             value = state.aiPrompt,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiPromptChanged(it)) },
-                            label = { Text("AI Prompt (Auto-generated)") },
-                            modifier = Modifier.fillMaxWidth(),
+                            label = "AI Prompt (Auto-generated)",
                             minLines = 2
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            OutlinedTextField(
+                            CharacterTextField(
                                 value = state.aiWidth.toString(),
                                 onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(it.toIntOrNull() ?: 1024, state.aiHeight)) },
-                                label = { Text("Width") },
+                                label = "Width",
                                 modifier = Modifier.weight(1f)
                             )
-                            OutlinedTextField(
+                            CharacterTextField(
                                 value = state.aiHeight.toString(),
                                 onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(state.aiWidth, it.toIntOrNull() ?: 1024)) },
-                                label = { Text("Height") },
+                                label = "Height",
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -123,24 +160,23 @@ fun CharacterCreateScreen(
                         Spacer(Modifier.height(16.dp))
                         
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(
+                            CharacterTextField(
                                 value = state.name,
                                 onValueChange = { viewModel.onEvent(CharacterCreateEvent.NameChanged(it)) },
-                                label = { Text("Character Name") },
-                                modifier = Modifier.weight(2f),
-                                singleLine = true
+                                label = "Character Name",
+                                modifier = Modifier.weight(2f)
                             )
                             Row(
-                                modifier = Modifier.weight(1f).height(56.dp).border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.extraSmall),
+                                modifier = Modifier.weight(1f).height(56.dp).border(1.dp, Color(0xFF2E7D32), MaterialTheme.shapes.extraSmall),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 IconButton(onClick = { viewModel.onEvent(CharacterCreateEvent.LevelChanged((state.level.toIntOrNull() ?: 1).minus(1).coerceAtLeast(1).toString())) }) {
-                                    Icon(Icons.Default.Remove, null)
+                                    Icon(Icons.Default.Remove, null, tint = Color.White)
                                 }
-                                Text("Lvl ${state.level}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                Text("Lvl ${state.level}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color.White)
                                 IconButton(onClick = { viewModel.onEvent(CharacterCreateEvent.LevelChanged((state.level.toIntOrNull() ?: 1).plus(1).coerceAtMost(20).toString())) }) {
-                                    Icon(Icons.Default.Add, null)
+                                    Icon(Icons.Default.Add, null, tint = Color.White)
                                 }
                             }
                         }
@@ -211,11 +247,10 @@ fun CharacterCreateScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        OutlinedTextField(
+                        CharacterTextField(
                             value = state.description,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.DescriptionChanged(it)) },
-                            label = { Text("Description") },
-                            modifier = Modifier.fillMaxWidth(),
+                            label = "Description",
                             minLines = 3
                         )
                     }
@@ -228,51 +263,63 @@ fun CharacterCreateScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    DesktopCardSection(title = "Ability Scores") {
+                    DesktopCardSection(title = "Ability Scores", icon = Icons.Default.BarChart) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                                AbilityScoreBox("STR", state.strength, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.StrengthChanged(it)) }
-                                AbilityScoreBox("DEX", state.dexterity, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.DexterityChanged(it)) }
-                                AbilityScoreBox("CON", state.constitution, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.ConstitutionChanged(it)) }
+                                AbilityScoreBox("STR", state.strength, dndColors.strength, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.StrengthChanged(it)) }
+                                AbilityScoreBox("DEX", state.dexterity, dndColors.dexterity, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.DexterityChanged(it)) }
+                                AbilityScoreBox("CON", state.constitution, dndColors.constitution, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.ConstitutionChanged(it)) }
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                                AbilityScoreBox("INT", state.intelligence, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.IntelligenceChanged(it)) }
-                                AbilityScoreBox("WIS", state.wisdom, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.WisdomChanged(it)) }
-                                AbilityScoreBox("CHA", state.charisma, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.CharismaChanged(it)) }
+                                AbilityScoreBox("INT", state.intelligence, dndColors.intelligence, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.IntelligenceChanged(it)) }
+                                AbilityScoreBox("WIS", state.wisdom, dndColors.wisdom, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.WisdomChanged(it)) }
+                                AbilityScoreBox("CHA", state.charisma, dndColors.charisma, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.CharismaChanged(it)) }
                             }
                         }
                     }
                 }
                 item {
-                    DesktopCardSection(title = "Combat & HP") {
+                    DesktopCardSection(title = "Combat & HP", icon = Icons.Default.Shield) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
+                            CharacterTextField(
                                 value = state.maxHp,
                                 onValueChange = { viewModel.onEvent(CharacterCreateEvent.MaxHpChanged(it)) },
-                                label = { Text("Max HP") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
+                                label = "Max HP",
+                                modifier = Modifier.weight(1f)
                             )
-                            OutlinedTextField(
+                            CharacterTextField(
                                 value = state.armorClass,
                                 onValueChange = { viewModel.onEvent(CharacterCreateEvent.ArmorClassChanged(it)) },
-                                label = { Text("Armor Class") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
+                                label = "AC",
+                                modifier = Modifier.weight(1f)
                             )
-                            OutlinedTextField(
+                            CharacterTextField(
                                 value = state.initiative,
                                 onValueChange = { viewModel.onEvent(CharacterCreateEvent.InitiativeChanged(it)) },
-                                label = { Text("Initiative") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
+                                label = "Init",
+                                modifier = Modifier.weight(1f)
                             )
-                            OutlinedTextField(
+                            CharacterTextField(
                                 value = state.speed,
                                 onValueChange = { viewModel.onEvent(CharacterCreateEvent.SpeedChanged(it)) },
-                                label = { Text("Speed") },
-                                modifier = Modifier.weight(1f),
-                                singleLine = true
+                                label = "Spd",
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+                
+                item {
+                    DesktopCardSection(
+                        title = "Spells", 
+                        icon = Icons.Default.AutoFixHigh,
+                        onAddClick = { viewModel.onEvent(CharacterCreateEvent.AddSpell) }
+                    ) {
+                        state.spellList.forEachIndexed { index, spell ->
+                            SpellEditItem(
+                                index = index,
+                                spell = spell,
+                                onEvent = viewModel::onEvent
                             )
                         }
                     }
@@ -285,22 +332,21 @@ fun CharacterCreateScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    DesktopCardSection(title = "Proficiencies") {
+                    DesktopCardSection(title = "Proficiencies", icon = Icons.AutoMirrored.Filled.List) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedTextField(
+                            CharacterTextField(
                                 value = state.savingThrows,
                                 onValueChange = { viewModel.onEvent(CharacterCreateEvent.SavingThrowsChanged(it)) },
-                                label = { Text("Saving Throws") },
+                                label = "Saving Throws",
                                 modifier = Modifier.weight(1f),
                             )
-                            OutlinedTextField(
+                            CharacterTextField(
                                 value = state.hitDice,
                                 onValueChange = { viewModel.onEvent(CharacterCreateEvent.HitDiceChanged(it)) },
-                                label = { Text("Hit Die") },
+                                label = "Hit Die",
                                 modifier = Modifier.weight(1f),
                             )
                         }
-                        Spacer(Modifier.height(8.dp))
                         Spacer(Modifier.height(8.dp))
                         MultiSelectDropdownField(
                             label = "Skill",
@@ -313,11 +359,10 @@ fun CharacterCreateScreen(
                         )
                         Spacer(Modifier.height(8.dp))
                         
-                        OutlinedTextField(
+                        CharacterTextField(
                             value = state.armorProficiencies,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ArmorProficienciesChanged(it)) },
-                            label = { Text("Armor") },
-                            modifier = Modifier.fillMaxWidth()
+                            label = "Armor",
                         )
                         Spacer(Modifier.height(8.dp))
 
@@ -345,7 +390,7 @@ fun CharacterCreateScreen(
                 }
 
                 item {
-                    DesktopCardSection(title = "Features & Traits") {
+                    DesktopCardSection(title = "Features & Traits", icon = Icons.Default.Star) {
                         MultiSelectDropdownField(
                             label = "Class Feature",
                             selectedItems = state.selectedClassFeatures,
@@ -379,33 +424,183 @@ fun CharacterCreateScreen(
                 }
             }
         }
-        
-        // Save Button at bottom right
-        Column(
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-            horizontalAlignment = Alignment.End
-        ) {
-            val errorMsg = state.error
-            if (!errorMsg.isNullOrBlank()) {
-                Text(
-                    text = errorMsg,
-                    color = MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
+    }
+}
+
+@Composable
+fun SpellEditItem(
+    index: Int,
+    spell: com.dnd.helper.domain.model.Spell,
+    onEvent: (CharacterCreateEvent) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.3f)),
+        border = BorderStroke(1.dp, Color(0xFF2E7D32).copy(alpha = 0.3f))
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CharacterTextField(
+                    value = spell.name,
+                    onValueChange = { onEvent(CharacterCreateEvent.SpellNameChanged(index, it)) },
+                    label = "Spell Name",
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { onEvent(CharacterCreateEvent.RemoveSpell(index)) }) {
+                    Icon(Icons.Default.Delete, "Delete", tint = Color.Red.copy(alpha = 0.7f))
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CharacterTextField(
+                    value = spell.level.toString(),
+                    onValueChange = { onEvent(CharacterCreateEvent.SpellLevelChanged(index, it)) },
+                    label = "Lvl",
+                    modifier = Modifier.weight(1f)
+                )
+                CharacterTextField(
+                    value = spell.school,
+                    onValueChange = { onEvent(CharacterCreateEvent.SpellSchoolChanged(index, it)) },
+                    label = "School",
+                    modifier = Modifier.weight(2f)
                 )
             }
-            Button(
-                onClick = { viewModel.onEvent(CharacterCreateEvent.SaveCharacter) },
-                enabled = !state.isSaving
-            ) {
-                if (state.isSaving) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
-                    Spacer(Modifier.width(8.dp))
-                }
-                Text("Save Character", fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CharacterTextField(
+                    value = spell.castingTime,
+                    onValueChange = { onEvent(CharacterCreateEvent.SpellCastingTimeChanged(index, it)) },
+                    label = "Casting Time",
+                    modifier = Modifier.weight(1f)
+                )
+                CharacterTextField(
+                    value = spell.range,
+                    onValueChange = { onEvent(CharacterCreateEvent.SpellRangeChanged(index, it)) },
+                    label = "Range",
+                    modifier = Modifier.weight(1f)
+                )
             }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CharacterTextField(
+                    value = spell.duration,
+                    onValueChange = { onEvent(CharacterCreateEvent.SpellDurationChanged(index, it)) },
+                    label = "Duration",
+                    modifier = Modifier.weight(1f)
+                )
+                CharacterTextField(
+                    value = spell.damage,
+                    onValueChange = { onEvent(CharacterCreateEvent.SpellDamageChanged(index, it)) },
+                    label = "Damage (e.g. 1d8)",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            CharacterTextField(
+                value = spell.description,
+                onValueChange = { onEvent(CharacterCreateEvent.SpellDescriptionChanged(index, it)) },
+                label = "Description",
+                minLines = 2
+            )
         }
     }
+}
+
+@Composable
+fun DesktopCardSection(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    onAddClick: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B241C)), // Dark forest green
+        border = BorderStroke(1.dp, Color(0xFF2E7D32)), // Neon green border
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (icon != null) {
+                        Icon(icon, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(title, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50), fontSize = 18.sp)
+                }
+                if (onAddClick != null) {
+                    IconButton(onClick = onAddClick, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Add, contentDescription = "Add", tint = Color(0xFF4CAF50))
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            content()
+        }
+    }
+}
+
+@Composable
+fun AbilityScoreBox(
+    label: String, 
+    value: String, 
+    color: Color,
+    modifier: Modifier = Modifier, 
+    onValueChange: (String) -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Black.copy(alpha = 0.2f))
+            .border(1.dp, color, RoundedCornerShape(8.dp))
+            .padding(8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label, fontSize = 12.sp, color = color, fontWeight = FontWeight.Bold)
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = androidx.compose.ui.text.style.TextAlign.Center, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White),
+                modifier = Modifier.width(60.dp).padding(top = 4.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedBorderColor = color,
+                    cursorColor = color,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent
+                )
+            )
+        }
+    }
+}
+
+@Composable
+fun CharacterTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    minLines: Int = 1
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label, color = Color(0xFF4CAF50).copy(alpha = 0.7f)) },
+        modifier = modifier.fillMaxWidth(),
+        textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFF4CAF50),
+            unfocusedBorderColor = Color(0xFF2E7D32),
+            cursorColor = Color(0xFF4CAF50),
+            focusedContainerColor = Color.Black.copy(alpha = 0.2f),
+            unfocusedContainerColor = Color.Black.copy(alpha = 0.2f)
+        ),
+        minLines = minLines,
+        shape = RoundedCornerShape(8.dp),
+        singleLine = minLines == 1
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -427,21 +622,30 @@ fun <T> DropdownMenuField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text(label) },
+            label = { Text(label, color = Color(0xFF4CAF50).copy(alpha = 0.7f)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF4CAF50),
+                unfocusedBorderColor = Color(0xFF2E7D32),
+                cursorColor = Color(0xFF4CAF50),
+                focusedContainerColor = Color.Black.copy(alpha = 0.2f),
+                unfocusedContainerColor = Color.Black.copy(alpha = 0.2f),
+                unfocusedTextColor = Color.White,
+                focusedTextColor = Color.White
+            ),
             modifier = Modifier.menuAnchor().fillMaxWidth(),
             singleLine = true
         )
         if (options.isNotEmpty()) {
             ExposedDropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(Color(0xFF1B241C))
             ) {
                 options.forEach { option ->
                     val text = optionLabel(option)
                     DropdownMenuItem(
-                        text = { Text(text) },
+                        text = { Text(text, color = Color.White) },
                         onClick = {
                             onValueChange(text)
                             expanded = false
@@ -449,58 +653,6 @@ fun <T> DropdownMenuField(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun DesktopCardSection(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (icon != null) {
-                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
-                }
-                Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 18.sp)
-            }
-            Spacer(Modifier.height(16.dp))
-            content()
-        }
-    }
-}
-
-@Composable
-fun AbilityScoreBox(label: String, value: String, modifier: Modifier = Modifier, onValueChange: (String) -> Unit) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
-            .padding(8.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                singleLine = true,
-                textStyle = LocalTextStyle.current.copy(textAlign = androidx.compose.ui.text.style.TextAlign.Center, fontSize = 20.sp, fontWeight = FontWeight.Bold),
-                modifier = Modifier.width(60.dp).padding(top = 4.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary
-                )
-            )
         }
     }
 }
@@ -534,8 +686,9 @@ fun <T> MultiSelectDropdownField(
                     InputChip(
                         selected = true,
                         onClick = { onRemove(item) },
-                        label = { Text(item) },
-                        trailingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.size(16.dp)) }
+                        label = { Text(item, color = Color.White) },
+                        trailingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.size(16.dp), tint = Color.White) },
+                        colors = InputChipDefaults.inputChipColors(selectedContainerColor = Color(0xFF2E7D32))
                     )
                 }
             }
@@ -552,9 +705,17 @@ fun <T> MultiSelectDropdownField(
                     searchText = it
                     expanded = true
                 },
-                label = { Text("Add $label") },
+                label = { Text("Add $label", color = Color(0xFF4CAF50).copy(alpha = 0.7f)) },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF4CAF50),
+                    unfocusedBorderColor = Color(0xFF2E7D32),
+                    cursorColor = Color(0xFF4CAF50),
+                    focusedContainerColor = Color.Black.copy(alpha = 0.2f),
+                    unfocusedContainerColor = Color.Black.copy(alpha = 0.2f),
+                    unfocusedTextColor = Color.White,
+                    focusedTextColor = Color.White
+                ),
                 modifier = Modifier.menuAnchor().fillMaxWidth(),
                 singleLine = true
             )
@@ -562,11 +723,12 @@ fun <T> MultiSelectDropdownField(
             if (filteredOptions.isNotEmpty()) {
                 ExposedDropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.background(Color(0xFF1B241C))
                 ) {
                     filteredOptions.take(10).forEach { optionText ->
                         DropdownMenuItem(
-                            text = { Text(optionText) },
+                            text = { Text(optionText, color = Color.White) },
                             onClick = {
                                 onAdd(optionText)
                                 searchText = ""
@@ -576,7 +738,7 @@ fun <T> MultiSelectDropdownField(
                     }
                     if (searchText.isNotBlank() && !filteredOptions.contains(searchText)) {
                         DropdownMenuItem(
-                            text = { Text("Add custom: \"$searchText\"") },
+                            text = { Text("Add custom: \"$searchText\"", color = Color.White) },
                             onClick = {
                                 onAdd(searchText)
                                 searchText = ""
@@ -588,10 +750,11 @@ fun <T> MultiSelectDropdownField(
             } else if (searchText.isNotBlank()) {
                 ExposedDropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.background(Color(0xFF1B241C))
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Add custom: \"$searchText\"") },
+                        text = { Text("Add custom: \"$searchText\"", color = Color.White) },
                         onClick = {
                             onAdd(searchText)
                             searchText = ""

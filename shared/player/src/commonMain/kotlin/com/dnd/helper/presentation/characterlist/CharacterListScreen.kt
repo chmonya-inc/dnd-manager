@@ -39,7 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.dnd.helper.domain.model.Character
-import com.dnd.helper.domain.model.Skill
+import com.dnd.helper.domain.model.Spell
 import com.dnd.helper.domain.model.abilityModifier
 
 // Race-based colors for subtle card backgrounds
@@ -601,19 +601,19 @@ private fun SummaryCharacterCard(
                 // Ability modifiers
                 AbilityModifiersRow(stats = character.stats)
 
-                // Skills
-                if (character.skills.isNotEmpty()) {
+                // Spells
+                if (character.spells.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        character.skills.take(6).forEach { skill ->
-                            SkillChip(skill = skill)
+                        character.spells.take(6).forEach { spell ->
+                            SpellChip(spell = spell)
                         }
-                        if (character.skills.size > 6) {
+                        if (character.spells.size > 6) {
                             Text(
-                                text = "+${character.skills.size - 6}",
+                                text = "+${character.spells.size - 6}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.align(Alignment.CenterVertically),
@@ -665,13 +665,13 @@ private fun AbilityModifiersRow(stats: com.dnd.helper.domain.model.CharacterStat
 }
 
 @Composable
-private fun SkillChip(skill: Skill) {
+private fun SpellChip(spell: Spell) {
     Surface(
         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
         shape = MaterialTheme.shapes.extraSmall,
     ) {
         Text(
-            text = skill.name,
+            text = spell.name,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onTertiaryContainer,

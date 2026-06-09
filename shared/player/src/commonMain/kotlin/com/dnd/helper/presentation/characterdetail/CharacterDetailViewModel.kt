@@ -113,6 +113,33 @@ class CharacterDetailViewModel(
                                 nextState
                             }
                             updatedChar?.let { scheduleDebouncedSave(it) }
+                        } else if (task.entityType == "spell") {
+                            val spellId = task.entityId.substringAfter(":")
+                            
+                            var updatedChar: com.dnd.helper.domain.model.Character? = null
+                            _state.update { currentState ->
+                                var nextState = currentState
+                                // Update in main character
+                                currentState.character?.let { char ->
+                                    if (char.spells.any { it.id == spellId && it.iconUrl == "generating:${task.id}" }) {
+                                        val newSpells = char.spells.map { if (it.id == spellId) it.copy(iconUrl = resultUrl) else it }
+                                        val updated = char.copy(spells = newSpells)
+                                        nextState = nextState.copy(character = updated)
+                                        updatedChar = updated
+                                    }
+                                }
+                                // Update in edited character
+                                currentState.editedCharacter?.let { char ->
+                                    if (char.spells.any { it.id == spellId && it.iconUrl == "generating:${task.id}" }) {
+                                        val newSpells = char.spells.map { if (it.id == spellId) it.copy(iconUrl = resultUrl) else it }
+                                        val updated = char.copy(spells = newSpells)
+                                        nextState = nextState.copy(editedCharacter = updated)
+                                        if (updatedChar == null) updatedChar = updated
+                                    }
+                                }
+                                nextState
+                            }
+                            updatedChar?.let { scheduleDebouncedSave(it) }
                         }
                     }
                 }
@@ -185,9 +212,9 @@ class CharacterDetailViewModel(
             CharacterDetailEvent.ToggleMasterMode -> {
                 _state.value = _state.value.copy(isMasterMode = !_state.value.isMasterMode)
             }
-            CharacterDetailEvent.AddSkill -> addSkill()
-            is CharacterDetailEvent.RemoveSkill -> removeSkill(event.skillId)
-            is CharacterDetailEvent.UpdateSkill -> updateSkill(event.skill)
+            CharacterDetailEvent.AddSpell -> addSpell()
+            is CharacterDetailEvent.RemoveSpell -> removeSpell(event.spellId)
+            is CharacterDetailEvent.UpdateSpell -> updateSpell(event.spell)
             CharacterDetailEvent.AddItem -> addItem()
             is CharacterDetailEvent.RemoveItem -> removeItem(event.itemId)
             is CharacterDetailEvent.UpdateItem -> updateItem(event.item)
@@ -196,6 +223,7 @@ class CharacterDetailViewModel(
             is CharacterDetailEvent.UpdateNote -> updateNote(event.note)
             CharacterDetailEvent.GenerateImage -> generateImage()
             is CharacterDetailEvent.GenerateItemImage -> generateItemImage(event.itemId)
+            is CharacterDetailEvent.GenerateSpellImage -> generateSpellImage(event.spellId)
         }
     }
 
@@ -226,9 +254,37 @@ class CharacterDetailViewModel(
         }
     }
 
+    private fun generateSpellImage(spellId: String) {
+        val currentState = _state.value
+        val edited = currentState.editedCharacter ?: currentState.character ?: return
+        val spell = edited.spells.find { it.id == spellId } ?: return
+        val promptText = "${spell.name}, ${spell.school} spell. ${spell.description}"
+        if (spell.name.isBlank()) return
+
+        val fullPrompt = PromptGenerator.getFullPrompt(promptText, GenerationType.SKILL)
+        
+        val mockUrl = editingRepository.startGeneration(
+            entityId = "$characterId:$spellId",
+            entityType = "spell",
+            prompt = fullPrompt,
+            genType = GenerationType.SKILL
+        )
+
+        val newSpells = edited.spells.map {
+            if (it.id == spellId) it.copy(iconUrl = mockUrl) else it
+        }
+        val updatedChar = edited.copy(spells = newSpells)
+        
+        if (currentState.isEditing) {
+            _state.value = currentState.copy(editedCharacter = updatedChar)
+        } else {
+            scheduleDebouncedSave(updatedChar)
+        }
+    }
+
     private fun generateItemImage(itemId: String) {
         val currentState = _state.value
-        val edited = currentState.editedCharacter ?: return
+        val edited = currentState.editedCharacter ?: currentState.character ?: return
         val item = edited.items.find { it.id == itemId } ?: return
         val promptText = "${item.name}, ${item.rarity}. ${item.description}"
         if (item.name.isBlank()) return
@@ -246,10 +302,11 @@ class CharacterDetailViewModel(
             if (it.id == itemId) it.copy(imageUrl = mockUrl) else it
         }
         val updatedChar = edited.copy(items = newItems)
-        _state.value = currentState.copy(editedCharacter = updatedChar)
-
-        if (!currentState.isEditing) {
-            repository.optimisticUpdate(updatedChar)
+        
+        if (currentState.isEditing) {
+            _state.value = currentState.copy(editedCharacter = updatedChar)
+        } else {
+            scheduleDebouncedSave(updatedChar)
         }
     }
 
@@ -296,28 +353,28 @@ class CharacterDetailViewModel(
         scheduleDebouncedSave(updatedCharacter)
     }
 
-    private fun addSkill() {
+    private fun addSpell() {
         val current = _state.value.character ?: return
-        val newSkill = com.dnd.helper.domain.model.Skill(
-            id = "skill-${kotlin.random.Random.nextInt()}",
-            name = "New Skill",
+        val newSpell = com.dnd.helper.domain.model.Spell(
+            id = "spell-${kotlin.random.Random.nextInt()}",
+            name = "New Spell",
             description = "Click edit to change details",
             level = 0
         )
-        val updatedCharacter = current.copy(skills = current.skills + newSkill)
+        val updatedCharacter = current.copy(spells = current.spells + newSpell)
         scheduleDebouncedSave(updatedCharacter)
     }
 
-    private fun removeSkill(skillId: String) {
+    private fun removeSpell(spellId: String) {
         val current = _state.value.character ?: return
-        val updatedCharacter = current.copy(skills = current.skills.filter { it.id != skillId })
+        val updatedCharacter = current.copy(spells = current.spells.filter { it.id != spellId })
         scheduleDebouncedSave(updatedCharacter)
     }
 
-    private fun updateSkill(skill: com.dnd.helper.domain.model.Skill) {
+    private fun updateSpell(spell: com.dnd.helper.domain.model.Spell) {
         val current = _state.value.character ?: return
-        val updatedSkills = current.skills.map { if (it.id == skill.id) skill else it }
-        val updatedCharacter = current.copy(skills = updatedSkills)
+        val updatedSpells = current.spells.map { if (it.id == spell.id) spell else it }
+        val updatedCharacter = current.copy(spells = updatedSpells)
         scheduleDebouncedSave(updatedCharacter)
     }
 
@@ -429,8 +486,22 @@ class CharacterDetailViewModel(
 
     private fun toggleItemEquipped(itemId: String) {
         val currentCharacter = _state.value.character ?: return
+        val itemToToggle = currentCharacter.items.find { it.id == itemId } ?: return
+        
+        // Only allow equipping if there's a slot
+        if (!itemToToggle.equipped && itemToToggle.slot == null) return
+
         val updatedItems = currentCharacter.items.map { item ->
-            if (item.id == itemId) item.copy(equipped = !item.equipped) else item
+            when {
+                item.id == itemId -> {
+                    item.copy(equipped = !item.equipped)
+                }
+                // If we are equipping an item, unequip any other item in the same slot
+                !itemToToggle.equipped && item.equipped && item.slot != null && item.slot == itemToToggle.slot -> {
+                    item.copy(equipped = false)
+                }
+                else -> item
+            }
         }
         val updatedCharacter = currentCharacter.copy(items = updatedItems)
         scheduleDebouncedSave(updatedCharacter)
@@ -598,15 +669,9 @@ class CharacterDetailViewModel(
             }
         }
 
-        // Skills
-        if (old.skills.size != new.skills.size) {
-            changes.add("Skills: ${old.skills.size} -> ${new.skills.size}")
-        } else {
-            old.skills.forEach { oldSkill ->
-                new.skills.find { it.id == oldSkill.id }?.let { newSkill ->
-                    if (oldSkill.level != newSkill.level) changes.add("${newSkill.name} LVL: ${oldSkill.level} -> ${newSkill.level}")
-                }
-            }
+        // Spells
+        if (old.spells.size != new.spells.size) {
+            changes.add("Spells: ${old.spells.size} -> ${new.spells.size}")
         }
 
         // Notes

@@ -1,7 +1,7 @@
 package com.dnd.helper.presentation.charactercreate
 
 import com.dnd.helper.domain.model.Item
-import com.dnd.helper.domain.model.Skill
+import com.dnd.helper.domain.model.Spell
 import com.dnd.helper.domain.model.Weapon
 
 data class CharacterCreateState(
@@ -32,6 +32,7 @@ data class CharacterCreateState(
     val availableFeats: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
     val availableFeatures: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
     val availableTraits: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
+    val availableSpells: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
 
     // Appearance
     val age: String = "",
@@ -84,7 +85,7 @@ data class CharacterCreateState(
     // Lists
     val items: List<Item> = emptyList(),
     val weapons: List<Weapon> = emptyList(),
-    val skillList: List<Skill> = emptyList(),
+    val spellList: List<Spell> = emptyList(),
     val notes: List<com.dnd.helper.domain.model.Note> = emptyList(),
 
     // Features (newline-separated)

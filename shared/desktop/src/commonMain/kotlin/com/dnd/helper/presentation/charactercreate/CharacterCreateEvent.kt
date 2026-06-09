@@ -72,16 +72,16 @@ sealed interface CharacterCreateEvent {
     data class RemoveRacialTrait(val value: String) : CharacterCreateEvent
     data class AddFeat(val value: String) : CharacterCreateEvent
     data class RemoveFeat(val value: String) : CharacterCreateEvent
-    data class ItemSlotChanged(val index: Int, val value: EquipmentSlot?) : CharacterCreateEvent
-    data class ItemRarityChanged(val index: Int, val value: ItemRarity) : CharacterCreateEvent
-    data class ItemDescriptionChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class ItemImageUrlChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class ItemEquippedChanged(val index: Int, val value: Boolean) : CharacterCreateEvent
 
     // Items
     data object AddItem : CharacterCreateEvent
     data class RemoveItem(val index: Int) : CharacterCreateEvent
     data class ItemNameChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class ItemSlotChanged(val index: Int, val value: EquipmentSlot?) : CharacterCreateEvent
+    data class ItemRarityChanged(val index: Int, val value: ItemRarity) : CharacterCreateEvent
+    data class ItemDescriptionChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class ItemImageUrlChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class ItemEquippedChanged(val index: Int, val value: Boolean) : CharacterCreateEvent
 
     // Weapons
     data object AddWeapon : CharacterCreateEvent
@@ -92,23 +92,21 @@ sealed interface CharacterCreateEvent {
     data class WeaponDamageTypeChanged(val index: Int, val value: String) : CharacterCreateEvent
     data class WeaponNotesChanged(val index: Int, val value: String) : CharacterCreateEvent
 
-    // Skills
-    data object AddSkill : CharacterCreateEvent
-    data class RemoveSkill(val index: Int) : CharacterCreateEvent
-    data class SkillNameChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class SkillDescriptionChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class SkillIconNameChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class SkillDamageChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class SkillDamageTypeChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class SkillResourceCostChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class SkillRangeChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class SkillCastingTimeChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class SkillDurationChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class SkillLevelChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class SkillSchoolChanged(val index: Int, val value: String) : CharacterCreateEvent
-    data class SkillIsPassiveChanged(val index: Int, val value: Boolean) : CharacterCreateEvent
+    // Spells
+    data object AddSpell : CharacterCreateEvent
+    data class RemoveSpell(val index: Int) : CharacterCreateEvent
+    data class SpellNameChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SpellDescriptionChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SpellLevelChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SpellSchoolChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SpellCastingTimeChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SpellRangeChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SpellDurationChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SpellDamageChanged(val index: Int, val value: String) : CharacterCreateEvent
+    data class SpellDamageTypeChanged(val index: Int, val value: String) : CharacterCreateEvent
 
     // Features
+    data class LoadCharacter(val character: com.dnd.helper.domain.model.Character) : CharacterCreateEvent
 
     data object SaveCharacter : CharacterCreateEvent
 

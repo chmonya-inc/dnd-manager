@@ -102,7 +102,7 @@ fun ImageGenerationButton(
 }
 
 sealed class CreatorType(val title: String, val icon: ImageVector) {
-    data object Character : CreatorType("Character", Icons.Default.PersonAdd)
+    data class Character(val existingCharacter: com.dnd.helper.domain.model.Character? = null) : CreatorType("Character", Icons.Default.PersonAdd)
     data class Item(val existingItem: com.dnd.helper.domain.model.Item? = null, val ownerId: String? = null) : CreatorType("Item", Icons.Default.ShoppingBag)
     data class Monster(val existingMonster: com.dnd.helper.domain.model.Monster? = null) : CreatorType("Monster", Icons.Default.BugReport)
     data class Npc(val existingNpc: com.dnd.helper.domain.model.Npc? = null) : CreatorType("NPC", Icons.Default.EmojiPeople)
@@ -135,12 +135,12 @@ fun CreatorScreen(
         CreatorSelection(onSelect = { selectedType = it })
     } else {
         val isEditing = when (val t = selectedType!!) {
+            is CreatorType.Character -> t.existingCharacter != null
             is CreatorType.Item -> t.existingItem != null
             is CreatorType.Monster -> t.existingMonster != null
             is CreatorType.Npc -> t.existingNpc != null
             is CreatorType.Location -> t.existingLocation != null
             is CreatorType.Battlefield -> t.existingBattlefield != null
-            else -> false
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
@@ -185,7 +185,8 @@ fun CreatorScreen(
             
             Box(modifier = Modifier.fillMaxSize()) {
                 when (val type = selectedType!!) {
-                    CreatorType.Character -> CharacterCreateScreen(
+                    is CreatorType.Character -> CharacterCreateScreen(
+                        existingCharacter = type.existingCharacter,
                         onBackClick = { 
                             selectedType = null
                             onBack()
@@ -516,7 +517,7 @@ private fun LocationCreateForm(
 @Composable
 private fun CreatorSelection(onSelect: (CreatorType) -> Unit) {
     val types = listOf(
-        CreatorType.Character,
+        CreatorType.Character(),
         CreatorType.Item(),
         CreatorType.Monster(),
         CreatorType.Npc(),

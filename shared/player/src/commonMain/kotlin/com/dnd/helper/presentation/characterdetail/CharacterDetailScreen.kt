@@ -108,7 +108,7 @@ import com.dnd.helper.di.isDesktop
 import com.dnd.helper.presentation.characterdetail.features.FeaturesTab
 import com.dnd.helper.presentation.characterdetail.inventory.InventoryTab
 import com.dnd.helper.presentation.characterdetail.overview.OverviewTab
-import com.dnd.helper.presentation.characterdetail.skills.SkillsTab
+import com.dnd.helper.presentation.characterdetail.spells.SpellsTab
 import com.dnd.helper.presentation.characterdetail.stats.StatsTab
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
 import org.koin.compose.viewmodel.koinViewModel
@@ -254,14 +254,14 @@ fun CharacterDetailScreen(
                     onClick = { selectedTab = 3 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Star, null) },
-                    label = { Text("Features") },
+                    icon = { Icon(Icons.Default.AutoFixHigh, null) },
+                    label = { Text("Spells") },
                     selected = selectedTab == 4,
                     onClick = { selectedTab = 4 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.AutoFixHigh, null) },
-                    label = { Text("Skills") },
+                    icon = { Icon(Icons.Default.Star, null) },
+                    label = { Text("Features") },
                     selected = selectedTab == 5,
                     onClick = { selectedTab = 5 }
                 )
@@ -285,8 +285,8 @@ fun CharacterDetailScreen(
                         1 -> StatsTab(character)
                         2 -> InventoryTab(items = character.items, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
                         3 -> CombatTab(character, isMasterMode = state.isMasterMode)
-                        4 -> FeaturesTab(character, isMasterMode = state.isMasterMode)
-                        5 -> SkillsTab(character, isMasterMode = state.isMasterMode)
+                        4 -> SpellsTab(character.spells)
+                        5 -> FeaturesTab(character, isMasterMode = state.isMasterMode)
                     }
                 }
             }

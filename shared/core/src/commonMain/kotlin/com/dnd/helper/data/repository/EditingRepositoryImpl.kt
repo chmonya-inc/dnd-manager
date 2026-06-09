@@ -216,6 +216,27 @@ class EditingRepositoryImpl(
                 } else false
             }
 
+            "spell" -> {
+                // Spell is nested in Character. entityId should be "charId:spellId"
+                val parts = entityId.split(":")
+                if (parts.size == 2) {
+                    val charId = parts[0]
+                    val spellId = parts[1]
+                    val result = characterRepository.getCharacter(charId)
+                    if (result is Result.Success) {
+                        val char = result.data
+                        if (char.spells.any { it.id == spellId }) {
+                            val updatedSpells = char.spells.map {
+                                if (it.id == spellId) it.copy(iconUrl = url) else it
+                            }
+                            val saveResult =
+                                characterRepository.saveCharacter(char.copy(spells = updatedSpells))
+                            saveResult is Result.Success
+                        } else false
+                    } else false
+                } else false
+            }
+
             else -> false
         }
     }

@@ -251,7 +251,7 @@ private suspend fun handleSaveCharacter(char: Character?, sessionId: String) = d
         it[proficiencies] = char.proficiencies
         it[weapons] = char.weapons
         it[features] = char.features
-        it[skills] = char.skills
+        it[spells] = char.spells
         it[items] = char.items
         it[notes] = char.notes
     }
@@ -492,7 +492,7 @@ private fun rowToCharacter(row: ResultRow): Character {
         proficiencies = row[Characters.proficiencies],
         weapons = row[Characters.weapons],
         features = row[Characters.features],
-        skills = row[Characters.skills],
+        spells = row[Characters.spells],
         items = row[Characters.items],
         notes = row[Characters.notes]
     )

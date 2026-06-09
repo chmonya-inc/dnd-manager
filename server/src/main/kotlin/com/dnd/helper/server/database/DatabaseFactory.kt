@@ -26,6 +26,36 @@ object DatabaseFactory {
         )
         
         transaction {
+            // Manual migration: skills -> spells
+            // Must run before createMissingTablesAndColumns if we want to RENAME instead of DROP/ADD
+            try {
+                exec("""
+                    DO ${'$'}${'$'}
+                    BEGIN
+                      -- If skills exists but spells does not, rename it
+                      IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='characters' AND column_name='skills') AND 
+                         NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='characters' AND column_name='spells') THEN
+                        ALTER TABLE characters RENAME COLUMN skills TO spells;
+                      END IF;
+                      
+                      -- If both exist, migrate data and drop skills
+                      IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='characters' AND column_name='skills') AND 
+                         EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='characters' AND column_name='spells') THEN
+                        UPDATE characters SET spells = skills WHERE (spells IS NULL OR spells::text = '[]') AND skills IS NOT NULL;
+                        ALTER TABLE characters DROP COLUMN skills;
+                      END IF;
+                      
+                      -- Ensure spells has no nulls if it exists
+                      IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='characters' AND column_name='spells') THEN
+                        UPDATE characters SET spells = '[]' WHERE spells IS NULL;
+                      END IF;
+                    END ${'$'}${'$'};
+                """.trimIndent())
+                println("[DatabaseFactory] Checked and applied 'skills' to 'spells' migration if needed")
+            } catch (e: Exception) {
+                println("[DatabaseFactory] Migration logic skipped or failed: ${e.message}")
+            }
+
             SchemaUtils.createMissingTablesAndColumns(
                 Characters,
                 Locations,

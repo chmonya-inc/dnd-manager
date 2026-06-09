@@ -156,7 +156,7 @@ class XlsxImporter(private val repository: CharacterRepository) {
             val profs = try { json.decodeFromString<CharacterProficiencies>(row.getCell(21)?.getVal() ?: "{}") } catch (e: Exception) { CharacterProficiencies() }
             val weapons = try { json.decodeFromString<List<Weapon>>(row.getCell(22)?.getVal() ?: "[]") } catch (e: Exception) { emptyList() }
             val features = try { json.decodeFromString<CharacterFeatures>(row.getCell(23)?.getVal() ?: "{}") } catch (e: Exception) { CharacterFeatures() }
-            val skills = try { json.decodeFromString<List<Skill>>(row.getCell(24)?.getVal() ?: "[]") } catch (e: Exception) { emptyList() }
+            val spells = try { json.decodeFromString<List<Spell>>(row.getCell(24)?.getVal() ?: "[]") } catch (e: Exception) { emptyList() }
             
             // Try to fetch items from individual sheet first
             val items = fetchItemsFromSheet(workbook, id) ?: try { 
@@ -170,7 +170,7 @@ class XlsxImporter(private val repository: CharacterRepository) {
                 subclass = subclass, background = bg, level = level, experiencePoints = xp,
                 description = desc, imageUrl = img, appearance = appearance, stats = stats,
                 maxHp = maxHp, currentHp = curHp, combat = combat, proficiencies = profs,
-                weapons = weapons, features = features, skills = skills, items = items, notes = notes
+                weapons = weapons, features = features, spells = spells, items = items, notes = notes
             )
             
             repository.saveCharacter(character)

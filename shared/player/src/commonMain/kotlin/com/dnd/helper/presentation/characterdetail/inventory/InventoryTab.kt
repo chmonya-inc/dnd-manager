@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -38,7 +39,7 @@ import com.dnd.helper.presentation.utils.toColor
 fun InventoryTab(
     items: List<Item>,
     onEvent: (CharacterDetailEvent) -> Unit,
-    isMasterMode: Boolean = false,
+    isMasterMode: Boolean = true,
 ) {
     val equippedItems = remember(items) {
         items.filter { it.equipped }.associateBy { it.slot }
@@ -50,8 +51,11 @@ fun InventoryTab(
     var selectedItem by remember { mutableStateOf<Item?>(null) }
 
     selectedItem?.let { item ->
+        // Find the latest version of this item from the list to keep dialog in sync
+        val latestItem = items.find { it.id == item.id } ?: item
+
         ItemDetailDialog(
-            item = item,
+            item = latestItem,
             onDismiss = { selectedItem = null },
             onToggleEquip = {
                 onEvent(CharacterDetailEvent.ToggleItemEquipped(item.id))
@@ -89,7 +93,7 @@ fun InventoryTab(
             items = inventoryItems,
             onItemClick = { selectedItem = it },
             modifier = Modifier.fillMaxHeight(1f),
-            isMasterMode = isMasterMode,
+            isMasterMode = true,
             onAddItem = {
                 onEvent(CharacterDetailEvent.AddItem)
             }
@@ -106,11 +110,13 @@ private fun EquipmentPanel(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .height(340.dp)
             .padding(16.dp)
     ) {
+        // Character Background Silhouette
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(140.dp)
                 .clip(MaterialTheme.shapes.large)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                 .align(Alignment.Center),
@@ -119,74 +125,80 @@ private fun EquipmentPanel(
             Icon(
                 imageVector = Icons.Default.Person,
                 contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                modifier = Modifier.size(100.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
             )
         }
 
+        // --- Center Column ---
         EquipmentSlotBox(
             slot = EquipmentSlot.HEAD,
             item = equippedItems[EquipmentSlot.HEAD],
             onClick = onSlotClick,
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 4.dp),
+            modifier = Modifier.align(Alignment.TopCenter),
             size = 64.dp
-        )
-
-        EquipmentSlotBox(
-            slot = EquipmentSlot.MAIN_HAND,
-            item = equippedItems[EquipmentSlot.MAIN_HAND],
-            onClick = onSlotClick,
-            modifier = Modifier.align(Alignment.CenterStart).padding(start = 8.dp),
-            size = 72.dp
-        )
-
-        EquipmentSlotBox(
-            slot = EquipmentSlot.OFF_HAND,
-            item = equippedItems[EquipmentSlot.OFF_HAND],
-            onClick = onSlotClick,
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 8.dp),
-            size = 72.dp
         )
 
         EquipmentSlotBox(
             slot = EquipmentSlot.BODY,
             item = equippedItems[EquipmentSlot.BODY],
             onClick = onSlotClick,
-            modifier = Modifier.align(Alignment.Center).padding(top = 48.dp),
-            size = 64.dp
-        )
-
-        EquipmentSlotBox(
-            slot = EquipmentSlot.HANDS,
-            item = equippedItems[EquipmentSlot.HANDS],
-            onClick = onSlotClick,
-            modifier = Modifier.align(Alignment.BottomStart).padding(start = 24.dp, bottom = 8.dp),
-            size = 56.dp
+            modifier = Modifier.align(Alignment.Center),
+            size = 76.dp
         )
 
         EquipmentSlotBox(
             slot = EquipmentSlot.FEET,
             item = equippedItems[EquipmentSlot.FEET],
             onClick = onSlotClick,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp),
-            size = 56.dp
+            modifier = Modifier.align(Alignment.BottomCenter),
+            size = 64.dp
         )
 
-        EquipmentSlotBox(
-            slot = EquipmentSlot.RING,
-            item = equippedItems[EquipmentSlot.RING],
-            onClick = onSlotClick,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(end = 24.dp, bottom = 8.dp),
-            size = 56.dp
-        )
+        // --- Left Column ---
+        Column(
+            modifier = Modifier.align(Alignment.CenterStart).padding(start = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(32.dp)
+        ) {
+            EquipmentSlotBox(
+                slot = EquipmentSlot.MAIN_HAND,
+                item = equippedItems[EquipmentSlot.MAIN_HAND],
+                onClick = onSlotClick,
+                size = 72.dp
+            )
+            EquipmentSlotBox(
+                slot = EquipmentSlot.HANDS,
+                item = equippedItems[EquipmentSlot.HANDS],
+                onClick = onSlotClick,
+                size = 60.dp
+            )
+        }
 
-        EquipmentSlotBox(
-            slot = EquipmentSlot.AMULET,
-            item = equippedItems[EquipmentSlot.AMULET],
-            onClick = onSlotClick,
-            modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 12.dp),
-            size = 56.dp
-        )
+        // --- Right Column ---
+        Column(
+            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.End
+        ) {
+            EquipmentSlotBox(
+                slot = EquipmentSlot.AMULET,
+                item = equippedItems[EquipmentSlot.AMULET],
+                onClick = onSlotClick,
+                size = 56.dp
+            )
+            EquipmentSlotBox(
+                slot = EquipmentSlot.OFF_HAND,
+                item = equippedItems[EquipmentSlot.OFF_HAND],
+                onClick = onSlotClick,
+                size = 72.dp
+            )
+            EquipmentSlotBox(
+                slot = EquipmentSlot.RING,
+                item = equippedItems[EquipmentSlot.RING],
+                onClick = onSlotClick,
+                size = 56.dp
+            )
+        }
     }
 }
 
@@ -420,11 +432,18 @@ private fun ItemDetailDialog(
     var editedItem by remember { mutableStateOf(item) }
     val rarityColor = editedItem.rarity.toColor()
 
+    // Sync editedItem when item from state changes (e.g. after generation completes)
+    LaunchedEffect(item) {
+        editedItem = item
+    }
+
+    val isGenerating = editedItem.imageUrl?.startsWith("generating:") == true
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .heightIn(max = 700.dp),
+                .fillMaxWidth(0.9f)
+                .heightIn(max = 750.dp),
             shape = MaterialTheme.shapes.large,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         ) {
@@ -434,44 +453,40 @@ private fun ItemDetailDialog(
                     .padding(20.dp)
                     .verticalScroll(rememberScrollState()),
             ) {
-                val imageUrl = editedItem.displayImageUrl
-                val isGenerating = imageUrl?.startsWith("generating:") == true
-
-                if (!imageUrl.isNullOrBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(140.dp)
-                            .clip(MaterialTheme.shapes.medium)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (isGenerating) {
-                            CircularProgressIndicator()
-                        } else {
-                            AsyncImage(
-                                model = imageUrl,
-                                contentDescription = editedItem.name,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                }
-
+                // Header with big icon
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = itemToIcon(editedItem),
-                            contentDescription = null,
-                            modifier = Modifier.size(36.dp),
-                            tint = rarityColor,
-                        )
+                        Card(
+                            modifier = Modifier.size(78.dp),
+                            shape = MaterialTheme.shapes.medium,
+                            colors = CardDefaults.cardColors(containerColor = rarityColor.copy(alpha = 0.1f)),
+                            border = BorderStroke(2.dp, rarityColor)
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                if (isGenerating) {
+                                    CircularProgressIndicator(modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
+                                } else if (!editedItem.displayImageUrl.isNullOrBlank()) {
+                                    AsyncImage(
+                                        model = editedItem.displayImageUrl,
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = itemToIcon(editedItem),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(48.dp),
+                                        tint = rarityColor,
+                                    )
+                                }
+                            }
+                        }
+
                         Spacer(Modifier.width(12.dp))
                         Column {
                             if (isMasterMode) {
@@ -481,7 +496,8 @@ private fun ItemDetailDialog(
                                         editedItem = editedItem.copy(name = it)
                                         onUpdate(editedItem)
                                     },
-                                    label = { Text("Name") }
+                                    label = { Text("Name") },
+                                    modifier = Modifier.width(180.dp)
                                 )
                             } else {
                                 Text(
@@ -507,44 +523,48 @@ private fun ItemDetailDialog(
 
                 if (isMasterMode) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = editedItem.description, onValueChange = { editedItem = editedItem.copy(description = it); onUpdate(editedItem) }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(
-                                value = editedItem.imageUrl ?: "",
-                                onValueChange = { editedItem = editedItem.copy(imageUrl = it.ifBlank { null }); onUpdate(editedItem) },
-                                label = { Text("Image URL") },
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(
-                                onClick = { onEvent(CharacterDetailEvent.GenerateItemImage(editedItem.id)) },
-                                enabled = !isGenerating
+                        // AI Generation Section
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)),
+                            shape = MaterialTheme.shapes.medium,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                if (isGenerating) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                                } else {
-                                    Icon(Icons.Default.AutoFixHigh, "Generate")
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                    Icon(Icons.Default.AutoFixHigh, null, tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.width(12.dp))
+                                    Text("AI Image Generation", style = MaterialTheme.typography.labelLarge)
+                                }
+                                IconButton(
+                                    onClick = { onEvent(CharacterDetailEvent.GenerateItemImage(editedItem.id)) },
+                                    enabled = !isGenerating,
+                                    modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
+                                ) {
+                                    if (isGenerating) {
+                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
+                                    } else {
+                                        Icon(Icons.Default.AutoFixHigh, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                    }
                                 }
                             }
                         }
+
+                        OutlinedTextField(value = editedItem.type, onValueChange = { editedItem = editedItem.copy(type = it); onUpdate(editedItem) }, label = { Text("Type") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedItem.cost, onValueChange = { editedItem = editedItem.copy(cost = it); onUpdate(editedItem) }, label = { Text("Cost") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedItem.weight.toString(), onValueChange = { val w = it.toDoubleOrNull() ?: 0.0; editedItem = editedItem.copy(weight = w); onUpdate(editedItem) }, label = { Text("Weight") }, modifier = Modifier.fillMaxWidth())
+                        
+                        Text("Current Slot: ${editedItem.slot?.name ?: "None"}", style = MaterialTheme.typography.labelSmall)
+                        
+                        OutlinedTextField(value = editedItem.description, onValueChange = { editedItem = editedItem.copy(description = it); onUpdate(editedItem) }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+                        OutlinedTextField(value = editedItem.imageUrl ?: "", onValueChange = { editedItem = editedItem.copy(imageUrl = it.ifBlank { null }); onUpdate(editedItem) }, label = { Text("Image URL") }, modifier = Modifier.fillMaxWidth())
                     }
                 } else {
                     if (editedItem.slot != null) {
                         DetailRow("Slot", editedItem.slot!!.name.replace("_", " "))
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "Equipped",
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        Checkbox(
-                            checked = editedItem.equipped,
-                            onCheckedChange = { onToggleEquip() },
-                        )
                     }
 
                     if (editedItem.description.isNotBlank()) {
@@ -566,9 +586,11 @@ private fun ItemDetailDialog(
                 Spacer(Modifier.height(12.dp))
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val canEquip = editedItem.slot != null
                     Button(
                         onClick = onToggleEquip,
                         modifier = Modifier.fillMaxWidth(),
+                        enabled = canEquip || editedItem.equipped
                     ) {
                         Text(if (editedItem.equipped) "Unequip" else "Equip")
                     }

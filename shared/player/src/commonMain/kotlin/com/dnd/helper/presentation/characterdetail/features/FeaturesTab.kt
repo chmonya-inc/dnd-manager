@@ -65,32 +65,31 @@ fun FeaturesTab(
             }
         }
 
-        // Proficiencies
+        // Skills & Proficiencies
         val profs = character.proficiencies
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        if (profs.skills.isNotEmpty() || profs.armor.isNotEmpty() || profs.weapons.isNotEmpty() || profs.tools.isNotEmpty() || profs.languages.isNotEmpty()) {
             Text(
-                text = "Proficiencies",
+                text = "Skills & Proficiencies",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-        }
 
-        if (profs.armor.isNotEmpty()) {
-            ProficiencySection("Armor", profs.armor, isMasterMode)
-        }
-        if (profs.weapons.isNotEmpty()) {
-            ProficiencySection("Weapons", profs.weapons, isMasterMode)
-        }
-        if (profs.tools.isNotEmpty()) {
-            ProficiencySection("Tools", profs.tools, isMasterMode)
-        }
-        if (profs.languages.isNotEmpty()) {
-            ProficiencySection("Languages", profs.languages, isMasterMode)
+            if (profs.skills.isNotEmpty()) {
+                ProficiencySection("Skills", profs.skills, isMasterMode)
+            }
+            if (profs.armor.isNotEmpty()) {
+                ProficiencySection("Armor", profs.armor, isMasterMode)
+            }
+            if (profs.weapons.isNotEmpty()) {
+                ProficiencySection("Weapons", profs.weapons, isMasterMode)
+            }
+            if (profs.tools.isNotEmpty()) {
+                ProficiencySection("Tools", profs.tools, isMasterMode)
+            }
+            if (profs.languages.isNotEmpty()) {
+                ProficiencySection("Languages", profs.languages, isMasterMode)
+            }
         }
 
         // Class Features

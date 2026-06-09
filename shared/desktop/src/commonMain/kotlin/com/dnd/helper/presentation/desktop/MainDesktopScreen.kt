@@ -285,8 +285,12 @@ fun MainDesktopScreen(
                                 selectedCharacterId = selectedCharacterId,
                                 onCharacterSelected = { selectedCharacterId = it },
                                 onCreateCharacter = { 
-                                    initialCreatorType = CreatorType.Character
+                                    initialCreatorType = CreatorType.Character()
                                     selectedTab = DesktopTab.Creator 
+                                },
+                                onEditCharacter = { character ->
+                                    initialCreatorType = CreatorType.Character(character)
+                                    selectedTab = DesktopTab.Creator
                                 },
                                 sessionKey = activeTableId ?: "",
                             )
@@ -301,18 +305,30 @@ fun MainDesktopScreen(
                         DesktopTab.Creator -> CreatorScreen(
                             initialType = initialCreatorType,
                             onCreated = {
-                                if (initialCreatorType != null) {
-                                    selectedTab = DesktopTab.Library
-                                } else {
-                                    selectedTab = DesktopTab.Characters
+                                when (initialCreatorType) {
+                                    is CreatorType.Character -> {
+                                        selectedTab = DesktopTab.Characters
+                                    }
+                                    null -> {
+                                        selectedTab = DesktopTab.Characters
+                                    }
+                                    else -> {
+                                        selectedTab = DesktopTab.Library
+                                    }
                                 }
                                 initialCreatorType = null
                             },
                             onBack = {
-                                if (initialCreatorType != null) {
-                                    selectedTab = DesktopTab.Library
-                                } else {
-                                    selectedTab = DesktopTab.Characters
+                                when (initialCreatorType) {
+                                    is CreatorType.Character -> {
+                                        selectedTab = DesktopTab.Characters
+                                    }
+                                    null -> {
+                                        selectedTab = DesktopTab.Characters
+                                    }
+                                    else -> {
+                                        selectedTab = DesktopTab.Library
+                                    }
                                 }
                                 initialCreatorType = null
                             }
@@ -350,6 +366,7 @@ fun CharactersSplitPane(
     selectedCharacterId: String?,
     onCharacterSelected: (String) -> Unit,
     onCreateCharacter: () -> Unit,
+    onEditCharacter: (com.dnd.helper.domain.model.Character) -> Unit = {},
     sessionKey: String = "",
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
@@ -374,7 +391,8 @@ fun CharactersSplitPane(
                     parametersOf(selectedCharacterId)
                 }
                 MasterCharacterDetailScreen(
-                    viewModel = viewModel
+                    viewModel = viewModel,
+                    onEditClick = onEditCharacter
                 )
             } else {
                 Column(

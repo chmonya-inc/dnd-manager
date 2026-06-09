@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.random.Random
-import kotlin.time.Clock
 
 class CharacterCreateViewModel(
     private val repository: CharacterRepository,
@@ -22,7 +21,7 @@ class CharacterCreateViewModel(
     private val api: com.dnd.helper.data.remote.DndApiDataSource,
 ) : ViewModel() {
 
-    private val tempId = "temp-char-${Random.nextInt(1000000, 9999999)}"
+    private var tempId = "temp-char-${Random.nextInt(1000000, 9999999)}"
     private val _state = MutableStateFlow(CharacterCreateState())
     val state: StateFlow<CharacterCreateState> = _state.asStateFlow()
 
@@ -48,6 +47,12 @@ class CharacterCreateViewModel(
                                 if (currentState.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
                                     val newItems = currentState.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
                                     currentState.copy(items = newItems)
+                                } else currentState
+                            } else if (task.entityType == "spell") {
+                                val spellId = task.entityId.substringAfter(":")
+                                if (currentState.spellList.any { it.id == spellId && it.iconUrl == "generating:${task.id}" }) {
+                                    val newSpells = currentState.spellList.map { if (it.id == spellId) it.copy(iconUrl = resultUrl) else it }
+                                    currentState.copy(spellList = newSpells)
                                 } else currentState
                             } else currentState
                         }
@@ -95,6 +100,10 @@ class CharacterCreateViewModel(
             }
             when (val res = api.getTraits()) {
                 is Result.Success -> _state.update { it.copy(availableTraits = res.data.results) }
+                else -> {}
+            }
+            when (val res = api.getSpells()) {
+                is Result.Success -> _state.update { it.copy(availableSpells = res.data.results) }
                 else -> {}
             }
         }
@@ -232,21 +241,18 @@ class CharacterCreateViewModel(
             is CharacterCreateEvent.WeaponDamageTypeChanged -> updateWeapon(event.index) { it.copy(damageType = event.value) }
             is CharacterCreateEvent.WeaponNotesChanged -> updateWeapon(event.index) { it.copy(notes = event.value) }
 
-            // Skills
-            CharacterCreateEvent.AddSkill -> addSkill()
-            is CharacterCreateEvent.RemoveSkill -> removeSkill(event.index)
-            is CharacterCreateEvent.SkillNameChanged -> updateSkill(event.index) { it.copy(name = event.value) }
-            is CharacterCreateEvent.SkillDescriptionChanged -> updateSkill(event.index) { it.copy(description = event.value) }
-            is CharacterCreateEvent.SkillIconNameChanged -> updateSkill(event.index) { it.copy(iconUrl = event.value.ifBlank { null }) }
-            is CharacterCreateEvent.SkillDamageChanged -> updateSkill(event.index) { it.copy(damage = event.value) }
-            is CharacterCreateEvent.SkillDamageTypeChanged -> updateSkill(event.index) { it.copy(damageType = event.value) }
-            is CharacterCreateEvent.SkillResourceCostChanged -> updateSkill(event.index) { it.copy(resourceCost = event.value) }
-            is CharacterCreateEvent.SkillRangeChanged -> updateSkill(event.index) { it.copy(range = event.value) }
-            is CharacterCreateEvent.SkillCastingTimeChanged -> updateSkill(event.index) { it.copy(castingTime = event.value) }
-            is CharacterCreateEvent.SkillDurationChanged -> updateSkill(event.index) { it.copy(duration = event.value) }
-            is CharacterCreateEvent.SkillLevelChanged -> updateSkill(event.index) { it.copy(level = event.value.toIntOrNull() ?: 0) }
-            is CharacterCreateEvent.SkillSchoolChanged -> updateSkill(event.index) { it.copy(school = event.value) }
-            is CharacterCreateEvent.SkillIsPassiveChanged -> updateSkill(event.index) { it.copy(isPassive = event.value) }
+            // Spells
+            CharacterCreateEvent.AddSpell -> addSpell()
+            is CharacterCreateEvent.RemoveSpell -> removeSpell(event.index)
+            is CharacterCreateEvent.SpellNameChanged -> updateSpell(event.index) { it.copy(name = event.value) }
+            is CharacterCreateEvent.SpellDescriptionChanged -> updateSpell(event.index) { it.copy(description = event.value) }
+            is CharacterCreateEvent.SpellLevelChanged -> updateSpell(event.index) { it.copy(level = event.value.toIntOrNull() ?: 0) }
+            is CharacterCreateEvent.SpellSchoolChanged -> updateSpell(event.index) { it.copy(school = event.value) }
+            is CharacterCreateEvent.SpellCastingTimeChanged -> updateSpell(event.index) { it.copy(castingTime = event.value) }
+            is CharacterCreateEvent.SpellRangeChanged -> updateSpell(event.index) { it.copy(range = event.value) }
+            is CharacterCreateEvent.SpellDurationChanged -> updateSpell(event.index) { it.copy(duration = event.value) }
+            is CharacterCreateEvent.SpellDamageChanged -> updateSpell(event.index) { it.copy(damage = event.value) }
+            is CharacterCreateEvent.SpellDamageTypeChanged -> updateSpell(event.index) { it.copy(damageType = event.value) }
 
             // Features
             // Features
@@ -257,6 +263,7 @@ class CharacterCreateViewModel(
             is CharacterCreateEvent.AddFeat -> _state.value = _state.value.copy(selectedFeats = _state.value.selectedFeats + event.value)
             is CharacterCreateEvent.RemoveFeat -> _state.value = _state.value.copy(selectedFeats = _state.value.selectedFeats - event.value)
 
+            is CharacterCreateEvent.LoadCharacter -> loadCharacter(event.character)
             is CharacterCreateEvent.SaveCharacter -> saveCharacter()
             is CharacterCreateEvent.GenerateImage -> generateImage()
             is CharacterCreateEvent.GenerateItemImage -> generateItemImage(event.index)
@@ -373,40 +380,105 @@ class CharacterCreateViewModel(
         }
     }
 
-    // Skills
-    private fun addSkill() {
-        val newSkill = Skill(
-            id = "skl-${getRandomId()}",
-            name = "New Skill",
+    // Spells
+    private fun addSpell() {
+        val newSpell = Spell(
+            id = "spl-${getRandomId()}",
+            name = "New Spell",
             description = "",
-            iconUrl = null,
-            damage = "",
-            damageType = "",
-            resourceCost = "",
-            range = "",
-            castingTime = "",
-            duration = "",
             level = 0,
             school = "",
-            isPassive = false,
+            castingTime = "",
+            range = "",
+            duration = ""
         )
-        _state.value = _state.value.copy(skillList = _state.value.skillList + newSkill)
+        _state.value = _state.value.copy(spellList = _state.value.spellList + newSpell)
     }
 
-    private fun removeSkill(index: Int) {
-        val current = _state.value.skillList
+    private fun removeSpell(index: Int) {
+        val current = _state.value.spellList
         if (index in current.indices) {
-            _state.value = _state.value.copy(skillList = current.filterIndexed { i, _ -> i != index })
+            _state.value = _state.value.copy(spellList = current.filterIndexed { i, _ -> i != index })
         }
     }
 
-    private fun updateSkill(index: Int, transform: (Skill) -> Skill) {
-        val current = _state.value.skillList
+    private fun updateSpell(index: Int, transform: (Spell) -> Spell) {
+        val current = _state.value.spellList
         if (index in current.indices) {
             _state.value = _state.value.copy(
-                skillList = current.mapIndexed { i, skl -> if (i == index) transform(skl) else skl }
+                spellList = current.mapIndexed { i, spl -> if (i == index) transform(spl) else spl }
             )
         }
+    }
+
+    private fun loadCharacter(character: Character) {
+        _state.value = CharacterCreateState(
+            name = character.name,
+            playerName = character.playerName,
+            race = character.race,
+            subrace = character.subrace,
+            characterClass = character.characterClass,
+            subclass = character.subclass,
+            background = character.background,
+            alignment = character.alignment,
+            level = character.level.toString(),
+            experiencePoints = character.experiencePoints.toString(),
+            description = character.description,
+            imageUrl = character.imageUrl ?: "",
+            age = character.appearance.age.toString(),
+            gender = character.appearance.gender,
+            height = character.appearance.height,
+            weight = character.appearance.weight,
+            eyes = character.appearance.eyes,
+            hair = character.appearance.hair,
+            skin = character.appearance.skin,
+            strength = character.stats.strength.toString(),
+            dexterity = character.stats.dexterity.toString(),
+            constitution = character.stats.constitution.toString(),
+            intelligence = character.stats.intelligence.toString(),
+            wisdom = character.stats.wisdom.toString(),
+            charisma = character.stats.charisma.toString(),
+            maxHp = character.maxHp.toString(),
+            currentHp = character.currentHp.toString(),
+            tempHp = character.combat.tempHp.toString(),
+            armorClass = character.combat.armorClass.toString(),
+            initiative = character.combat.initiative.toString(),
+            speed = character.combat.speed.toString(),
+            proficiencyBonus = character.combat.proficiencyBonus.toString(),
+            hitDice = character.combat.hitDice,
+            hitDiceCurrent = character.combat.hitDiceCurrent.toString(),
+            inspiration = character.combat.inspiration,
+            exhaustion = character.combat.exhaustion.toString(),
+            conditions = character.combat.conditions.joinToString(", "),
+            deathSaveSuccesses = character.combat.deathSaveSuccesses.toString(),
+            deathSaveFailures = character.combat.deathSaveFailures.toString(),
+            savingThrows = character.proficiencies.savingThrows.joinToString(", "),
+            armorProficiencies = character.proficiencies.armor.joinToString(", "),
+            selectedSkills = character.proficiencies.skills,
+            selectedWeapons = character.proficiencies.weapons,
+            selectedTools = character.proficiencies.tools,
+            selectedLanguages = character.proficiencies.languages,
+            selectedClassFeatures = character.features.classFeatures,
+            selectedRacialTraits = character.features.racialTraits,
+            selectedFeats = character.features.feats,
+            items = character.items,
+            weapons = character.weapons,
+            spellList = character.spells,
+            notes = character.notes,
+            availableClasses = _state.value.availableClasses,
+            availableRaces = _state.value.availableRaces,
+            availableBackgrounds = _state.value.availableBackgrounds,
+            availableAlignments = _state.value.availableAlignments,
+            availableLanguages = _state.value.availableLanguages,
+            availableSkills = _state.value.availableSkills,
+            availableEquipment = _state.value.availableEquipment,
+            availableFeats = _state.value.availableFeats,
+            availableFeatures = _state.value.availableFeatures,
+            availableTraits = _state.value.availableTraits,
+            availableSpells = _state.value.availableSpells
+        )
+        tempId = character.id
+        updateDefaultPrompt()
     }
 
     private fun parseCommaList(input: String): List<String> =
@@ -510,7 +582,7 @@ class CharacterCreateViewModel(
                 racialTraits = s.selectedRacialTraits,
                 feats = s.selectedFeats,
             ),
-            skills = s.skillList,
+            spells = s.spellList,
             items = s.items,
             notes = s.notes,
         )

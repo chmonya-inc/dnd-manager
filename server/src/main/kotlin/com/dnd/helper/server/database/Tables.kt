@@ -34,14 +34,14 @@ object Characters : Table("characters") {
     val experiencePoints = integer("experience_points")
     
     // Complex objects as JSON
-    val appearance = json<com.dnd.helper.domain.model.CharacterAppearance>("appearance", json)
-    val combat = json<com.dnd.helper.domain.model.CharacterCombat>("combat", json)
-    val proficiencies = json<com.dnd.helper.domain.model.CharacterProficiencies>("proficiencies", json)
-    val weapons = json<List<com.dnd.helper.domain.model.Weapon>>("weapons", json)
-    val features = json<com.dnd.helper.domain.model.CharacterFeatures>("features", json)
-    val skills = json<List<com.dnd.helper.domain.model.Skill>>("skills", json)
-    val items = json<List<com.dnd.helper.domain.model.Item>>("items", json)
-    val notes = json<List<com.dnd.helper.domain.model.Note>>("notes", json)
+    val appearance = json<com.dnd.helper.domain.model.CharacterAppearance>("appearance", json).default(com.dnd.helper.domain.model.CharacterAppearance())
+    val combat = json<com.dnd.helper.domain.model.CharacterCombat>("combat", json).default(com.dnd.helper.domain.model.CharacterCombat())
+    val proficiencies = json<com.dnd.helper.domain.model.CharacterProficiencies>("proficiencies", json).default(com.dnd.helper.domain.model.CharacterProficiencies())
+    val weapons = json<List<com.dnd.helper.domain.model.Weapon>>("weapons", json).default(emptyList())
+    val features = json<com.dnd.helper.domain.model.CharacterFeatures>("features", json).default(com.dnd.helper.domain.model.CharacterFeatures())
+    val spells = json<List<com.dnd.helper.domain.model.Spell>>("spells", json).default(emptyList())
+    val items = json<List<com.dnd.helper.domain.model.Item>>("items", json).default(emptyList())
+    val notes = json<List<com.dnd.helper.domain.model.Note>>("notes", json).default(emptyList())
 
     override val primaryKey = PrimaryKey(id, sessionId)
 }

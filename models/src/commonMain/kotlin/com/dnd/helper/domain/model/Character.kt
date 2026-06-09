@@ -26,7 +26,7 @@ data class Character(
     val proficiencies: CharacterProficiencies = CharacterProficiencies(),
     val weapons: List<Weapon> = emptyList(),
     val features: CharacterFeatures = CharacterFeatures(),
-    val skills: List<Skill> = emptyList(),
+    val spells: List<Spell> = emptyList(),
     val items: List<Item> = emptyList(),
     val notes: List<Note> = emptyList(),
 ) {
