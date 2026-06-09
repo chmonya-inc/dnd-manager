@@ -4,6 +4,8 @@ import com.dnd.helper.domain.music.AudioPlayer
 import com.dnd.helper.domain.storage.CharacterStorage
 import org.koin.dsl.module
 import java.util.prefs.Preferences
+import kotlinx.serialization.json.*
+import kotlinx.serialization.*
 
 class DesktopAudioPlayer : AudioPlayer {
     private var player: javazoom.jl.player.Player? = null
@@ -180,12 +182,32 @@ class DesktopCharacterStorage : CharacterStorage {
         return prefs.get("comfy_ui_address", null)
     }
 
-    override fun saveComfyUiWorkflow(json: String) {
-        prefs.put("comfy_ui_workflow", json)
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun saveComfyUi(workflow: JsonObject) {
+        try {
+            val dir = java.io.File(System.getProperty("user.home"), ".dndhelper")
+            if (!dir.exists()) dir.mkdirs()
+            val file = java.io.File(dir, "workflow.json")
+            file.outputStream().use { stream ->
+                Json.encodeToStream(workflow, stream)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
-    override fun getComfyUiWorkflow(): String? {
-        return prefs.get("comfy_ui_workflow", null)
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun getComfyUiWorkflow(): JsonObject? {
+        return try {
+            val file = java.io.File(System.getProperty("user.home"), ".dndhelper/workflow.json")
+            if (file.exists()) {
+                file.inputStream().use { stream ->
+                    Json.decodeFromStream<JsonObject>(stream)
+                }
+            } else null
+        } catch (e: Exception) {
+            null
+        }
     }
 
     override fun saveGenerationSteps(steps: Int) {

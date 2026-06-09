@@ -4,6 +4,8 @@ import android.content.Context
 import com.dnd.helper.domain.music.AndroidAudioPlayer
 import com.dnd.helper.domain.music.AudioPlayer
 import com.dnd.helper.domain.storage.CharacterStorage
+import kotlinx.serialization.json.*
+import kotlinx.serialization.encodeToString
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -50,12 +52,17 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
         return prefs.getString("comfy_ui_address", null)
     }
 
-    override fun saveComfyUiWorkflow(json: String) {
-        prefs.edit().putString("comfy_ui_workflow", json).apply()
+    override fun saveComfyUi(workflow: JsonObject) {
+        prefs.edit().putString("comfy_ui_workflow", Json.encodeToString(workflow)).apply()
     }
 
-    override fun getComfyUiWorkflow(): String? {
-        return prefs.getString("comfy_ui_workflow", null)
+    override fun getComfyUiWorkflow(): JsonObject? {
+        val jsonStr = prefs.getString("comfy_ui_workflow", null) ?: return null
+        return try {
+            Json.decodeFromString<JsonObject>(jsonStr)
+        } catch (e: Exception) {
+            null
+        }
     }
 
     override fun saveGenerationSteps(steps: Int) {

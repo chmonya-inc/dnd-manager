@@ -1,5 +1,7 @@
 package com.dnd.helper.domain.storage
 
+import kotlinx.serialization.json.JsonObject
+
 interface CharacterStorage {
     fun saveCharacterId(id: String)
     fun getCharacterId(): String?
@@ -11,8 +13,8 @@ interface CharacterStorage {
     fun getTheme(): String?
     fun saveComfyUiAddress(address: String)
     fun getComfyUiAddress(): String?
-    fun saveComfyUiWorkflow(json: String)
-    fun getComfyUiWorkflow(): String?
+    fun saveComfyUi(workflow: JsonObject)
+    fun getComfyUiWorkflow(): JsonObject?
     fun saveGenerationSteps(steps: Int)
     fun getGenerationSteps(): Int
     fun saveApiCache(key: String, json: String)

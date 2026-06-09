@@ -5,6 +5,8 @@ import com.dnd.helper.domain.storage.CharacterStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 
 data class SettingsState(
     val comfyUiAddress: String = "127.0.0.1:8000",
@@ -30,9 +32,14 @@ class SettingsViewModel(
         _state.value = _state.value.copy(comfyUiAddress = address)
     }
 
-    fun updateComfyUiWorkflow(json: String) {
-        storage.saveComfyUiWorkflow(json)
-        _state.value = _state.value.copy(hasWorkflow = true)
+    fun updateComfyUiWorkflow(jsonStr: String) {
+        try {
+            val workflow = Json.decodeFromString<JsonObject>(jsonStr)
+            storage.saveComfyUi(workflow)
+            _state.value = _state.value.copy(hasWorkflow = true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun updateGenerationSteps(steps: Int) {

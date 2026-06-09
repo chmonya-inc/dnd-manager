@@ -44,21 +44,17 @@ enum class GenerationType {
 
 object PromptGenerator {
     fun getFullPrompt(text: String, type: GenerationType): String {
-        val base = when (type) {
-            GenerationType.CHARACTER, GenerationType.NPC ->
-                "A high-resolution, ultra-detailed professional character portrait for a D&D RPG. A $text character in a realistic oil painting style. Bust shot from chest up. Sharp focus on facial features and textures. Intricate armor or clothing details. Dramatic atmospheric lighting, cinematic composition. Realistic skin textures, fine hair detail. Dark moody background. Flux model, 8k, masterpiece."
-            GenerationType.MONSTER ->
-                "An epic, wide-angle cinematic dark fantasy illustration capturing an overwhelming sense of cosmic horror and cataclysmic scale. A colossal, titanic $text rises majestically out of a raging, violent turquoise ocean, its massive form towering into the clouds and blotting out the sky. \n" +
-                        "\n" +
-                        "In the lower foreground, a small, fragile wooden ship is helplessly tossed around by massive crashing waves and churning sea foam, dramatically emphasizing the unfathomable, god-like size of the creature. Sharp, jagged dark rock spires and ancient obsidian monoliths jut out from the turbulent water. The sky is chaotic, filled with rolling dark storm clouds and dense fog, shattered by brilliant flashes of jagged teal and yellow lightning that vividly illuminate the creature's colossal silhouette. Masterpiece digital art, dynamic environmental movement, intense cinematic lighting, atmospheric perspective, grimdark mythic fantasy style."
-            GenerationType.LOCATION ->
-                "A high-resolution, ultra-detailed wide-angle landscape painting of a $text, a legendary D&D RPG location. Breathtaking scenery, epic scale, intricate architectural details or natural formations. Magical atmosphere, volumetric lighting, god rays. Rich color palette, deep textures. Cinematic composition, sharp focus. 8k resolution, flux model, digital masterpiece."
-            GenerationType.BATTLEFIELD ->
-                "A top-down 2D tactical fantasy RPG battle map of a $text. High-quality digital painting style, detailed textures, vibrant colors, clear layout with pathways, structures, and tactical elements. Overlayed with a subtle, clean square grid. Bird's-eye view, perfectly flat overhead perspective, ideal for a D&D game."
-            GenerationType.SKILL, GenerationType.ITEM ->
-                "A high-resolution, ultra-detailed square RPG inventory icon of $text, D&D style. Intricate materials, polished textures, magical energy effects. Dramatic studio lighting, sharp focus on micro-details. Clean dark moody vignette background. Fantasy game asset, octane render style."
+        val typeName = when (type) {
+            GenerationType.CHARACTER -> "Character"
+            GenerationType.NPC -> "NPC"
+            GenerationType.MONSTER -> "Monster"
+            GenerationType.LOCATION -> "Location"
+            GenerationType.BATTLEFIELD -> "Battlefield"
+            GenerationType.SKILL -> "Skill"
+            GenerationType.ITEM -> "Item"
         }
-        return "$base No text, no letters, no words, no signatures, no watermark. MUST have no text on it."
+        val base = "Category: $typeName | Idea: $text"
+        return base
     }
 }
 
@@ -196,8 +192,7 @@ class AiImageService(
 
             println("Generating image with prompt: $promptText and size: ${width}x${height}")
             
-            val savedWorkflow = storage.getComfyUiWorkflow()
-            val workflow = json.parseToJsonElement(savedWorkflow ?: workflowJson).jsonObject.toMutableMap()
+            val workflow = (storage.getComfyUiWorkflow() ?: json.parseToJsonElement(workflowJson).jsonObject).toMutableMap()
             
             // Dynamically find and update nodes
             for (nodeId in workflow.keys) {
@@ -206,13 +201,9 @@ class AiImageService(
                 var updated = false
 
                 // Update Prompt (find CLIPTextEncode or similar with "text" input)
-                if (inputs.containsKey("text") && node["class_type"]?.jsonPrimitive?.content?.contains("CLIPText") == true) {
-                    val currentText = inputs["text"]?.jsonPrimitive?.content ?: ""
-                    // Update if it's the positive prompt (usually the empty one or specifically marked)
-                    if (currentText.isEmpty() || currentText == "PROMPT_HERE" || nodeId == "75:74") {
-                        inputs["text"] = JsonPrimitive(promptText)
-                        updated = true
-                    }
+                if (inputs.containsKey("prompt")) {
+                    inputs["prompt"] = JsonPrimitive(promptText)
+                    updated = true
                 }
 
                 // Update Seed
@@ -220,7 +211,7 @@ class AiImageService(
                     inputs["noise_seed"] = JsonPrimitive(Random.nextLong(0, Long.MAX_VALUE))
                     updated = true
                 } else if (inputs.containsKey("seed")) {
-                    inputs["seed"] = JsonPrimitive(Random.nextLong(0, Long.MAX_VALUE))
+                    inputs["seed"] = JsonPrimitive(Random.nextInt(0, Int.MAX_VALUE))
                     updated = true
                 }
 

@@ -1,6 +1,8 @@
 package com.dnd.helper.di
 
 import com.dnd.helper.domain.storage.CharacterStorage
+import kotlinx.serialization.json.*
+import kotlinx.serialization.encodeToString
 import org.koin.dsl.module
 import kotlinx.browser.localStorage
 
@@ -45,12 +47,17 @@ class WasmCharacterStorage : CharacterStorage {
         return localStorage.getItem("comfy_ui_address")
     }
 
-    override fun saveComfyUiWorkflow(json: String) {
-        localStorage.setItem("comfy_ui_workflow", json)
+    override fun saveComfyUi(workflow: JsonObject) {
+        localStorage.setItem("comfy_ui_workflow", Json.encodeToString(workflow))
     }
 
-    override fun getComfyUiWorkflow(): String? {
-        return localStorage.getItem("comfy_ui_workflow")
+    override fun getComfyUiWorkflow(): JsonObject? {
+        val jsonStr = localStorage.getItem("comfy_ui_workflow") ?: return null
+        return try {
+            Json.decodeFromString<JsonObject>(jsonStr)
+        } catch (e: Exception) {
+            null
+        }
     }
 
     override fun saveGenerationSteps(steps: Int) {
