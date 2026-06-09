@@ -13,7 +13,7 @@ env:
 jobs:
   manual-approval:
     name: Manual Approval
-    runs-on: ubuntu-latest
+    runs-on: raspberrypi
     permissions:
       issues: write
     steps:
