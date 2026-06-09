@@ -7,7 +7,7 @@ on:
 jobs:
   manual-approval:
     name: Manual Approval
-    runs-on: raspberrypi
+    runs-on: ubuntu-latest
     permissions:
       issues: write
     steps:
