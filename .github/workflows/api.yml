@@ -2,7 +2,7 @@ name: DND Manager Api
 
 on:
   push:
-    branches: cicd
+    branches: api
 
 env:
   RELEASE_NAME: dndmanager-api
