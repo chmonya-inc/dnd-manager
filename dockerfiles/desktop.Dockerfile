@@ -24,6 +24,8 @@ COPY desktop/src desktop/src
 
 COPY apps-script apps-script
 
+COPY properties/desktop.properties ./local.properties
+
 RUN chmod +x gradlew
 
 # Build only the web
