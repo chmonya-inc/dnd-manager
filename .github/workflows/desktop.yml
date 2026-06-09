@@ -23,7 +23,7 @@ jobs:
         uses: trstringer/manual-approval@v1
         with:
           secret: ${{ steps.generate_token.outputs.token }}
-          approvers: dnd-manager-developers
+          approvers: chmonya-inc/dnd-manager-developers
           minimum-approvals: 1
           issue-title: "Manual Approval Required for build"
           issue-body: "Please approve or deny the build"
