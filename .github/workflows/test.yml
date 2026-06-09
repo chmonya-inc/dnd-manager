@@ -1,0 +1,13 @@
+name: Release api
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  manual-approval:
+    uses: chmonya-inc/dnd-manager/.github/workflows/common.yml
+    with:
+      app-name: Test
+    secrets: inherit
