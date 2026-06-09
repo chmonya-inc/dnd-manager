@@ -38,6 +38,31 @@ fun SettingsScreen(
         )
         
         HorizontalDivider()
+
+        // Connection Settings Section
+        SettingsSection(
+            title = "Main Server Settings",
+            icon = Icons.Default.Cloud
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = state.serverAddress,
+                    onValueChange = { viewModel.updateServerAddress(it) },
+                    label = { Text("Main Server URL") },
+                    placeholder = { Text("http://localhost:8080") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    leadingIcon = { Icon(Icons.Default.Link, null) }
+                )
+                Text(
+                    "This is the base URL for synchronization and character data.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        HorizontalDivider()
         
         // AI Settings Section
         SettingsSection(

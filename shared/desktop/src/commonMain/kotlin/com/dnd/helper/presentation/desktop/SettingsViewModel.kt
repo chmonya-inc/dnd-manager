@@ -9,6 +9,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
 data class SettingsState(
+    val serverAddress: String = "http://localhost:9090",
     val comfyUiAddress: String = "127.0.0.1:8000",
     val hasWorkflow: Boolean = false,
     val generationSteps: Int = 20
@@ -20,12 +21,18 @@ class SettingsViewModel(
 
     private val _state = MutableStateFlow(
         SettingsState(
+            serverAddress = storage.getServerAddress() ?: "http://localhost:9090",
             comfyUiAddress = storage.getComfyUiAddress() ?: "127.0.0.1:8000",
             hasWorkflow = storage.getComfyUiWorkflow() != null,
             generationSteps = storage.getGenerationSteps()
         )
     )
     val state: StateFlow<SettingsState> = _state.asStateFlow()
+
+    fun updateServerAddress(address: String) {
+        storage.saveServerAddress(address)
+        _state.value = _state.value.copy(serverAddress = address)
+    }
 
     fun updateComfyUiAddress(address: String) {
         storage.saveComfyUiAddress(address)

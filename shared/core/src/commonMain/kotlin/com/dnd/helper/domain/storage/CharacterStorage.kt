@@ -11,6 +11,9 @@ interface CharacterStorage {
     fun getSessions(): String?
     fun saveTheme(themeName: String)
     fun getTheme(): String?
+    fun saveServerAddress(address: String)
+    fun getServerAddress(): String?
+    fun getServerAddressFlow(): kotlinx.coroutines.flow.Flow<String?>
     fun saveComfyUiAddress(address: String)
     fun getComfyUiAddress(): String?
     fun saveComfyUi(workflow: JsonObject)

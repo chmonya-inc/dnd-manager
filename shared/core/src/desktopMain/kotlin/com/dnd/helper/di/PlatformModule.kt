@@ -2,6 +2,7 @@ package com.dnd.helper.di
 
 import com.dnd.helper.domain.music.AudioPlayer
 import com.dnd.helper.domain.storage.CharacterStorage
+import kotlinx.coroutines.flow.asStateFlow
 import org.koin.dsl.module
 import java.util.prefs.Preferences
 import kotlinx.serialization.json.*
@@ -141,7 +142,8 @@ class DesktopAudioPlayer : AudioPlayer {
 
 class DesktopCharacterStorage : CharacterStorage {
     private val prefs = Preferences.userRoot().node("com.dnd.helper")
-    
+    private val _serverAddressFlow = kotlinx.coroutines.flow.MutableStateFlow(getServerAddress())
+
     override fun saveCharacterId(id: String) {
         prefs.put("last_character_id", id)
     }
@@ -172,6 +174,19 @@ class DesktopCharacterStorage : CharacterStorage {
 
     override fun getTheme(): String? {
         return prefs.get("app_theme", null)
+    }
+
+    override fun saveServerAddress(address: String) {
+        prefs.put("main_server_address", address)
+        _serverAddressFlow.value = address
+    }
+
+    override fun getServerAddress(): String? {
+        return prefs.get("main_server_address", null)
+    }
+
+    override fun getServerAddressFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _serverAddressFlow.asStateFlow()
     }
 
     override fun saveComfyUiAddress(address: String) {

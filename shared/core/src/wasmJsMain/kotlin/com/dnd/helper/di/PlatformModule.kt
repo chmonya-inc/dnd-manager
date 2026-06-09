@@ -5,8 +5,12 @@ import kotlinx.serialization.json.*
 import kotlinx.serialization.encodeToString
 import org.koin.dsl.module
 import kotlinx.browser.localStorage
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class WasmCharacterStorage : CharacterStorage {
+    private val _serverAddressFlow = MutableStateFlow(getServerAddress())
+
     override fun saveCharacterId(id: String) {
         localStorage.setItem("last_character_id", id)
     }
@@ -37,6 +41,19 @@ class WasmCharacterStorage : CharacterStorage {
 
     override fun getTheme(): String? {
         return localStorage.getItem("app_theme")
+    }
+
+    override fun saveServerAddress(address: String) {
+        localStorage.setItem("main_server_address", address)
+        _serverAddressFlow.value = address
+    }
+
+    override fun getServerAddress(): String? {
+        return localStorage.getItem("main_server_address")
+    }
+
+    override fun getServerAddressFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _serverAddressFlow.asStateFlow()
     }
 
     override fun saveComfyUiAddress(address: String) {

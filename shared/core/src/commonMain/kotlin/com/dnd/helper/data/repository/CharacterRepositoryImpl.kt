@@ -23,6 +23,29 @@ class CharacterRepositoryImpl(
 
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
+    init {
+        repositoryScope.launch {
+            storage.getServerAddressFlow().collect {
+                println("[CharacterRepository] Server address changed, clearing caches")
+                charactersCache = null
+                heavyCharacterCache.clear()
+                locationsCache = null
+                battlefieldsCache = null
+                monstersCache = null
+                npcsCache = null
+                musicCache = null
+                eventsCache = null
+                
+                // Trigger refresh in all observing ViewModels
+                _characterUpdates.tryEmit("all")
+                _npcUpdates.tryEmit("all")
+                _monsterUpdates.tryEmit("all")
+                _locationUpdates.tryEmit("all")
+                _battlefieldUpdates.tryEmit("all")
+            }
+        }
+    }
+
     private val _characterUpdates = MutableSharedFlow<String>(extraBufferCapacity = 1)
     override val characterUpdates: SharedFlow<String> = _characterUpdates.asSharedFlow()
 

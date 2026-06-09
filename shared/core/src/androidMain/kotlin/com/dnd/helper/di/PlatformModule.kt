@@ -6,12 +6,15 @@ import com.dnd.helper.domain.music.AudioPlayer
 import com.dnd.helper.domain.storage.CharacterStorage
 import kotlinx.serialization.json.*
 import kotlinx.serialization.encodeToString
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
 class AndroidCharacterStorage(context: Context) : CharacterStorage {
     private val prefs = context.getSharedPreferences("dnd_helper_prefs", Context.MODE_PRIVATE)
-    
+    private val _serverAddressFlow = MutableStateFlow(getServerAddress())
+
     override fun saveCharacterId(id: String) {
         prefs.edit().putString("last_character_id", id).apply()
     }
@@ -42,6 +45,19 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
 
     override fun getTheme(): String? {
         return prefs.getString("app_theme", null)
+    }
+
+    override fun saveServerAddress(address: String) {
+        prefs.edit().putString("main_server_address", address).apply()
+        _serverAddressFlow.value = address
+    }
+
+    override fun getServerAddress(): String? {
+        return prefs.getString("main_server_address", null)
+    }
+
+    override fun getServerAddressFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _serverAddressFlow.asStateFlow()
     }
 
     override fun saveComfyUiAddress(address: String) {

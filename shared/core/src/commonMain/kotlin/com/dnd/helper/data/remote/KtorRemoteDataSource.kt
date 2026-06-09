@@ -13,6 +13,7 @@ import io.ktor.http.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 
@@ -29,45 +30,56 @@ class KtorRemoteDataSource(
 
     private fun sessionId(): String = storage.getTableId() ?: "default"
     
-    private fun baseUrl(): String {
-        return GoogleAppsScriptConfig.WEB_APP_URL.removeSuffix("/exec")
-    }
-
-    private fun wsUrl(): String {
-        return baseUrl().replace("http://", "ws://").replace("https://", "wss://")
-    }
-
-    fun observeUpdates(): Flow<String> = flow {
-        while (true) {
-            try {
-                val url = "${wsUrl()}/api/${sessionId()}/ws"
-                httpClient.webSocket(url) {
-                    // Send a "check" message every 1 second to trigger update notifications
-                    val pinger = launch {
-                        while (isActive) {
-                            try {
-                                send("check")
-                                delay(1000)
-                            } catch (e: Exception) {
-                                break
-                            }
-                        }
-                    }
-
-                    for (frame in incoming) {
-                        if (frame is Frame.Text) {
-                            val text = frame.readText()
-                            if (text.startsWith("update:")) {
-                                emit(text.removePrefix("update:"))
-                            }
-                        }
-                    }
-                    pinger.cancel()
-                }
-            } catch (e: Exception) {
-                println("[KtorRemoteDataSource] WS Error: ${e.message}")
+    private fun baseUrl(address: String? = storage.getServerAddress()): String {
+        if (address != null && address.isNotBlank()) {
+            var formatted = address.trim()
+            if (!formatted.startsWith("http://") && !formatted.startsWith("https://")) {
+                formatted = "http://$formatted"
             }
-            delay(5000) // Reconnect delay
+            return formatted.removeSuffix("/exec").removeSuffix("/")
+        }
+        return GoogleAppsScriptConfig.WEB_APP_URL.removeSuffix("/exec").removeSuffix("/")
+    }
+
+    private fun wsUrl(address: String? = storage.getServerAddress()): String {
+        return baseUrl(address).replace("http://", "ws://").replace("https://", "wss://")
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeUpdates(): Flow<String> = storage.getServerAddressFlow().flatMapLatest { address ->
+        flow {
+            while (true) {
+                try {
+                    val url = "${wsUrl(address)}/api/${sessionId()}/ws"
+                    println("[KtorRemoteDataSource] Connecting to WebSocket: $url")
+                    httpClient.webSocket(url) {
+                        // Send a "check" message every 1 second to trigger update notifications
+                        val pinger = launch {
+                            while (isActive) {
+                                try {
+                                    send("check")
+                                    delay(1000)
+                                } catch (e: Exception) {
+                                    break
+                                }
+                            }
+                        }
+
+                        for (frame in incoming) {
+                            if (frame is Frame.Text) {
+                                val text = frame.readText()
+                                if (text.startsWith("update:")) {
+                                    emit(text.removePrefix("update:"))
+                                }
+                            }
+                        }
+                        pinger.cancel()
+                    }
+                } catch (e: Exception) {
+                    println("[KtorRemoteDataSource] WS Error: ${e.message}")
+                }
+                delay(5000) // Reconnect delay
+            }
         }
     }
 

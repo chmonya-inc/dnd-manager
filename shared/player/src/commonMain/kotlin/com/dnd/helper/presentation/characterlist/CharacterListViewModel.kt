@@ -27,7 +27,13 @@ class CharacterListViewModel(
     private val saveJobs = mutableMapOf<String, Job>()
 
     init {
-        loadInitialData()
+        // Listen for server address changes to reload data
+        viewModelScope.launch {
+            storage.getServerAddressFlow().collect {
+                println("[CharacterList] Server address changed or initialized, reloading initial data...")
+                loadInitialData()
+            }
+        }
         
         // Listen for background image generation completion
         viewModelScope.launch {
