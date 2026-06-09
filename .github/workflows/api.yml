@@ -29,9 +29,11 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           push: true
-          tags: "${{ env.IMAGE_NAME }}:latest","${{ env.IMAGE_NAME }}:${{ env.GITHUB_SHA }}"
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
           file: ${{ env.DOCKERFILE }}
-          cache-from: "${{ env.IMAGE_NAME }}:latest"
+          cache-from: ${{ env.IMAGE_NAME }}:latest
   deploy:
     needs: build
     runs-on: raspberrypi
