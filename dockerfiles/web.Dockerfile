@@ -13,8 +13,9 @@ COPY settings.gradle.kts .
 RUN mkdir -p desktop android web app shared server models
 
 # Copy build files (use simple COPY without shell redirection)
-COPY shared/build.gradle.kts shared
 COPY models/build.gradle.kts models
+COPY shared/core/build.gradle.kts shared/core
+COPY shared/player/build.gradle.kts shared/player
 COPY web/build.gradle.kts web
 
 # Copy source code - use simple COPY
