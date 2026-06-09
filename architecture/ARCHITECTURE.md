@@ -29,11 +29,20 @@ We follow **Clean Architecture** with **MVVM** presentation pattern.
 ### Module Structure
 
 ```
-:shared                     ← KMP shared module (UI, domain, data logic)
-├── commonMain              ← Shared Compose UI, ViewModels, UseCases, Repositories
-├── androidMain             ← Android-specific platform bindings (SharedPreferences)
-├── desktopMain             ← Desktop-specific platform bindings (java.util.prefs)
-└── wasmJsMain              ← Web-specific platform bindings (localStorage)
+:shared:core                ← Core architecture (Domain, Data, DI, Theme, Networking)
+├── commonMain              ← Ktor client, Repositories, Koin coreModule
+├── androidMain             ← Android PlatformModule (Storage, Audio)
+├── desktopMain             ← Desktop PlatformModule (POI, JLayer)
+└── wasmJsMain              ← Web PlatformModule
+
+:shared:player              ← Lightweight player screens
+└── commonMain              ← Start, CharacterList, CharacterDetail + playerModule
+
+:shared:desktop             ← Heavy DM screens and Creator mode
+├── commonMain              ← Library, Presenter, Creator, MusicPlayer + desktopModule
+├── androidMain             ← ExternalWindow actual (stub)
+├── desktopMain             ← ExternalWindow actual (Swing window)
+└── wasmJsMain              ← ExternalWindow actual (stub)
 
 :server                     ← Ktor server module (JVM)
 ├── database                ← Exposed tables and factory

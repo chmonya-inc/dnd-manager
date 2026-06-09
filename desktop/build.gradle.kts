@@ -18,7 +18,7 @@ group = "com.dnd.helper"
 version = "1.0"
 
 dependencies {
-    implementation(project(":shared"))
+    implementation(project(":shared:desktop"))
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutines.swing)
 }

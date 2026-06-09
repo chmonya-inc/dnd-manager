@@ -12,12 +12,14 @@ User defined full project scope:
 ## What's Implemented
 
 ### Project Structure
-- [x] `:shared` KMP module with `commonMain`, `androidMain`, `desktopMain`, `wasmJsMain` source sets
-- [x] `:app` Android application module depending on `:shared`
-- [x] `:desktop` Desktop application module depending on `:shared`
-- [x] `:web` Web Browser application module (Kotlin/Wasm) depending on `:shared`
+- [x] `:shared:core` KMP module (Domain models, Repositories, Theme, DI, Network)
+- [x] `:shared:player` KMP module (Start, Character List, Character Detail screens)
+- [x] `:shared:desktop` KMP module (DM tools, Library, Creator, Music Player)
+- [x] `:app` Android application module depending on `:shared:player`
+- [x] `:desktop` Desktop application module depending on `:shared:desktop`
+- [x] `:web` Web Browser application module (Kotlin/Wasm) depending on `:shared:player`
 - [x] Gradle configuration with version catalogs for KMP, Ktor, Koin, Coil, Serialization
-- [x] Compose Multiplatform setup in `:shared` (Android, Desktop, Web)
+- [x] Compose Multiplatform setup in shared modules (Android, Desktop, Web)
 
 ### Domain Layer
 - [x] `Character` domain model with nested data classes:
