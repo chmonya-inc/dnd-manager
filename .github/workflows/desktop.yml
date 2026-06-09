@@ -1,4 +1,4 @@
-name: DND Manager Desktop client
+name: DND Manager Desktop
 
 on:
   push:
@@ -38,7 +38,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       - run: chmod +x gradlew
-      - run: ./gradlew :desktop:run
+      - run: ./gradlew :desktop:packageDistributionForCurrentOS
       - uses: actions/upload-artifact@v4
         with:
           name: dnd-manager-linux
@@ -54,7 +54,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       - run: chmod +x gradlew
-      - run: ./gradlew :desktop:run
+      - run: ./gradlew :desktop:packageDistributionForCurrentOS
       - uses: actions/upload-artifact@v4
         with:
           name: dnd-manager-windows
