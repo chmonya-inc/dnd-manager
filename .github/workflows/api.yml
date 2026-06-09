@@ -34,6 +34,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
           file: ${{ env.DOCKERFILE }}
           cache-from: ${{ env.IMAGE_NAME }}:latest
+          platforms: linux/arm64
   deploy:
     needs: build
     runs-on: raspberrypi
