@@ -2,7 +2,7 @@ name: DND Manager Web
 
 on:
   push:
-    branches: web-release*
+    branches: web
 
 env:
   RELEASE_NAME: dndmanager-web
