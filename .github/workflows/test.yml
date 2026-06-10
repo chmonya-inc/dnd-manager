@@ -7,7 +7,7 @@ on:
 
 jobs:
   manual-approval:
-    uses: chmonya-inc/dnd-manager/.github/workflows/common.yml
+    uses: chmonya-inc/dnd-manager/.github/workflows/common.yml@cicd
     with:
       app-name: Test
     secrets: inherit
