@@ -17,3 +17,7 @@ local.properties
 # Exclude git
 .git/
 .gitignore
+.github/
+
+# Exclude infra configs
+.helm/
