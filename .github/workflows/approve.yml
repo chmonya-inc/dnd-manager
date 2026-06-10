@@ -1,0 +1,27 @@
+name: Common manual approve workflow
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        type: string
+
+jobs:
+  manual-approval:
+    name: Manual Approval
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: Await Manual Approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ steps.generate_token.outputs.token }}
+          approvers: dnd-manager-developers
+          minimum-approvals: 1
+          issue-title: "${{ inputs.app-name }} build"
+          issue-body: "Please approve or deny the build"

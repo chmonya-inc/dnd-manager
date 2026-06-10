@@ -1,0 +1,20 @@
+name: Release api
+
+on:
+  push:
+    branches:
+      - release/all**
+      - release/api**
+    tags:
+      - release/all**
+      - release/api**
+
+jobs:
+  build-and-deploy:
+    uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v1
+    with:
+      image-name: chmonya777/dndmanager-api
+      dockerfile-path: dockerfiles/api.Dockerfile
+      release-name: dndmanager-api
+      k8s-namespace: dndmanager
+    secrets: inherit

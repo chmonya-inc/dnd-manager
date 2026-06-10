@@ -1,0 +1,48 @@
+name: Release desktop
+
+on:
+  push:
+    branches:
+      - release/all**
+      - release/desktop**
+    tags:
+      - release/all**
+      - release/desktop**
+
+jobs:
+  manual-approval:
+    name: Manual Approval
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: Await Manual Approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ steps.generate_token.outputs.token }}
+          approvers: dnd-manager-developers
+          minimum-approvals: 1
+          issue-title: "Desktop build"
+          issue-body: "Please approve or deny the build"
+
+  build-windows:
+    needs: manual-approval
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - run: chmod +x gradlew
+      - run: ./gradlew :desktop:packageDistributionForCurrentOS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dnd-manager-windows
+          path: desktop/build/compose/binaries/main/msi

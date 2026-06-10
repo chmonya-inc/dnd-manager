@@ -1,0 +1,19 @@
+# Exclude build outputs
+**/build/
+**/out/
+**/.gradle/
+
+# Exclude IDE files
+.idea/
+*.iml
+.vscode/
+.agents/
+.kimi/
+
+# Exclude local properties
+local.properties
+*.local
+
+# Exclude git
+.git/
+.gitignore
