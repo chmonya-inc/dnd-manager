@@ -17,4 +17,5 @@ jobs:
       dockerfile-path: dockerfiles/web.Dockerfile
       release-name: dndmanager-web
       k8s-namespace: dndmanager
+      app-name: web
     secrets: inherit

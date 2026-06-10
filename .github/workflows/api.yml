@@ -17,4 +17,5 @@ jobs:
       dockerfile-path: dockerfiles/api.Dockerfile
       release-name: dndmanager-api
       k8s-namespace: dndmanager
+      app-name: api
     secrets: inherit

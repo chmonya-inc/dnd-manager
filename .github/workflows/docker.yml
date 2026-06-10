@@ -15,6 +15,9 @@ on:
       k8s-namespace:
         required: true
         type: string
+      app-name:
+        required: true
+        type: string
 
 jobs:
   build:
@@ -47,7 +50,7 @@ jobs:
     steps:
     - name: Apply deployment
       run: |
-        helm secrets upgrade ${{ inputs.release-name }} .helm/api \
+        helm secrets upgrade ${{ inputs.release-name }} .helm/${{ inputs.app-name }} \
           --install \
           --set-string image.name=${{ inputs.image-name }} \
           --set-string image.tag=$GITHUB_SHA \

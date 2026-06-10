@@ -8,4 +8,4 @@ api:
     port: "5432"
     name: "dndhelper"
 web:
-  port: 8081
+  port: 80
