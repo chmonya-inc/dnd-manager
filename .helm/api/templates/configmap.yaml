@@ -5,6 +5,6 @@ metadata:
   labels:
     app: {{ .Release.Name }}
 data:
-  DB_HOST: "{{ .Values.api.db.host }}"
-  DB_PORT: "{{ .Values.api.db.port }}"
-  DB_NAME: "{{ .Values.api.db.name }}"
+  DB_HOST: "{{ .Values.db.host }}"
+  DB_PORT: "{{ .Values.db.port }}"
+  DB_NAME: "{{ .Values.db.name }}"

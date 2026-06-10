@@ -20,10 +20,10 @@ spec:
     - host: "{{ .Values.dns }}"
       http:
         paths:
-          - path: /
+          - path: /"{{ .Values.subpath }}"
             pathType: Prefix
             backend:
               service:
                 name: {{ .Release.Name }}
                 port:
-                  number: {{ .Values.web.port | int }}
+                  number: {{ .Values.port | int }}
