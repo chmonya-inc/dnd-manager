@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-and-deploy:
-    uses: chmonya-inc/dnd-manager/.github/workflows/build-deploy-docker.yml@cicd
+    uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v1
     with:
       image-name: chmonya777/dndmanager-web
       dockerfile-path: dockerfiles/web.Dockerfile
