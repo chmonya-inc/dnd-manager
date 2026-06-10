@@ -12,7 +12,6 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-connect-timeout: '300'
     nginx.ingress.kubernetes.io/proxy-read-timeout: '300'
     nginx.ingress.kubernetes.io/proxy-send-timeout: '300'
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.org/server-snippets: |
       add_header Access-Control-Allow-Origin *;
 spec:
@@ -21,10 +20,10 @@ spec:
     - host: "{{ .Values.dns }}"
       http:
         paths:
-          - path: /api(/|$)(.*)
-            pathType: ImplementationSpecific
+          - path: /"{{ .Values.subpath }}"
+            pathType: Prefix
             backend:
               service:
                 name: {{ .Release.Name }}
                 port:
-                  number: {{ .Values.web.port | int  }}
+                  number: {{ .Values.port | int }}

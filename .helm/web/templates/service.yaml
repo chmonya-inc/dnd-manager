@@ -7,8 +7,8 @@ metadata:
 spec:
   ports:
     - protocol: TCP
-      port: {{ .Values.web.port | int  }}
-      targetPort: {{ .Values.web.port | int  }}
+      port: {{ .Values.port | int  }}
+      targetPort: {{ .Values.port | int  }}
   selector:
     app: {{ .Release.Name }}
   type: ClusterIP

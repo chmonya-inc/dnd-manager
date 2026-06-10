@@ -1,15 +1,15 @@
-#name: Release api
-#
-#on:
-#  pull_request:
-#    branches:
-#      - master
-#
-#jobs:
-#  manual-approval:
-#    uses: chmonya-inc/dnd-manager/.github/workflows/approve.yml@v1
-#    with:
-#      app-name: Test
-#    secrets: inherit
-#    permissions:
-#      issues: write
+name: Release api
+
+on:
+  pull_request:
+    branches:
+      - test-workflow
+
+jobs:
+  manual-approval:
+    uses: chmonya-inc/dnd-manager/.github/workflows/approve.yml@v1
+    with:
+      app-name: Test
+    secrets: inherit
+    permissions:
+      issues: write

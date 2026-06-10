@@ -10,11 +10,12 @@ on:
       - release/web**
 
 jobs:
-  build-and-deploy:
+  release:
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v1
     with:
       image-name: chmonya777/dndmanager-web
       dockerfile-path: dockerfiles/web.Dockerfile
       release-name: dndmanager-web
       k8s-namespace: dndmanager
+      app-name: web
     secrets: inherit
