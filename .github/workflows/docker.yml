@@ -54,7 +54,7 @@ jobs:
           --install \
           --set-string image.name=${{ inputs.image-name }} \
           --set-string image.tag=$GITHUB_SHA \
-          -f .helm/values.yaml \
+          -f .helm/${{ inputs.app-name }}/values.yaml \
           -f .helm/.encrypted/secrets.yaml \
           -n ${{ inputs.k8s-namespace }}
     - name: Wait for deploy
