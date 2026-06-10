@@ -10,7 +10,7 @@ on:
       - release/api**
 
 jobs:
-  build-and-deploy:
+  release:
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v1
     with:
       image-name: chmonya777/dndmanager-api
