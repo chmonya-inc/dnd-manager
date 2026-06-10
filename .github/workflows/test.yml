@@ -11,3 +11,5 @@ jobs:
     with:
       app-name: Test
     secrets: inherit
+    permissions:
+      issues: write

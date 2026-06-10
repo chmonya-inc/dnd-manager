@@ -10,8 +10,6 @@ jobs:
   manual-approval:
     name: Manual Approval
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
     steps:
       - name: Generate token
         id: generate_token
