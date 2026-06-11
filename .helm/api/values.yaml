@@ -1,5 +1,5 @@
 dns: "true-steady-stinkbug.ngrok-free.app"
-subpath: "api/"
+subpath: api/
 port: 9090
 db:
   host: "postgres"
