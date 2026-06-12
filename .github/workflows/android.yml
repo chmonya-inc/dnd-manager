@@ -4,24 +4,24 @@ on:
   push:
     branches:
       - release/all**
-      - release/desktop**
+      - release/app**
     tags:
       - release/all**
-      - release/desktop**
+      - release/app**
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-      - run: mv properties/desktop.properties ./local.properties
+      - run: mv properties/app.properties ./local.properties
       - run: chmod +x gradlew
-      - run: ./gradlew :desktop:packageDistributionForCurrentOS
+      - run: ./gradlew :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: dnd-manager-windows
-          path: desktop/build/compose/binaries/main/msi
+          path: app/build/outputs/debug
