@@ -1,4 +1,4 @@
-name: Release desktop
+name: Release android app
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
       - release/app**
 
 jobs:
-  build-windows:
+  build-android:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
