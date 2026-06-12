@@ -5,14 +5,14 @@ WORKDIR /app
 
 # Copy Gradle files
 COPY gradlew .
-COPY gradle .
+COPY gradle gradle/
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
 
 # Copy build files
-COPY shared .
-COPY models .
-COPY server .
+COPY shared shared
+COPY models models
+COPY server models
 
 RUN chmod +x gradlew
 
