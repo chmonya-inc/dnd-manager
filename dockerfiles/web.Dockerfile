@@ -16,6 +16,7 @@ COPY models models
 COPY server server
 COPY desktop desktop
 COPY web web
+COPY app app
 
 RUN chmod +x gradlew
 
