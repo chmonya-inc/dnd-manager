@@ -12,7 +12,9 @@ COPY settings.gradle.kts .
 # Copy build files
 COPY shared shared
 COPY models models
-COPY server models
+COPY server server
+COPY desktop desktop
+COPY web web
 
 RUN chmod +x gradlew
 

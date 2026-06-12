@@ -13,6 +13,8 @@ COPY properties/web.properties ./local.properties
 # Copy build files
 COPY shared shared
 COPY models models
+COPY server server
+COPY desktop desktop
 COPY web web
 
 RUN chmod +x gradlew
