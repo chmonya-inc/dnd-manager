@@ -20,7 +20,7 @@ spec:
     - host: "{{ .Values.dns }}"
       http:
         paths:
-          - path: /"{{ .Values.subpath }}"
+          - path: "/{{ .Values.subpath }}"
             pathType: Prefix
             backend:
               service:
