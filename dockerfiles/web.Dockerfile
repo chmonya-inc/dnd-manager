@@ -29,12 +29,12 @@ ENV IMGBB_API_KEY=$IMGBB_API_KEY
 ENV NODE_OPTIONS=--max-old-space-size=2048
 
 # Build only the web
-RUN ./gradlew :web:wasmJsBrowserDistribution --no-daemon --max-workers=1
+RUN ./gradlew :web:wasmJsBrowserDevelopmentExecutableDistribution --no-daemon --max-workers=1
 
 # Stage 2: Runtime stage
 FROM nginx:alpine AS runtime
 
-COPY --from=build /app/web/build/dist/wasmJs/productionExecutable /usr/share/nginx/html
+COPY --from=build /app/web/build/dist/wasmJs/developmentExecutable /usr/share/nginx/html
 
 EXPOSE 80
 

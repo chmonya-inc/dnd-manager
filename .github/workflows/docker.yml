@@ -53,8 +53,8 @@ jobs:
             ${{ inputs.use-config-secrets && format('APPS_SCRIPT_URL_ANDROID={0}', secrets.APPS_SCRIPT_URL_ANDROID) || '' }}
             ${{ inputs.use-config-secrets && format('APPS_SCRIPT_URL_DESKTOP={0}', secrets.APPS_SCRIPT_URL_DESKTOP) || '' }}
             ${{ inputs.use-config-secrets && format('IMGBB_API_KEY={0}', secrets.IMGBB_API_KEY) || '' }}
-          cache-from: type=registry,ref=${{ inputs.image-name }}:buildcache
-          cache-to: type=registry,ref=${{ inputs.image-name }}:buildcache,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           platforms: linux/arm64
 
   deploy:
