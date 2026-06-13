@@ -32,6 +32,7 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
 
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootPlugin> {
     rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootExtension> {
-        downloadBaseUrl = null
+        @Suppress("DEPRECATION")
+        version = "130"
     }
 }
