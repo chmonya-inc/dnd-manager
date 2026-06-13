@@ -18,6 +18,7 @@ import org.koin.compose.KoinApplication
 import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.module.Module
+import org.koin.core.qualifier.named
 import org.koin.dsl.KoinAppDeclaration
 
 @Composable
@@ -31,7 +32,7 @@ fun CoreApp(
         modules(listOf(coreModule, platformModule) + appModules)
     }) {
         val koin = getKoin()
-        val httpClient = remember { koin.get<HttpClient>() }
+        val httpClient = remember { koin.get<HttpClient>(named("imageClient")) }
         remember(httpClient) {
             SingletonImageLoader.setSafe { context ->
                 ImageLoader.Builder(context)

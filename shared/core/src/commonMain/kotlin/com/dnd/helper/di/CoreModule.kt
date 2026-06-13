@@ -10,13 +10,18 @@ import com.dnd.helper.data.repository.CharacterRepositoryImpl
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.theme.ThemeViewModel
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.request.header
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val coreModule = module {
+    // Client for API calls with special headers
     single {
         HttpClient {
             followRedirects = true
@@ -34,11 +39,26 @@ val coreModule = module {
                 header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 header("ngrok-skip-browser-warning", "true")
             }
-            install(io.ktor.client.plugins.logging.Logging) {
-                level = io.ktor.client.plugins.logging.LogLevel.INFO
-                logger = object : io.ktor.client.plugins.logging.Logger {
+            install(Logging) {
+                level = LogLevel.INFO
+                logger = object : Logger {
                     override fun log(message: String) {
-                        println("[Ktor] $message")
+                        println("[Ktor API] $message")
+                    }
+                }
+            }
+        }
+    }
+
+    // Clean client for Image Loading (Coil) to avoid CORS Preflight
+    single(named("imageClient")) {
+        HttpClient {
+            followRedirects = true
+            install(Logging) {
+                level = LogLevel.INFO
+                logger = object : Logger {
+                    override fun log(message: String) {
+                        println("[Ktor Image] $message")
                     }
                 }
             }
