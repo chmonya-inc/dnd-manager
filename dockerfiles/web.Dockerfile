@@ -26,9 +26,10 @@ ARG IMGBB_API_KEY
 ENV APPS_SCRIPT_URL_ANDROID=$APPS_SCRIPT_URL_ANDROID
 ENV APPS_SCRIPT_URL_DESKTOP=$APPS_SCRIPT_URL_DESKTOP
 ENV IMGBB_API_KEY=$IMGBB_API_KEY
+ENV NODE_OPTIONS=--max-old-space-size=2048
 
 # Build only the web
-RUN ./gradlew :web:wasmJsBrowserDevelopmentExecutableDistribution --no-daemon
+RUN ./gradlew :web:wasmJsBrowserDevelopmentExecutableDistribution --no-daemon --max-workers=1
 
 # Stage 2: Runtime stage
 FROM nginx:alpine AS runtime

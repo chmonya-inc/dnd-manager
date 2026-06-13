@@ -18,7 +18,6 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-      - run: mv properties/app.properties ./local.properties
       - run: chmod +x gradlew
       - run: ./gradlew :app:assembleDebug
         env:
