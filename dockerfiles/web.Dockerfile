@@ -8,7 +8,6 @@ COPY gradlew .
 COPY gradle .
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
-COPY properties/web.properties ./local.properties
 
 # Copy build files
 COPY shared .
@@ -16,6 +15,14 @@ COPY models .
 COPY web .
 
 RUN chmod +x gradlew
+
+ARG APPS_SCRIPT_URL_ANDROID
+ARG APPS_SCRIPT_URL_DESKTOP
+ARG IMGBB_API_KEY
+
+ENV APPS_SCRIPT_URL_ANDROID=$APPS_SCRIPT_URL_ANDROID
+ENV APPS_SCRIPT_URL_DESKTOP=$APPS_SCRIPT_URL_DESKTOP
+ENV IMGBB_API_KEY=$IMGBB_API_KEY
 
 # Build only the web
 RUN ./gradlew :web:wasmJsBrowserDevelopmentExecutableDistribution --no-daemon

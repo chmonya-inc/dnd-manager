@@ -18,4 +18,5 @@ jobs:
       release-name: dndmanager-web
       k8s-namespace: dndmanager
       app-name: web
+      use-config-secrets: true
     secrets: inherit

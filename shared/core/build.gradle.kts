@@ -20,9 +20,17 @@ val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localPropertiesFile.inputStream().use { localProperties.load(it) }
 }
-val appsScriptUrlAndroid: String = localProperties.getProperty("apps.script.url.android", "")
-val appsScriptUrlDesktop: String = localProperties.getProperty("apps.script.url.desktop", "")
-val imgbbApiKey: String = localProperties.getProperty("imgbb.api.key", "")
+
+fun getSecret(key: String, defaultValue: String = ""): String {
+    val envKey = key.replace(".", "_").uppercase()
+    return System.getenv(envKey)
+        ?: project.findProperty(key)?.toString()
+        ?: localProperties.getProperty(key, defaultValue)
+}
+
+val appsScriptUrlAndroid: String = getSecret("apps.script.url.android")
+val appsScriptUrlDesktop: String = getSecret("apps.script.url.desktop")
+val imgbbApiKey: String = getSecret("imgbb.api.key")
 
 // ── Generate config class from local.properties ────────────────────
 val generateAppConfig = tasks.register("generateAppConfig") {

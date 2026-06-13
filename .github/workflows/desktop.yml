@@ -40,9 +40,12 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-      - run: mv properties/desktop.properties ./local.properties
       - run: chmod +x gradlew
       - run: ./gradlew :desktop:packageDistributionForCurrentOS
+        env:
+          APPS_SCRIPT_URL_ANDROID: ${{ secrets.APPS_SCRIPT_URL_ANDROID }}
+          APPS_SCRIPT_URL_DESKTOP: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
       - uses: actions/upload-artifact@v4
         with:
           name: dnd-manager-windows

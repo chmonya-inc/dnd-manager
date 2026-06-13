@@ -31,3 +31,5 @@ local.properties
 shared/core/build/
 shared/player/build/
 shared/desktop/build/
+.gradle_home
+.idea/artifacts
