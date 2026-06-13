@@ -3,11 +3,11 @@ name: Release api
 on:
   push:
     branches:
-      - release/all**
-      - release/api**
+      - 'release/all/v*.*.*'
+      - 'release/api/v*.*.*'
     tags:
-      - release/all**
-      - release/api**
+      - 'release/all/v*.*.*'
+      - 'release/api/v*.*.*'
 
 jobs:
   release:

@@ -3,11 +3,11 @@ name: Release desktop
 on:
   push:
     branches:
-      - release/all**
-      - release/desktop**
+      - 'release/all/v*.*.*'
+      - 'release/desktop/v*.*.*'
     tags:
-      - release/all**
-      - release/desktop**
+      - 'release/all/v*.*.*'
+      - 'release/desktop/v*.*.*'
 
 jobs:
   build-windows:
@@ -17,32 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - name: Increment Build Number
-        id: versioning
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          MAX_RETRIES=5
-          for i in $(seq 1 $MAX_RETRIES); do
-            git pull origin ${GITHUB_REF_NAME}
-            VERSION=$(grep 'build.number' version-desktop.properties | cut -d'=' -f2)
-            NEW_VERSION=$((VERSION + 1))
-            sed -i "s/build.number=.*/build.number=$NEW_VERSION/" version-desktop.properties
-            git add version-desktop.properties
-            if git commit -m "chore(desktop): increment build number to $NEW_VERSION [skip ci]"; then
-              if git push origin ${GITHUB_REF_NAME}; then
-                echo "number=$NEW_VERSION" >> $GITHUB_OUTPUT
-                break
-              fi
-            else
-              echo "Commit failed or nothing to commit, retrying..."
-            fi
-            if [ $i -eq $MAX_RETRIES ]; then echo "Failed to update version after $MAX_RETRIES attempts"; exit 1; fi
-            sleep $((RANDOM % 5 + 1))
-          done
+          fetch-depth: 0 # Полная история для работы git-версионирования
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -52,8 +27,8 @@ jobs:
       - run: chmod +x gradlew
       - run: ./gradlew :desktop:packageDistributionForCurrentOS
         env:
-          BUILD_NUMBER_DESKTOP: ${{ steps.versioning.outputs.number }}
-          APPS_SCRIPT_URL_ANDROID: ${{ secrets.APPS_SCRIPT_URL_ANDROID }}
+          APP_BUILD_NUMBER: ${{ github.run_number }}
+          APP_VERSION_NUMBER: ${{ github.ref_name }}
           APPS_SCRIPT_URL_DESKTOP: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
       - uses: actions/upload-artifact@v4

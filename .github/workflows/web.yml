@@ -3,11 +3,11 @@ name: Release web
 on:
   push:
     branches:
-      - release/all**
-      - release/web**
+      - 'release/all/v*.*.*'
+      - 'release/web/v*.*.*'
     tags:
-      - release/all**
-      - release/web**
+      - 'release/all/v*.*.*'
+      - 'release/web/v*.*.*'
 
 jobs:
   release:
