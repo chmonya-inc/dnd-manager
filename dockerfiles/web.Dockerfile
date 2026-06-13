@@ -3,7 +3,20 @@ FROM gradle:8.5-jdk21 AS build
 
 WORKDIR /app
 
-COPY . .
+# Copy Gradle files
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle.kts .
+COPY settings.gradle.kts .
+COPY properties/web.properties ./local.properties
+
+# Copy build files
+COPY shared shared
+COPY models models
+COPY server server
+COPY desktop desktop
+COPY web web
+COPY app app
 
 RUN chmod +x gradlew
 
@@ -15,6 +28,6 @@ FROM nginx:alpine AS runtime
 
 COPY --from=build /app/web/build/dist/wasmJs/developmentExecutable /usr/share/nginx/html
 
-EXPOSE 8081
+EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]

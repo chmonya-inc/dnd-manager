@@ -3,7 +3,19 @@ FROM gradle:8.5-jdk21 AS build
 
 WORKDIR /app
 
-COPY . .
+# Copy Gradle files
+COPY gradlew .
+COPY gradle gradle/
+COPY build.gradle.kts .
+COPY settings.gradle.kts .
+
+# Copy build files
+COPY shared shared
+COPY models models
+COPY server server
+COPY desktop desktop
+COPY web web
+COPY app app
 
 RUN chmod +x gradlew
 

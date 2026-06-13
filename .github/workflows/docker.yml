@@ -48,7 +48,10 @@ jobs:
     needs: build
     runs-on: raspberrypi
     steps:
+    - name: Checkout
+      uses: actions/checkout@v6
     - name: Apply deployment
+      working-directory: ${{ github.workspace }}
       run: |
         helm secrets upgrade ${{ inputs.release-name }} .helm/${{ inputs.app-name }} \
           --install \
