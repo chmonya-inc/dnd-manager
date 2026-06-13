@@ -1,6 +1,12 @@
 @file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 
 import java.util.Properties
+import org.gradle.api.DefaultTask
+import org.gradle.api.provider.Property
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.TaskAction
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -28,16 +34,23 @@ fun getSecret(key: String, defaultValue: String = ""): String {
         ?: localProperties.getProperty(key, defaultValue)
 }
 
-val appsScriptUrlAndroid: String = getSecret("apps.script.url.android")
-val appsScriptUrlDesktop: String = getSecret("apps.script.url.desktop")
-val imgbbApiKey: String = getSecret("imgbb.api.key")
+abstract class GenerateAppConfigTask : DefaultTask() {
+    @get:Input
+    abstract val appsScriptUrlAndroid: Property<String>
 
-// ── Generate config class from local.properties ────────────────────
-val generateAppConfig = tasks.register("generateAppConfig") {
-    val outputDir = layout.buildDirectory.dir("generated/source/config").get().asFile
-    outputs.dir(outputDir)
-    doLast {
-        val configFile = outputDir.resolve("com/dnd/helper/data/config/GeneratedConfig.kt")
+    @get:Input
+    abstract val appsScriptUrlDesktop: Property<String>
+
+    @get:Input
+    abstract val imgbbApiKey: Property<String>
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun generate() {
+        val dir = outputDir.get().asFile
+        val configFile = dir.resolve("com/dnd/helper/data/config/GeneratedConfig.kt")
         configFile.parentFile.mkdirs()
         configFile.writeText(
             """
@@ -45,13 +58,21 @@ val generateAppConfig = tasks.register("generateAppConfig") {
             package com.dnd.helper.data.config
 
             object GeneratedConfig {
-                const val WEB_APP_URL_ANDROID = "$appsScriptUrlAndroid"
-                const val WEB_APP_URL_DESKTOP = "$appsScriptUrlDesktop"
-                const val IMGBB_API_KEY = "$imgbbApiKey"
+                const val WEB_APP_URL_ANDROID = "${appsScriptUrlAndroid.get()}"
+                const val WEB_APP_URL_DESKTOP = "${appsScriptUrlDesktop.get()}"
+                const val IMGBB_API_KEY = "${imgbbApiKey.get()}"
             }
             """.trimIndent()
         )
     }
+}
+
+// ── Generate config class from local.properties ────────────────────
+val generateAppConfig = tasks.register<GenerateAppConfigTask>("generateAppConfig") {
+    appsScriptUrlAndroid.set(getSecret("apps.script.url.android"))
+    appsScriptUrlDesktop.set(getSecret("apps.script.url.desktop"))
+    imgbbApiKey.set(getSecret("imgbb.api.key"))
+    outputDir.set(layout.buildDirectory.dir("generated/source/config"))
 }
 
 // Ensure config is generated before any Kotlin compilation
@@ -84,7 +105,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             // Include generated config as source
-            kotlin.srcDir(generateAppConfig.map { it.outputs.files.singleFile })
+            kotlin.srcDir(generateAppConfig.flatMap { it.outputDir })
 
             dependencies {
                 implementation(compose.runtime)
