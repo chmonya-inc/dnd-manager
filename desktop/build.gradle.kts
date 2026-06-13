@@ -15,7 +15,7 @@ kotlin {
 }
 
 group = "com.dnd.helper"
-version = "1.0"
+version = rootProject.extra["buildVersionDesktop"] as String
 
 dependencies {
     implementation(project(":shared:desktop"))
@@ -34,7 +34,7 @@ compose.desktop {
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb,
             )
             packageName = "D&D Helper"
-            packageVersion = "1.0.0"
+            packageVersion = version.toString()
 
             modules("java.net.http")
         }

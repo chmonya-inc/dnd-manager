@@ -12,10 +12,18 @@ android {
         applicationId = "com.dnd.helper"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        val buildNumber = (rootProject.extra["buildNumberAndroidOnly"] as String).toIntOrNull() ?: 1
+        versionCode = buildNumber
+        versionName = rootProject.extra["buildVersionAndroid"] as String
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    applicationVariants.all {
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
+            output.outputFileName = "DND-Helper-Android-${name}-${versionName}.apk"
+        }
     }
 
     buildTypes {

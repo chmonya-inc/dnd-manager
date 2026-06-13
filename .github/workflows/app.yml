@@ -12,8 +12,38 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Нужно для пуша
+      - name: Increment Build Number
+        id: versioning
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Пытаемся инкрементировать с учетом возможных параллельных запусков
+          MAX_RETRIES=5
+          for i in $(seq 1 $MAX_RETRIES); do
+            git pull origin ${GITHUB_REF_NAME}
+            VERSION=$(grep 'build.number' version.properties | cut -d'=' -f2)
+            NEW_VERSION=$((VERSION + 1))
+            sed -i "s/build.number=.*/build.number=$NEW_VERSION/" version.properties
+            git add version.properties
+            if git commit -m "chore: increment build number to $NEW_VERSION [skip ci]"; then
+              if git push origin ${GITHUB_REF_NAME}; then
+                echo "number=$NEW_VERSION" >> $GITHUB_OUTPUT
+                break
+              fi
+            else
+              # Если коммитить нечего, значит кто-то уже обновил. Тянем заново.
+              echo "Commit failed, retrying..."
+            fi
+            if [ $i -eq $MAX_RETRIES ]; then echo "Failed to update version after $MAX_RETRIES attempts"; exit 1; fi
+            sleep $((RANDOM % 5 + 1))
+          done
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -23,10 +53,11 @@ jobs:
       - run: chmod +x gradlew
       - run: ./gradlew :app:assembleDebug
         env:
+          BUILD_NUMBER_ANDROID: ${{ steps.versioning.outputs.number }}
           APPS_SCRIPT_URL_ANDROID: ${{ secrets.APPS_SCRIPT_URL_ANDROID }}
           APPS_SCRIPT_URL_DESKTOP: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
       - uses: actions/upload-artifact@v4
         with:
-          name: dnd-manager-windows
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: dnd-manager-android
+          path: app/build/outputs/apk/debug/*.apk

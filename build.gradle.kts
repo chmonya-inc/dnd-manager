@@ -36,3 +36,29 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.binaryen.Bin
         version = "130"
     }
 }
+
+val buildVersionAndroidProvider: Provider<String> = providers.provider {
+    val props = java.util.Properties()
+    val propsFile = rootProject.file("version.properties")
+    if (propsFile.exists()) {
+        propsFile.inputStream().use { props.load(it) }
+    }
+    val name = props.getProperty("version.name") ?: "1.0.0"
+    val number = System.getenv("BUILD_NUMBER_ANDROID") ?: props.getProperty("build.number") ?: "1"
+    "$name.$number"
+}
+
+val buildVersionDesktopProvider: Provider<String> = providers.provider {
+    val props = java.util.Properties()
+    val propsFile = rootProject.file("version-desktop.properties")
+    if (propsFile.exists()) {
+        propsFile.inputStream().use { props.load(it) }
+    }
+    val name = props.getProperty("version.name") ?: "1.0.0"
+    val number = System.getenv("BUILD_NUMBER_DESKTOP") ?: props.getProperty("build.number") ?: "1"
+    "$name.$number"
+}
+
+extra["buildVersionAndroid"] = buildVersionAndroidProvider.get()
+extra["buildVersionDesktop"] = buildVersionDesktopProvider.get()
+extra["buildNumberAndroidOnly"] = buildVersionAndroidProvider.get().split(".").last()
