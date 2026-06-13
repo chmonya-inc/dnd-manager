@@ -1,18 +1,29 @@
 package com.dnd.helper.presentation.characterdetail.stats
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DirectionsRun
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,13 +31,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.DndSkill
 import com.dnd.helper.domain.model.abilityModifier
 import com.dnd.helper.domain.model.modifier
+import com.dnd.helper.theme.DndIcons
 
 @Composable
 fun StatsTab(character: Character) {
@@ -50,11 +60,11 @@ fun StatsTab(character: Character) {
         )
 
         val abilities = listOf(
-            AbilityData("STR", stats.strength, Icons.Default.FitnessCenter, Color(0xFFE53935)),
-            AbilityData("DEX", stats.dexterity, Icons.AutoMirrored.Filled.DirectionsRun, Color(0xFF43A047)),
-            AbilityData("CON", stats.constitution, Icons.Default.Shield, Color(0xFFFB8C00)),
-            AbilityData("INT", stats.intelligence, Icons.Default.Psychology, Color(0xFF1E88E5)),
-            AbilityData("WIS", stats.wisdom, Icons.Default.Visibility, Color(0xFF8E24AA)),
+            AbilityData("STR", stats.strength, DndIcons.Filled.FitnessCenter, Color(0xFFE53935)),
+            AbilityData("DEX", stats.dexterity, DndIcons.Filled.DirectionsRun, Color(0xFF43A047)),
+            AbilityData("CON", stats.constitution, DndIcons.Filled.Shield, Color(0xFFFB8C00)),
+            AbilityData("INT", stats.intelligence, DndIcons.Filled.Psychology, Color(0xFF1E88E5)),
+            AbilityData("WIS", stats.wisdom, DndIcons.Filled.Visibility, Color(0xFF8E24AA)),
             AbilityData("CHA", stats.charisma, Icons.Default.Star, Color(0xFFFDD835)),
         )
 

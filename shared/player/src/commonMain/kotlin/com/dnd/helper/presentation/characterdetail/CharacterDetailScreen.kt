@@ -14,57 +14,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.DirectionsBike
-import androidx.compose.material.icons.automirrored.filled.DirectionsRun
-import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Accessibility
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.AutoFixHigh
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Dangerous
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.HealthAndSafety
-import androidx.compose.material.icons.filled.HeartBroken
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.Mood
-import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.SelfImprovement
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.SportsMartialArts
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material3.Card
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -74,6 +35,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -93,7 +56,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -103,15 +65,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.dnd.helper.presentation.characterdetail.combat.CombatTab
 import com.dnd.helper.di.isDesktop
+import com.dnd.helper.presentation.characterdetail.combat.CombatTab
 import com.dnd.helper.presentation.characterdetail.features.FeaturesTab
 import com.dnd.helper.presentation.characterdetail.inventory.InventoryTab
 import com.dnd.helper.presentation.characterdetail.overview.OverviewTab
 import com.dnd.helper.presentation.characterdetail.spells.SpellsTab
 import com.dnd.helper.presentation.characterdetail.stats.StatsTab
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
-import org.koin.compose.viewmodel.koinViewModel
+import com.dnd.helper.theme.DndIcons
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -181,12 +143,12 @@ fun CharacterDetailScreen(
                             IconButton(onClick = {
                                 state.character?.let { onPresentClick(it) }
                             }) {
-                                Icon(imageVector = Icons.Default.Tv, contentDescription = "Present")
+                                Icon(imageVector = DndIcons.Filled.Tv, contentDescription = "Present")
                             }
                         }
                         IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.ToggleMasterMode) }) {
                             Icon(
-                                imageVector = if (state.isMasterMode) Icons.Default.LockOpen else Icons.Default.Lock,
+                                imageVector = if (state.isMasterMode) DndIcons.Filled.LockOpen else DndIcons.Filled.Lock,
                                 contentDescription = "Master Mode",
                                 tint = if (state.isMasterMode) MaterialTheme.colorScheme.primary else LocalContentColor.current
                             )
@@ -230,31 +192,31 @@ fun CharacterDetailScreen(
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Shield, null) },
+                    icon = { Icon(DndIcons.Filled.Shield, null) },
                     label = { Text("Overview") },
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.FitnessCenter, null) },
+                    icon = { Icon(DndIcons.Filled.FitnessCenter, null) },
                     label = { Text("Stats") },
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.ShoppingBag, null) },
+                    icon = { Icon(DndIcons.Filled.ShoppingBag, null) },
                     label = { Text("Inventory") },
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.SportsMartialArts, null) },
+                    icon = { Icon(DndIcons.Filled.SportsMartialArts, null) },
                     label = { Text("Combat") },
                     selected = selectedTab == 3,
                     onClick = { selectedTab = 3 }
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.AutoFixHigh, null) },
+                    icon = { Icon(DndIcons.Filled.AutoFixHigh, null) },
                     label = { Text("Spells") },
                     selected = selectedTab == 4,
                     onClick = { selectedTab = 4 }
@@ -339,7 +301,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = (edited.level - 1).coerceAtLeast(1)))) }) {
-                Icon(Icons.Default.Remove, null)
+                Icon(DndIcons.Filled.Remove, null)
             }
             Text("Lvl ${edited.level}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
             IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = (edited.level + 1).coerceAtMost(20)))) }) {
@@ -520,7 +482,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
                 if (edited.imageUrl == "url will appear after generation") {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
-                    Icon(Icons.Default.AutoFixHigh, "Generate", tint = MaterialTheme.colorScheme.primary)
+                    Icon(DndIcons.Filled.AutoFixHigh, "Generate", tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -564,7 +526,7 @@ private fun CharacterHeader(character: com.dnd.helper.domain.model.Character, vi
                     onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateLevel(-amount)) },
                     modifier = Modifier.size(20.dp)
                 ) {
-                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(12.dp))
+                    Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(12.dp))
                 }
                 
                 Box(
@@ -618,8 +580,8 @@ private fun HealthSection(character: com.dnd.helper.domain.model.Character, view
     }
 
     val hpIcon = when {
-        character.currentHp <= 0 -> Icons.Default.Dangerous
-        hpRatio <= 0.4f -> Icons.Default.HeartBroken
+        character.currentHp <= 0 -> DndIcons.Filled.Dangerous
+        hpRatio <= 0.4f -> DndIcons.Filled.HeartBroken
         else -> Icons.Default.Favorite
     }
 
@@ -675,7 +637,7 @@ private fun HealthSection(character: com.dnd.helper.domain.model.Character, view
                         onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateMaxHp(-amount)) },
                         modifier = Modifier.size(24.dp)
                     ) {
-                        Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp))
+                        Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(16.dp))
                     }
                     IconButton(
                         onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateMaxHp(amount)) },
@@ -702,7 +664,7 @@ private fun HealthSection(character: com.dnd.helper.domain.model.Character, view
                     onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateHp(-amount)) },
                     modifier = Modifier.size(36.dp)
                 ) {
-                    Icon(Icons.Default.Remove, null)
+                    Icon(DndIcons.Filled.Remove, null)
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -755,10 +717,10 @@ private fun StatsGrid(character: com.dnd.helper.domain.model.Character, viewMode
                 else -> "Геракл"
             },
             icon = when {
-                character.stats.strength < 8 -> Icons.Default.Accessibility
-                character.stats.strength < 15 -> Icons.Default.FitnessCenter
-                character.stats.strength < 20 -> Icons.Default.SportsMartialArts
-                else -> Icons.Default.Bolt
+                character.stats.strength < 8 -> DndIcons.Filled.Accessibility
+                character.stats.strength < 15 -> DndIcons.Filled.FitnessCenter
+                character.stats.strength < 20 -> DndIcons.Filled.SportsMartialArts
+                else -> DndIcons.Filled.Bolt
             },
             color = Color(0xFFE53935)
         ),
@@ -773,10 +735,10 @@ private fun StatsGrid(character: com.dnd.helper.domain.model.Character, viewMode
                 else -> "Акробат"
             },
             icon = when {
-                character.stats.dexterity < 8 -> Icons.AutoMirrored.Filled.DirectionsWalk
-                character.stats.dexterity < 15 -> Icons.AutoMirrored.Filled.DirectionsRun
-                character.stats.dexterity < 20 -> Icons.AutoMirrored.Filled.DirectionsBike
-                else -> Icons.Default.AutoAwesome
+                character.stats.dexterity < 8 -> DndIcons.Filled.DirectionsWalk
+                character.stats.dexterity < 15 -> DndIcons.Filled.DirectionsRun
+                character.stats.dexterity < 20 -> DndIcons.Filled.DirectionsBike
+                else -> DndIcons.Filled.AutoAwesome
             },
             color = Color(0xFF43A047)
         ),
@@ -791,10 +753,10 @@ private fun StatsGrid(character: com.dnd.helper.domain.model.Character, viewMode
                 else -> "Несокрушимый"
             },
             icon = when {
-                character.stats.constitution < 8 -> Icons.Default.HeartBroken
+                character.stats.constitution < 8 -> DndIcons.Filled.HeartBroken
                 character.stats.constitution < 15 -> Icons.Default.Favorite
-                character.stats.constitution < 20 -> Icons.Default.HealthAndSafety
-                else -> Icons.Default.Shield
+                character.stats.constitution < 20 -> DndIcons.Filled.HealthAndSafety
+                else -> DndIcons.Filled.Shield
             },
             color = Color(0xFFFB8C00)
         ),
@@ -809,10 +771,10 @@ private fun StatsGrid(character: com.dnd.helper.domain.model.Character, viewMode
                 else -> "Гений"
             },
             icon = when {
-                character.stats.intelligence < 8 -> Icons.AutoMirrored.Filled.MenuBook
-                character.stats.intelligence < 15 -> Icons.Default.Lightbulb
-                character.stats.intelligence < 20 -> Icons.Default.School
-                else -> Icons.Default.Psychology
+                character.stats.intelligence < 8 -> DndIcons.Filled.MenuBook
+                character.stats.intelligence < 15 -> DndIcons.Filled.Lightbulb
+                character.stats.intelligence < 20 -> DndIcons.Filled.School
+                else -> DndIcons.Filled.Psychology
             },
             color = Color(0xFF1E88E5)
         ),
@@ -827,10 +789,10 @@ private fun StatsGrid(character: com.dnd.helper.domain.model.Character, viewMode
                 else -> "Провидец"
             },
             icon = when {
-                character.stats.wisdom < 8 -> Icons.Default.Visibility
-                character.stats.wisdom < 15 -> Icons.Default.Explore
-                character.stats.wisdom < 20 -> Icons.Default.SelfImprovement
-                else -> Icons.Default.AutoFixHigh
+                character.stats.wisdom < 8 -> DndIcons.Filled.Visibility
+                character.stats.wisdom < 15 -> DndIcons.Filled.Explore
+                character.stats.wisdom < 20 -> DndIcons.Filled.SelfImprovement
+                else -> DndIcons.Filled.AutoFixHigh
             },
             color = Color(0xFF8E24AA)
         ),
@@ -845,9 +807,9 @@ private fun StatsGrid(character: com.dnd.helper.domain.model.Character, viewMode
                 else -> "Избранник"
             },
             icon = when {
-                character.stats.charisma < 8 -> Icons.Default.Face
-                character.stats.charisma < 15 -> Icons.Default.Mood
-                character.stats.charisma < 20 -> Icons.Default.Groups
+                character.stats.charisma < 8 -> DndIcons.Filled.Face
+                character.stats.charisma < 15 -> DndIcons.Filled.Mood
+                character.stats.charisma < 20 -> DndIcons.Filled.Groups
                 else -> Icons.Default.Star
             },
             color = Color(0xFFFDD835)
@@ -933,7 +895,7 @@ private fun StatCard(
                     onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateStat(stat.key, -amount)) },
                     modifier = Modifier.size(28.dp)
                 ) {
-                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(18.dp))
+                    Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(18.dp))
                 }
 
                 Box(

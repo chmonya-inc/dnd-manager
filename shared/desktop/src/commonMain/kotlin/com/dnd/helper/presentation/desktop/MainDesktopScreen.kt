@@ -1,52 +1,88 @@
 package com.dnd.helper.presentation.desktop
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.LibraryBooks
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.key.*
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.dnd.helper.data.import.SessionImporter
 import com.dnd.helper.domain.common.IdUtils
-import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.repository.CharacterRepository
-import com.dnd.helper.domain.storage.CharacterStorage
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
-import com.dnd.helper.theme.AppTheme
+import com.dnd.helper.theme.DndIcons
 import com.dnd.helper.theme.ThemeDialog
-import com.dnd.helper.theme.ThemeViewModel
-import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.math.roundToInt
 
 sealed class DesktopTab(val title: String, val icon: ImageVector) {
-    data object Characters : DesktopTab("Characters", Icons.Default.People)
-    data object Library : DesktopTab("Library", Icons.AutoMirrored.Filled.LibraryBooks)
-    data object RulesLibrary : DesktopTab("D&D Rules", Icons.Default.MenuBook)
+    data object Characters : DesktopTab("Characters", DndIcons.Filled.People)
+    data object Library : DesktopTab("Library", DndIcons.Filled.LibraryBooks)
+    data object RulesLibrary : DesktopTab("D&D Rules", DndIcons.Filled.MenuBook)
     data object Creator : DesktopTab("Creator", Icons.Default.AddCircle)
-    data object Logs : DesktopTab("Logs", Icons.Default.History)
-    data object Presenter : DesktopTab("Presenter", Icons.Default.Tv)
+    data object Logs : DesktopTab("Logs", DndIcons.Filled.History)
+    data object Presenter : DesktopTab("Presenter", DndIcons.Filled.Tv)
     data object Settings : DesktopTab("Settings", Icons.Default.Settings)
 }
 
@@ -197,7 +233,7 @@ fun MainDesktopScreen(
                         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
                     ) {
                         Icon(
-                            imageVector = if (showMusicPlayer) Icons.Default.MusicNote else Icons.Default.MusicOff,
+                            imageVector = if (showMusicPlayer) DndIcons.Filled.MusicNote else DndIcons.Filled.MusicOff,
                             contentDescription = "Music",
                             tint = if (showMusicPlayer) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
                         )
@@ -213,7 +249,7 @@ fun MainDesktopScreen(
                         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Storage,
+                            imageVector = DndIcons.Filled.Storage,
                             contentDescription = "Sessions",
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
@@ -240,7 +276,7 @@ fun MainDesktopScreen(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
                     ) {
-                        Icon(Icons.Default.Palette, "Theme")
+                        Icon(DndIcons.Filled.Palette, "Theme")
                     }
                 }
             }
@@ -375,7 +411,7 @@ fun CharactersSplitPane(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Shield,
+                        imageVector = DndIcons.Filled.Shield,
                         contentDescription = null,
                         modifier = Modifier.size(80.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
@@ -517,23 +553,23 @@ private fun SessionsDialog(
                         fontWeight = FontWeight.Bold,
                     )
                     Spacer(Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = {
-                            viewModel.importData()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !state.isImporting
-                    ) {
-                        if (state.isImporting) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Importing...")
-                        } else {
-                            Icon(Icons.Default.UploadFile, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Import from XLSX")
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.importData()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.isImporting
+                        ) {
+                            if (state.isImporting) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Importing...")
+                            } else {
+                                Icon(DndIcons.Filled.UploadFile, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Import from XLSX")
+                            }
                         }
-                    }
                     state.importError?.let {
                         Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     }
@@ -591,7 +627,7 @@ private fun SessionRow(
             ) {
                 IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
                     Icon(
-                        imageVector = Icons.Default.ContentCopy,
+                        imageVector = DndIcons.Filled.ContentCopy,
                         contentDescription = "Copy Game ID",
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.primary,

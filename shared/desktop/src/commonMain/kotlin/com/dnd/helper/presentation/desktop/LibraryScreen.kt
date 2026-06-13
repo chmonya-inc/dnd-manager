@@ -6,20 +6,73 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EmojiPeople
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -28,23 +81,25 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.foundation.hoverable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-
 import coil3.compose.AsyncImage
-import com.dnd.helper.domain.model.*
+import com.dnd.helper.domain.model.Battlefield
+import com.dnd.helper.domain.model.EquipmentSlot
+import com.dnd.helper.domain.model.Item
+import com.dnd.helper.domain.model.ItemRarity
+import com.dnd.helper.domain.model.ItemTemplates
+import com.dnd.helper.domain.model.Location
+import com.dnd.helper.domain.model.Monster
+import com.dnd.helper.domain.model.Npc
 import com.dnd.helper.presentation.utils.itemToIcon
 import com.dnd.helper.presentation.utils.toColor
+import com.dnd.helper.theme.DndIcons
 import com.dnd.helper.theme.LocalDndColors
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -166,12 +221,12 @@ fun LibraryScreen(
                             .padding(4.dp)
                     ) {
                         val tabs = listOf(
-                            Triple(LibraryType.Items, dndColors.item, Icons.Default.ShoppingBag),
-                            Triple(LibraryType.Mobs, dndColors.monster, Icons.Default.BugReport),
-                            Triple(LibraryType.Npcs, dndColors.npc, Icons.Default.EmojiPeople),
-                            Triple(LibraryType.Locations, dndColors.location, Icons.Default.Explore),
-                            Triple(LibraryType.Battlefields, dndColors.location, Icons.Default.Map),
-                            Triple(LibraryType.Templates, dndColors.item, Icons.Default.AutoAwesome)
+                            Triple(LibraryType.Items, dndColors.item, DndIcons.Filled.ShoppingBag),
+                            Triple(LibraryType.Mobs, dndColors.monster, DndIcons.Filled.BugReport),
+                            Triple(LibraryType.Npcs, dndColors.npc, DndIcons.Filled.EmojiPeople),
+                            Triple(LibraryType.Locations, dndColors.location, DndIcons.Filled.Explore),
+                            Triple(LibraryType.Battlefields, dndColors.location, DndIcons.Filled.Map),
+                            Triple(LibraryType.Templates, dndColors.item, DndIcons.Filled.AutoAwesome)
                         )
                         
                         tabs.forEach { (type, color, icon) ->
@@ -202,7 +257,7 @@ fun LibraryScreen(
                             onClick = { showGenerateAllDialog = true },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
                         ) {
-                            Icon(Icons.Default.AutoFixHigh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(DndIcons.Filled.AutoFixHigh, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
                             Text("Generate missing images")
                         }
@@ -1235,7 +1290,7 @@ private fun TemplateLibraryGrid(
     }
 
     Column {
-        CategoryHeader("Generic Templates", LocalDndColors.current.item, Icons.Default.AutoAwesome, {})
+        CategoryHeader("Generic Templates", LocalDndColors.current.item, DndIcons.Filled.AutoAwesome, {})
         
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 240.dp),
