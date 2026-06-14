@@ -9,42 +9,40 @@ on:
 jobs:
   build-api:
     name: Build api
-    uses: chmonya-inc/dnd-manager/.github/templates/docker.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-api
       image-tag: ${{ github.sha }}
       dockerfile-path: dockerfiles/api.Dockerfile
-      app-name: api
     secrets: inherit
 
   build-web:
     name: Build web
-    uses: chmonya-inc/dnd-manager/.github/templates/docker.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-web
       image-tag: ${{ github.sha }}
       dockerfile-path: dockerfiles/web.Dockerfile
-      app-name: web
       use-config-secrets: true
     secrets: inherit
 
   build-desktop:
     name: Build desktop
-    uses: chmonya-inc/dnd-manager/.github/templates/desktop.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/desktop.yml@v2
     with:
       version: ${{ github.sha }}
     secrets: inherit
 
   build-app:
     name: Build mobile app
-    uses: chmonya-inc/dnd-manager/.github/templates/android.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/android.yml@v2
     with:
       version: ${{ github.sha }}
     secrets: inherit
 
   deploy-api:
     needs: [build-api]
-    uses: chmonya-inc/dnd-manager/.github/templates/deploy.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
       version: ${{ github.run_number }}
       image-name: chmonya777/dndmanager-api
@@ -57,7 +55,7 @@ jobs:
 
   deploy-web:
     needs: [build-web]
-    uses: chmonya-inc/dnd-manager/.github/templates/deploy.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
       version: ${{ github.run_number }}
       image-name: chmonya777/dndmanager-web

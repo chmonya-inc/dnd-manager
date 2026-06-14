@@ -21,30 +21,28 @@ jobs:
   build-api:
     name: Build api
     needs: version
-    uses: chmonya-inc/dnd-manager/.github/templates/docker.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-api
       image-tag: needs.version.outputs.version
       dockerfile-path: dockerfiles/api.Dockerfile
-      app-name: api
     secrets: inherit
 
   build-web:
     name: Build web
     needs: version
-    uses: chmonya-inc/dnd-manager/.github/templates/docker.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-web
       image-tag: ${{ needs.version.outputs.version }}
       dockerfile-path: dockerfiles/web.Dockerfile
-      app-name: web
       use-config-secrets: true
     secrets: inherit
 
   build-desktop:
     name: Build desktop
     needs: version
-    uses: chmonya-inc/dnd-manager/.github/templates/desktop.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/desktop.yml@v2
     with:
       version: ${{ needs.version.outputs.version }}
     secrets: inherit
@@ -52,14 +50,14 @@ jobs:
   build-app:
     name: Build mobile app
     needs: version
-    uses: chmonya-inc/dnd-manager/.github/templates/android.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/android.yml@v2
     with:
       version: ${{ needs.version.outputs.version }}
     secrets: inherit
 
   deploy-api:
     needs: [build-api, build-web, build-desktop, build-app, version]
-    uses: chmonya-inc/dnd-manager/.github/templates/deploy.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
       version: ${{ needs.version.outputs.version }}
       image-name: chmonya777/dndmanager-api
@@ -72,7 +70,7 @@ jobs:
 
   deploy-web:
     needs: [deploy-api, version]
-    uses: chmonya-inc/dnd-manager/.github/templates/deploy.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
       version: ${{ needs.version.outputs.version }}
       image-name: chmonya777/dndmanager-web
@@ -85,7 +83,7 @@ jobs:
 
   publish:
     needs: [deploy-web, build-desktop, build-app, version]
-    uses: chmonya-inc/dnd-manager/.github/templates/publish.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/publish.yml@v2
     with:
       version: ${{ needs.version.outputs.version }}
       artifact-ids: "${{ needs.build-app.outputs.artifact-id }},${{ needs.build-desktop.outputs.artifact-id }}"
