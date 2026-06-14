@@ -28,7 +28,7 @@ jobs:
       - run: ./gradlew :desktop:packageDistributionForCurrentOS
         env:
           APP_BUILD_NUMBER: ${{ github.run_number }}
-          APP_VERSION_NUMBER: ${{ github.ref_name }}
+          APP_VERSION_NUMBER: ${{ inputs.version }}
           APPS_SCRIPT_URL_DESKTOP: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
       - uses: actions/upload-artifact@v4
