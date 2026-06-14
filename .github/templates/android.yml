@@ -1,0 +1,44 @@
+name: Build mobile app
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Полная история для работы git-версионирования
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Decode Keystore
+        run: |
+          if [ ! -z "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > debug.keystore
+          fi
+      - run: chmod +x gradlew
+      - run: ./gradlew :app:assembleDebug
+        env:
+          APP_BUILD_NUMBER: ${{ github.run_number }}
+          APP_VERSION_NUMBER: ${{ github.ref_name }}
+          APPS_SCRIPT_URL_ANDROID: ${{ secrets.APPS_SCRIPT_URL_ANDROID }}
+          APPS_SCRIPT_URL_DESKTOP: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+      - uses: actions/upload-artifact@v4
+        id: upload-artifact
+        with:
+          name: dnd-manager-android-${{ inputs.version }}
+          path: app/build/outputs/apk/debug/*.apk
+          archive: false
+          if-no-files-found: error

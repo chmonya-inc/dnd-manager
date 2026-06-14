@@ -1,4 +1,4 @@
-name: Common manual approve workflow
+name: Create manual approve issue
 
 on:
   workflow_call:

@@ -1,0 +1,92 @@
+name: Prod release
+
+on:
+  push:
+    branches:
+      - release/**
+    tags:
+      - release/**
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+    - id: get_version
+      name: Get version
+      uses: jannemattila/get-version-from-tag@v4
+
+
+  build-api:
+    name: Build api
+    needs: version
+    uses: chmonya-inc/dnd-manager/.github/templates/docker.yml@v2
+    with:
+      image-name: chmonya777/dndmanager-api
+      image-tag: needs.version.outputs.version
+      dockerfile-path: dockerfiles/api.Dockerfile
+      app-name: api
+    secrets: inherit
+
+  build-web:
+    name: Build web
+    needs: version
+    uses: chmonya-inc/dnd-manager/.github/templates/docker.yml@v2
+    with:
+      image-name: chmonya777/dndmanager-web
+      image-tag: ${{ needs.version.outputs.version }}
+      dockerfile-path: dockerfiles/web.Dockerfile
+      app-name: web
+      use-config-secrets: true
+    secrets: inherit
+
+  build-desktop:
+    name: Build desktop
+    needs: version
+    uses: chmonya-inc/dnd-manager/.github/templates/desktop.yml@v2
+    with:
+      version: ${{ needs.version.outputs.version }}
+    secrets: inherit
+
+  build-app:
+    name: Build mobile app
+    needs: version
+    uses: chmonya-inc/dnd-manager/.github/templates/android.yml@v2
+    with:
+      version: ${{ needs.version.outputs.version }}
+    secrets: inherit
+
+  deploy-api:
+    needs: [build-api, build-web, build-desktop, build-app, version]
+    uses: chmonya-inc/dnd-manager/.github/templates/deploy.yml@v2
+    with:
+      version: ${{ needs.version.outputs.version }}
+      image-name: chmonya777/dndmanager-api
+      image-tag: ${{ needs.version.outputs.version }}
+      release-name: dndmanager-api
+      k8s-namespace: dndmanager
+      app-name: api
+      environment: prod
+    secrets: inherit
+
+  deploy-web:
+    needs: [deploy-api, version]
+    uses: chmonya-inc/dnd-manager/.github/templates/deploy.yml@v2
+    with:
+      version: ${{ needs.version.outputs.version }}
+      image-name: chmonya777/dndmanager-web
+      image-tag: ${{ needs.version.outputs.version }}
+      release-name: dndmanager-web
+      k8s-namespace: dndmanager
+      app-name: web
+      environment: prod
+    secrets: inherit
+
+  publish:
+    needs: [deploy-web, build-desktop, build-app, version]
+    uses: chmonya-inc/dnd-manager/.github/templates/publish.yml@v2
+    with:
+      version: ${{ needs.version.outputs.version }}
+      artifact-ids: "${{ needs.build-app.outputs.artifact-id }},${{ needs.build-desktop.outputs.artifact-id }}"
+    secrets: inherit

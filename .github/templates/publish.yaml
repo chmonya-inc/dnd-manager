@@ -1,0 +1,43 @@
+name: Publish app release
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      artifact-ids:
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v8
+      with:
+        artifact-ids: ${{ inputs.artifact-ids }}
+        path: release
+
+    - name: Create Draft Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ inputs.version }}
+        release_name: "DND Manager"
+        draft: true
+        prerelease: false
+
+    - name: Upload Multiple Assets
+      run: gh release upload ${{ inputs.version }} ./release/* --clobber
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: eregon/publish-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        release_id: ${{ steps.create_release.outputs.id }}
