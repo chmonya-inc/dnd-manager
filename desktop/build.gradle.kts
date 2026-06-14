@@ -49,27 +49,24 @@ compose.desktop {
     }
 }
 
-afterEvaluate {
-    tasks.named("packageDistributionForCurrentOS") {
-        doLast {
-            // Указываем путь, куда Compose складывает бинарники по умолчанию
-            val msiDir = layout.buildDirectory.dir("compose/binaries/main/msi").get().asFile
+val msiDirProvider = layout.buildDirectory.dir("compose/binaries/main/msi")
 
-            // Ищем сгенерированный .msi файл в этой папке
-            val msiFile = msiDir.listFiles()?.firstOrNull { it.extension == "msi" }
+tasks.matching { it.name == "packageDistributionForCurrentOS" }.configureEach {
+    val localBuildNumber = buildNumber
+    val localMsiDirProvider = msiDirProvider
 
-            if (msiFile != null) {
-                // Формируем новое имя: оригинальноеИмя-buildNumber.msi
-                // Если msiFile.nameWithoutExtension уже "D&D Helper-1.1.1",
-                // то на выходе получится красивое "D&D Helper-1.1.1-твойномерабилды.msi"
-                val newName = "${msiFile.nameWithoutExtension}-$buildNumber.msi"
-                val newFile = File(msiDir, newName)
+    doLast {
+        // 2. Внутри doLast используем только наши чистые локальные переменные
+        val msiDir = localMsiDirProvider.get().asFile
+        val msiFile = msiDir.listFiles()?.firstOrNull { it.extension == "msi" }
 
-                msiFile.renameTo(newFile)
-                println("MSI успешно переименован в: $newName")
-            } else {
-                println("Файл MSI не найден для переименования")
-            }
+        if (msiFile != null) {
+            val newName = "${msiFile.nameWithoutExtension}-$localBuildNumber.msi"
+            val newFile = File(msiDir, newName)
+            msiFile.renameTo(newFile)
+            println("MSI успешно переименован в: $newName")
+        } else {
+            println("Файл MSI не найден для переименования")
         }
     }
 }
