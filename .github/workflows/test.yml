@@ -28,6 +28,8 @@ jobs:
 
   build-desktop:
     name: Build desktop
+    permissions:
+      contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/desktop.yml@v2
     with:
       version: ${{ github.sha }}
@@ -35,6 +37,8 @@ jobs:
 
   build-app:
     name: Build mobile app
+    permissions:
+      contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/android.yml@v2
     with:
       version: ${{ github.sha }}
