@@ -471,8 +471,7 @@ object DndIcons {
         val AddCircle: ImageVector = buildIcon("Filled.AddCircle") {
             path(fill = SolidColor(Color.Black)) {
                 moveTo(12f, 2f); curveTo(6.48f, 2f, 2f, 6.48f, 2f, 12f); reflectiveCurveToRelative(4.48f, 10f, 10f, 10f); reflectiveCurveToRelative(10f, -4.48f, 10f, -10f); reflectiveCurveTo(17.52f, 2f, 12f, 2f); close()
-                moveTo(17f, 13f); horizontalLineToRelative(-4f); verticalLineToRelative(4f); horizontalLineToRelative(-2f); verticalLineToRelative(-4f); horizontalLineTo(7f); verticalLineToRelative(-2f); horizontalLineTo(17f); verticalLineToRelative(2f); close()
-                moveTo(12f, 13f); horizontalLineToRelative(1f); verticalLineToRelative(-4f); horizontalLineToRelative(-2f); verticalLineToRelative(4f); horizontalLineToRelative(1f); close()
+                moveTo(17f, 13f); horizontalLineToRelative(-4f); verticalLineToRelative(4f); horizontalLineToRelative(-2f); verticalLineToRelative(-4f); horizontalLineTo(7f); verticalLineToRelative(-2f); horizontalLineToRelative(4f); verticalLineTo(7f); horizontalLineToRelative(2f); verticalLineToRelative(4f); horizontalLineToRelative(4f); verticalLineToRelative(2f); close()
             }
         }
 
