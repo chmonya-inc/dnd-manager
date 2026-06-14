@@ -18,27 +18,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.HealthAndSafety
-import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.Mood
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -70,8 +57,8 @@ import coil3.compose.AsyncImage
 import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.CharacterStats
 import com.dnd.helper.domain.model.abilityModifier
-import com.dnd.helper.domain.model.modifier
 import com.dnd.helper.presentation.characterdetail.CharacterDetailEvent
+import com.dnd.helper.theme.DndIcons
 
 @Composable
 fun OverviewTab(
@@ -165,7 +152,7 @@ private fun HeaderCard(
                     }
                 } else {
                     Icon(
-                        imageVector = Icons.Default.Face,
+                        imageVector = DndIcons.Filled.Face,
                         contentDescription = null,
                         modifier = Modifier.size(100.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
@@ -217,7 +204,7 @@ private fun HeaderCard(
                     onClick = { onEvent(CharacterDetailEvent.UpdateLevel(-amount)) },
                     modifier = Modifier.size(28.dp),
                 ) {
-                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(18.dp))
+                    Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(18.dp))
                 }
 
                 Box(
@@ -374,7 +361,7 @@ private fun CombatSummaryCard(
                 verticalAlignment = Alignment.Top,
             ) {
                 CombatStat(
-                    icon = Icons.Default.Shield,
+                    icon = DndIcons.Filled.Shield,
                     value = combat.armorClass.toString(),
                     label = "AC",
                     tint = MaterialTheme.colorScheme.primary,
@@ -435,13 +422,13 @@ private fun CombatSummaryCard(
                 verticalAlignment = Alignment.Top,
             ) {
                 CombatStat(
-                    icon = Icons.Default.Lightbulb,
+                    icon = DndIcons.Filled.Lightbulb,
                     value = if (combat.initiative >= 0) "+${combat.initiative}" else "${combat.initiative}",
                     label = "Initiative",
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 CombatStat(
-                    icon = Icons.AutoMirrored.Filled.DirectionsRun,
+                    icon = DndIcons.Filled.DirectionsRun,
                     value = "${combat.speed} ft",
                     label = "Speed",
                     tint = MaterialTheme.colorScheme.tertiary,
@@ -468,7 +455,7 @@ private fun CombatSummaryCard(
                         onClick = { onEvent(CharacterDetailEvent.UpdateHp(-amount)) },
                         modifier = Modifier.size(32.dp),
                     ) {
-                        Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp))
+                        Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(16.dp))
                     }
                     Spacer(Modifier.width(4.dp))
                     Text(
@@ -517,7 +504,7 @@ private fun CombatSummaryCard(
                         onClick = { onEvent(CharacterDetailEvent.UpdateMaxHp(-amount)) },
                         modifier = Modifier.size(32.dp),
                     ) {
-                        Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp))
+                        Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(16.dp))
                     }
                     Spacer(Modifier.width(4.dp))
                     Text(
@@ -673,12 +660,12 @@ private fun DeathSaveDiamond(filled: Boolean, color: Color) {
 @Composable
 private fun StatModifiersRow(stats: CharacterStats) {
     val statData = listOf(
-        StatModifierData("STR", stats.strength, Icons.Default.FitnessCenter, Color(0xFFEF5350)),
-        StatModifierData("DEX", stats.dexterity, Icons.AutoMirrored.Filled.DirectionsRun, Color(0xFF66BB6A)),
-        StatModifierData("CON", stats.constitution, Icons.Default.HealthAndSafety, Color(0xFFFFA726)),
-        StatModifierData("INT", stats.intelligence, Icons.Default.Lightbulb, Color(0xFF42A5F5)),
-        StatModifierData("WIS", stats.wisdom, Icons.Default.Visibility, Color(0xFFAB47BC)),
-        StatModifierData("CHA", stats.charisma, Icons.Default.Mood, Color(0xFFEC407A)),
+        StatModifierData("STR", stats.strength, DndIcons.Filled.FitnessCenter, Color(0xFFEF5350)),
+        StatModifierData("DEX", stats.dexterity, DndIcons.Filled.DirectionsRun, Color(0xFF66BB6A)),
+        StatModifierData("CON", stats.constitution, DndIcons.Filled.HealthAndSafety, Color(0xFFFFA726)),
+        StatModifierData("INT", stats.intelligence, DndIcons.Filled.Lightbulb, Color(0xFF42A5F5)),
+        StatModifierData("WIS", stats.wisdom, DndIcons.Filled.Visibility, Color(0xFFAB47BC)),
+        StatModifierData("CHA", stats.charisma, DndIcons.Filled.Mood, Color(0xFFEC407A)),
     )
 
     Card(
@@ -736,12 +723,12 @@ private fun StatControls(
     onEvent: (CharacterDetailEvent) -> Unit,
 ) {
     val statConfigs = listOf(
-        StatControlConfig("strength", stats.strength, "STR", Icons.Default.FitnessCenter, Color(0xFFEF5350)),
-        StatControlConfig("dexterity", stats.dexterity, "DEX", Icons.AutoMirrored.Filled.DirectionsRun, Color(0xFF66BB6A)),
-        StatControlConfig("constitution", stats.constitution, "CON", Icons.Default.HealthAndSafety, Color(0xFFFFA726)),
-        StatControlConfig("intelligence", stats.intelligence, "INT", Icons.Default.Lightbulb, Color(0xFF42A5F5)),
-        StatControlConfig("wisdom", stats.wisdom, "WIS", Icons.Default.Visibility, Color(0xFFAB47BC)),
-        StatControlConfig("charisma", stats.charisma, "CHA", Icons.Default.Mood, Color(0xFFEC407A)),
+        StatControlConfig("strength", stats.strength, "STR", DndIcons.Filled.FitnessCenter, Color(0xFFEF5350)),
+        StatControlConfig("dexterity", stats.dexterity, "DEX", DndIcons.Filled.DirectionsRun, Color(0xFF66BB6A)),
+        StatControlConfig("constitution", stats.constitution, "CON", DndIcons.Filled.HealthAndSafety, Color(0xFFFFA726)),
+        StatControlConfig("intelligence", stats.intelligence, "INT", DndIcons.Filled.Lightbulb, Color(0xFF42A5F5)),
+        StatControlConfig("wisdom", stats.wisdom, "WIS", DndIcons.Filled.Visibility, Color(0xFFAB47BC)),
+        StatControlConfig("charisma", stats.charisma, "CHA", DndIcons.Filled.Mood, Color(0xFFEC407A)),
     )
 
     var amountText by remember { mutableStateOf("1") }
@@ -769,7 +756,7 @@ private fun StatControls(
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    imageVector = if (expanded) DndIcons.Filled.ExpandLess else DndIcons.Filled.ExpandMore,
                     contentDescription = if (expanded) "Collapse" else "Expand",
                     tint = MaterialTheme.colorScheme.primary,
                 )
@@ -812,7 +799,7 @@ private fun StatControls(
                             onClick = { onEvent(CharacterDetailEvent.UpdateStat(config.statName, -amount)) },
                             modifier = Modifier.size(40.dp),
                         ) {
-                            Icon(Icons.Default.Remove, null, modifier = Modifier.size(22.dp), tint = config.color)
+                            Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(22.dp), tint = config.color)
                         }
 
                         Box(

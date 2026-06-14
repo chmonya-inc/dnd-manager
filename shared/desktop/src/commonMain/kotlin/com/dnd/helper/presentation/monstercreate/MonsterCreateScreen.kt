@@ -1,23 +1,64 @@
 package com.dnd.helper.presentation.monstercreate
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Gavel
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,9 +71,11 @@ import coil3.compose.AsyncImage
 import com.dnd.helper.data.remote.dto.common.ApiReferenceDto
 import com.dnd.helper.data.remote.dto.common.DamageDto
 import com.dnd.helper.data.remote.dto.common.DcDto
-import com.dnd.helper.data.remote.dto.monster.*
+import com.dnd.helper.data.remote.dto.monster.MonsterActionDto
+import com.dnd.helper.data.remote.dto.monster.MonsterSpecialAbilityDto
 import com.dnd.helper.presentation.charactercreate.DropdownMenuField
 import com.dnd.helper.presentation.charactercreate.MultiSelectDropdownField
+import com.dnd.helper.theme.DndIcons
 import com.dnd.helper.theme.dndColors
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.random.Random
@@ -126,7 +169,7 @@ fun MonsterCreateScreen(
                                         onClick = { viewModel.onEvent(MonsterCreateEvent.GenerateImage) },
                                         modifier = Modifier.background(Color(0xFF2E7D32).copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                                     ) {
-                                        Icon(Icons.Default.AutoAwesome, contentDescription = "Generate", tint = Color.White)
+                                        Icon(DndIcons.Filled.AutoAwesome, contentDescription = "Generate", tint = Color.White)
                                     }
                                 }
                             }

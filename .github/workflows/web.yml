@@ -3,11 +3,11 @@ name: Release web
 on:
   push:
     branches:
-      - release/all**
-      - release/web**
+      - 'release/all/v*.*.*'
+      - 'release/web/v*.*.*'
     tags:
-      - release/all**
-      - release/web**
+      - 'release/all/v*.*.*'
+      - 'release/web/v*.*.*'
 
 jobs:
   release:
@@ -18,4 +18,5 @@ jobs:
       release-name: dndmanager-web
       k8s-namespace: dndmanager
       app-name: web
+      use-config-secrets: true
     secrets: inherit

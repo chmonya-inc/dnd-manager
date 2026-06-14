@@ -3,25 +3,35 @@ name: Release desktop
 on:
   push:
     branches:
-      - release/all**
-      - release/desktop**
+      - 'release/all/v*.*.*'
+      - 'release/desktop/v*.*.*'
     tags:
-      - release/all**
-      - release/desktop**
+      - 'release/all/v*.*.*'
+      - 'release/desktop/v*.*.*'
 
 jobs:
   build-windows:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Полная история для работы git-версионирования
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-      - run: mv properties/desktop.properties ./local.properties
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew
       - run: ./gradlew :desktop:packageDistributionForCurrentOS
+        env:
+          APP_BUILD_NUMBER: ${{ github.run_number }}
+          APP_VERSION_NUMBER: ${{ github.ref_name }}
+          APPS_SCRIPT_URL_DESKTOP: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
       - uses: actions/upload-artifact@v4
         with:
-          name: dnd-manager-windows
+          name: dnd-manager-desktop
           path: desktop/build/compose/binaries/main/msi

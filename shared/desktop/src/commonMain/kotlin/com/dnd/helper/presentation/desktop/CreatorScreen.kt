@@ -1,34 +1,61 @@
 package com.dnd.helper.presentation.desktop
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.automirrored.filled.Notes
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.dnd.helper.data.remote.GenerationType
 import com.dnd.helper.data.remote.PromptGenerator
-import com.dnd.helper.domain.model.*
+import com.dnd.helper.domain.model.Battlefield
+import com.dnd.helper.domain.model.Location
+import com.dnd.helper.domain.model.Npc
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.repository.EditingRepository
 import com.dnd.helper.presentation.charactercreate.CharacterCreateScreen
+import com.dnd.helper.theme.DndIcons
 import com.dnd.helper.theme.LocalDndColors
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -96,18 +123,18 @@ fun ImageGenerationButton(
         if (currentTaskId != null) {
             CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = accentColor)
         } else {
-            Icon(Icons.Default.AutoFixHigh, contentDescription = "Generate Image", tint = accentColor)
+            Icon(DndIcons.Filled.AutoFixHigh, contentDescription = "Generate Image", tint = accentColor)
         }
     }
 }
 
 sealed class CreatorType(val title: String, val icon: ImageVector) {
-    data class Character(val existingCharacter: com.dnd.helper.domain.model.Character? = null) : CreatorType("Character", Icons.Default.PersonAdd)
-    data class Item(val existingItem: com.dnd.helper.domain.model.Item? = null, val ownerId: String? = null) : CreatorType("Item", Icons.Default.ShoppingBag)
-    data class Monster(val existingMonster: com.dnd.helper.domain.model.Monster? = null) : CreatorType("Monster", Icons.Default.BugReport)
-    data class Npc(val existingNpc: com.dnd.helper.domain.model.Npc? = null) : CreatorType("NPC", Icons.Default.EmojiPeople)
-    data class Location(val existingLocation: com.dnd.helper.domain.model.Location? = null) : CreatorType("Location", Icons.Default.Explore)
-    data class Battlefield(val existingBattlefield: com.dnd.helper.domain.model.Battlefield? = null) : CreatorType("Battlefield", Icons.Default.Map)
+    data class Character(val existingCharacter: com.dnd.helper.domain.model.Character? = null) : CreatorType("Character", DndIcons.Filled.PersonAdd)
+    data class Item(val existingItem: com.dnd.helper.domain.model.Item? = null, val ownerId: String? = null) : CreatorType("Item", DndIcons.Filled.ShoppingBag)
+    data class Monster(val existingMonster: com.dnd.helper.domain.model.Monster? = null) : CreatorType("Monster", DndIcons.Filled.BugReport)
+    data class Npc(val existingNpc: com.dnd.helper.domain.model.Npc? = null) : CreatorType("NPC", DndIcons.Filled.EmojiPeople)
+    data class Location(val existingLocation: com.dnd.helper.domain.model.Location? = null) : CreatorType("Location", DndIcons.Filled.Explore)
+    data class Battlefield(val existingBattlefield: com.dnd.helper.domain.model.Battlefield? = null) : CreatorType("Battlefield", DndIcons.Filled.Map)
 }
 
 @Composable
@@ -393,7 +420,7 @@ private fun NpcCreateForm(
             )
         }
         
-        SectionHeader(Icons.AutoMirrored.Filled.Notes, "Backstory & Notes", colors.npc)
+        SectionHeader(DndIcons.Filled.Notes, "Backstory & Notes", colors.npc)
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
@@ -403,7 +430,7 @@ private fun NpcCreateForm(
             shape = MaterialTheme.shapes.medium
         )
 
-        SectionHeader(Icons.Default.AutoFixHigh, "AI Image Generation Prompt", colors.npc)
+        SectionHeader(DndIcons.Filled.AutoFixHigh, "AI Image Generation Prompt", colors.npc)
         OutlinedTextField(
             value = customPrompt,
             onValueChange = { customPrompt = it },
@@ -459,7 +486,7 @@ private fun LocationCreateForm(
             }
         }
     ) {
-        SectionHeader(Icons.Default.Map, "Identity", colors.location)
+        SectionHeader(DndIcons.Filled.Map, "Identity", colors.location)
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
@@ -491,7 +518,7 @@ private fun LocationCreateForm(
             )
         }
         
-        SectionHeader(Icons.AutoMirrored.Filled.Notes, "Description", colors.location)
+        SectionHeader(DndIcons.Filled.Notes, "Description", colors.location)
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
@@ -501,7 +528,7 @@ private fun LocationCreateForm(
             shape = MaterialTheme.shapes.medium
         )
 
-        SectionHeader(Icons.Default.AutoFixHigh, "AI Image Generation Prompt", colors.location)
+        SectionHeader(DndIcons.Filled.AutoFixHigh, "AI Image Generation Prompt", colors.location)
         OutlinedTextField(
             value = customPrompt,
             onValueChange = { customPrompt = it },
@@ -646,7 +673,7 @@ private fun BattlefieldCreateForm(
             }
         }
     ) {
-        SectionHeader(Icons.Default.Map, "Identity", colors.location)
+        SectionHeader(DndIcons.Filled.Map, "Identity", colors.location)
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
@@ -678,7 +705,7 @@ private fun BattlefieldCreateForm(
             )
         }
         
-        SectionHeader(Icons.AutoMirrored.Filled.Notes, "Description", colors.location)
+        SectionHeader(DndIcons.Filled.Notes, "Description", colors.location)
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
@@ -688,7 +715,7 @@ private fun BattlefieldCreateForm(
             shape = MaterialTheme.shapes.medium
         )
 
-        SectionHeader(Icons.Default.AutoFixHigh, "AI Image Generation Prompt", colors.location)
+        SectionHeader(DndIcons.Filled.AutoFixHigh, "AI Image Generation Prompt", colors.location)
         OutlinedTextField(
             value = customPrompt,
             onValueChange = { customPrompt = it },

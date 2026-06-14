@@ -8,7 +8,6 @@ COPY gradlew .
 COPY gradle gradle
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
-COPY properties/web.properties ./local.properties
 
 # Copy build files
 COPY shared shared
@@ -20,13 +19,23 @@ COPY app app
 
 RUN chmod +x gradlew
 
-# Build only the web
-RUN ./gradlew :web:wasmJsBrowserDevelopmentExecutableDistribution --no-daemon
+ARG APPS_SCRIPT_URL_ANDROID
+ARG APPS_SCRIPT_URL_DESKTOP
+ARG IMGBB_API_KEY
+
+ENV APPS_SCRIPT_URL_ANDROID=$APPS_SCRIPT_URL_ANDROID
+ENV APPS_SCRIPT_URL_DESKTOP=$APPS_SCRIPT_URL_DESKTOP
+ENV IMGBB_API_KEY=$IMGBB_API_KEY
+ENV NODE_OPTIONS=--max-old-space-size=4096
+ENV DOCKER=true
+
+# Build only the web (using Production for small size and better optimization)
+RUN ./gradlew :web:wasmJsBrowserDistribution --no-daemon --max-workers=1 -Dorg.gradle.jvmargs=-Xmx4096m
 
 # Stage 2: Runtime stage
 FROM nginx:alpine AS runtime
 
-COPY --from=build /app/web/build/dist/wasmJs/developmentExecutable /usr/share/nginx/html
+COPY --from=build /app/web/build/dist/wasmJs/productionExecutable /usr/share/nginx/html
 
 EXPOSE 80
 

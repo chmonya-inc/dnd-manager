@@ -1,23 +1,77 @@
 package com.dnd.helper.presentation.desktop
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.HeartBroken
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -31,9 +85,16 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.*
-import androidx.compose.foundation.gestures.*
-import androidx.compose.ui.input.key.*
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isSecondaryPressed
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -42,16 +103,15 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.dnd.helper.domain.model.*
-import com.dnd.helper.domain.repository.CharacterRepository
+import com.dnd.helper.domain.model.GameEvent
+import com.dnd.helper.domain.model.Item
+import com.dnd.helper.domain.model.PresentedItem
 import com.dnd.helper.presentation.characterlist.CharacterListViewModel
 import com.dnd.helper.presentation.utils.itemToIcon
-import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
+import com.dnd.helper.theme.DndIcons
+import com.dnd.helper.theme.LocalDndColors
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.sqrt
-
-import com.dnd.helper.theme.LocalDndColors
 
 // Theme colors
 private val MonsterColor: Color @Composable get() = LocalDndColors.current.monster
@@ -115,7 +175,7 @@ fun PresentationScreen(
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = if (isWindowOpen) Icons.Default.Tv else Icons.Default.TvOff, 
+                                    imageVector = if (isWindowOpen) DndIcons.Filled.Tv else DndIcons.Filled.TvOff, 
                                     contentDescription = null,
                                     tint = if (isWindowOpen) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
                                 )
@@ -141,7 +201,7 @@ fun PresentationScreen(
                             ),
                             shape = MaterialTheme.shapes.medium
                         ) {
-                            Icon(if (showStats) Icons.Default.Visibility else Icons.Default.VisibilityOff, null)
+                            Icon(if (showStats) DndIcons.Filled.Visibility else DndIcons.Filled.VisibilityOff, null)
                             Spacer(Modifier.width(8.dp))
                             Text(if (showStats) "Projection Stats: ON" else "Projection Stats: OFF")
                         }
@@ -155,7 +215,7 @@ fun PresentationScreen(
                             ),
                             shape = MaterialTheme.shapes.medium
                         ) {
-                            Icon(if (isWindowOpen) Icons.Default.Stop else Icons.Default.PlayArrow, null)
+                            Icon(if (isWindowOpen) DndIcons.Filled.Stop else Icons.Default.PlayArrow, null)
                             Spacer(Modifier.width(8.dp))
                             Text(if (isWindowOpen) "Stop Projection" else "Start Projection")
                         }
@@ -187,7 +247,7 @@ fun PresentationScreen(
                                     onClick = { viewModel.saveCurrentEvent(activeEvent!!.name) },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(Icons.Default.Save, "Update Scene", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Icon(DndIcons.Filled.Save, "Update Scene", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                                 }
                                 
                                 // 2. Save As (New Copy)
@@ -195,7 +255,7 @@ fun PresentationScreen(
                                     onClick = { showSaveAsDialog = true },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(Icons.Default.ContentCopy, "Save as New Scene", modifier = Modifier.size(18.dp))
+                                    Icon(DndIcons.Filled.ContentCopy, "Save as New Scene", modifier = Modifier.size(18.dp))
                                 }
                             } else {
                                 // Save New Scene
@@ -203,7 +263,7 @@ fun PresentationScreen(
                                     onClick = { showSaveAsDialog = true },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(Icons.Default.AddCircle, "Save New Scene", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Icon(DndIcons.Filled.AddCircle, "Save New Scene", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                             
@@ -311,7 +371,7 @@ fun PresentationScreen(
                                     shape = MaterialTheme.shapes.small,
                                     contentPadding = PaddingValues(0.dp)
                                 ) {
-                                    Icon(Icons.Default.DeleteSweep, null, modifier = Modifier.size(18.dp))
+                                    Icon(DndIcons.Filled.DeleteSweep, null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(4.dp))
                                     Text("Clear All", style = MaterialTheme.typography.labelLarge)
                                 }
@@ -325,7 +385,7 @@ fun PresentationScreen(
                         .filter { it.name.contains(searchQuery, ignoreCase = true) }
                     
                     // 1. Characters Section
-                    FoldableSection(title = "Characters", count = distinctChars.size, icon = Icons.Default.Groups, color = CharacterColor) {
+                    FoldableSection(title = "Characters", count = distinctChars.size, icon = DndIcons.Filled.Groups, color = CharacterColor) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(distinctChars) { character ->
                                 PresenterSidebarRow(
@@ -358,10 +418,10 @@ fun PresentationScreen(
 
                     // 2. Monsters Section
                     val filteredMonsters = monsters.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "Monsters", count = filteredMonsters.size, icon = Icons.Default.BugReport, color = MonsterColor) {
+                    FoldableSection(title = "Monsters", count = filteredMonsters.size, icon = DndIcons.Filled.BugReport, color = MonsterColor) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(filteredMonsters) { monster ->
-                                PresenterSidebarRow(monster.name, MonsterColor, icon = Icons.Default.BugReport, onClick = {
+                                PresenterSidebarRow(monster.name, MonsterColor, icon = DndIcons.Filled.BugReport, onClick = {
                                     viewModel.addItem(
                                         title = monster.name, 
                                         type = "Monster", 
@@ -383,10 +443,10 @@ fun PresentationScreen(
 
                     // 3. NPCs Section
                     val filteredNpcs = npcs.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "NPCs", count = filteredNpcs.size, icon = Icons.Default.EmojiPeople, color = NpcColor) {
+                    FoldableSection(title = "NPCs", count = filteredNpcs.size, icon = DndIcons.Filled.EmojiPeople, color = NpcColor) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(filteredNpcs) { npc ->
-                                PresenterSidebarRow(npc.name, NpcColor, icon = Icons.Default.EmojiPeople, onClick = {
+                                PresenterSidebarRow(npc.name, NpcColor, icon = DndIcons.Filled.EmojiPeople, onClick = {
                                     viewModel.addItem(
                                         title = npc.name, 
                                         type = "NPC", 
@@ -404,10 +464,10 @@ fun PresentationScreen(
 
                     // 4. Locations Section
                     val filteredLocations = locations.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "Locations", count = filteredLocations.size, icon = Icons.Default.Explore, color = LocationColor) {
+                    FoldableSection(title = "Locations", count = filteredLocations.size, icon = DndIcons.Filled.Explore, color = LocationColor) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(filteredLocations) { location ->
-                                PresenterSidebarRow(location.name, LocationColor, icon = Icons.Default.Explore, onClick = {
+                                PresenterSidebarRow(location.name, LocationColor, icon = DndIcons.Filled.Explore, onClick = {
                                     viewModel.addItem(location.name, "Location", imageUrl = location.displayImageUrl, isBackground = true)
                                 })
                             }
@@ -418,10 +478,10 @@ fun PresentationScreen(
 
                     // 5. Battlefields Section
                     val filteredBattlefields = battlefields.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "Battlefields", count = filteredBattlefields.size, icon = Icons.Default.Map, color = BattlefieldColor) {
+                    FoldableSection(title = "Battlefields", count = filteredBattlefields.size, icon = DndIcons.Filled.Map, color = BattlefieldColor) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(filteredBattlefields) { battlefield ->
-                                PresenterSidebarRow(battlefield.name, BattlefieldColor, icon = Icons.Default.Map, onClick = {
+                                PresenterSidebarRow(battlefield.name, BattlefieldColor, icon = DndIcons.Filled.Map, onClick = {
                                     viewModel.addItem(battlefield.name, "Battlefield", imageUrl = battlefield.displayImageUrl, isBackground = true)
                                 })
                             }
@@ -432,7 +492,7 @@ fun PresentationScreen(
 
                     // 6. Events Section
                     val filteredEvents = events.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "Saved Events", count = filteredEvents.size, icon = Icons.Default.AutoFixHigh, color = MaterialTheme.colorScheme.secondary) {
+                    FoldableSection(title = "Saved Events", count = filteredEvents.size, icon = DndIcons.Filled.AutoFixHigh, color = MaterialTheme.colorScheme.secondary) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(filteredEvents) { event ->
                                 var showSaveDialog by remember { mutableStateOf(false) }
@@ -461,7 +521,7 @@ fun PresentationScreen(
                     // 7. Items Section
                     val allItems = distinctChars.flatMap { c -> c.items.map { Triple(it, c.id, c.name) } }
                         .filter { it.first.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "Inventory", count = allItems.size, icon = Icons.Default.ShoppingBag, color = ItemColor) {
+                    FoldableSection(title = "Inventory", count = allItems.size, icon = DndIcons.Filled.ShoppingBag, color = ItemColor) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(allItems) { (item, ownerId, ownerName) ->
                                 var itemCoords: androidx.compose.ui.layout.LayoutCoordinates? by remember { mutableStateOf(null) }
@@ -597,7 +657,7 @@ private fun EventSidebarRow(
             }
             Row {
                 IconButton(onClick = onSave, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Save, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(DndIcons.Filled.Save, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 IconButton(onClick = onLoad, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
@@ -688,7 +748,7 @@ private fun FoldableSection(
                     }
                 }
                 Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, 
+                    imageVector = if (expanded) DndIcons.Filled.ExpandLess else DndIcons.Filled.ExpandMore,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1064,7 +1124,7 @@ fun PresentationItem(
                     }
             ) {
                 Icon(
-                    imageVector = Icons.Default.SouthEast,
+                    imageVector = DndIcons.Filled.SouthEast,
                     contentDescription = "Resize",
                     modifier = Modifier.size(20.dp).align(Alignment.BottomEnd).padding(4.dp),
                     tint = Color.White.copy(alpha = 0.8f)
@@ -1098,13 +1158,13 @@ private fun ClashingSwords() {
 
     Box(contentAlignment = Alignment.Center, modifier = Modifier.scale(scale)) {
         Icon(
-            imageVector = Icons.Default.Shield,
+            imageVector = DndIcons.Filled.Shield,
             contentDescription = null,
             modifier = Modifier.size(48.dp).rotate(45f + rotation),
             tint = Color.White.copy(alpha = 0.8f)
         )
         Icon(
-            imageVector = Icons.Default.Bolt,
+            imageVector = DndIcons.Filled.Bolt,
             contentDescription = null,
             modifier = Modifier.size(48.dp).rotate(-45f - rotation),
             tint = Color.White.copy(alpha = 0.8f)
@@ -1217,7 +1277,7 @@ fun PlayerCard(
                                 color = Color.Black.copy(alpha = 0.3f)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Remove, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                    Icon(DndIcons.Filled.Remove, null, tint = Color.White, modifier = Modifier.size(16.dp))
                                 }
                             }
                             Spacer(Modifier.width(8.dp))
@@ -1391,7 +1451,7 @@ fun LocationCard(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Map,
+                        imageVector = DndIcons.Filled.Map,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize(0.3f),
                         tint = Color.DarkGray

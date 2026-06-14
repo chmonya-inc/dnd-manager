@@ -6,23 +6,26 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Notes
-import androidx.compose.material.icons.automirrored.filled.DirectionsRun
-import androidx.compose.material.icons.filled.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -33,14 +36,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.dnd.helper.domain.model.Note
-import com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel
 import com.dnd.helper.presentation.characterdetail.CharacterDetailEvent
 import com.dnd.helper.presentation.characterdetail.CharacterDetailState
+import com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel
 import com.dnd.helper.presentation.characterdetail.combat.CombatTab
 import com.dnd.helper.presentation.characterdetail.features.FeaturesTab
 import com.dnd.helper.presentation.characterdetail.inventory.InventoryTab
 import com.dnd.helper.presentation.characterdetail.spells.SpellsTab
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
+import com.dnd.helper.theme.DndIcons
 import org.koin.compose.viewmodel.koinViewModel
 
 // Consistent colors
@@ -116,7 +120,7 @@ fun MasterCharacterDetailScreen(
                         IconButton(onClick = { 
                             state.character?.let { presentationViewModel.addItem(it.name, type = "Character", imageUrl = it.displayImageUrl, sourceId = it.id) }
                         }) {
-                            Icon(imageVector = Icons.Default.Tv, contentDescription = "Present")
+                            Icon(imageVector = DndIcons.Filled.Tv, contentDescription = "Present")
                         }
                         
                         if (state.isEditing) {
@@ -213,7 +217,7 @@ private fun MasterContent(
                             modifier = Modifier.fillMaxSize().background(Color.Gray.copy(alpha = 0.2f), MaterialTheme.shapes.medium),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Face, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color.Gray)
+                            Icon(DndIcons.Filled.Face, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color.Gray)
                         }
                     }
 
@@ -228,7 +232,7 @@ private fun MasterContent(
                             tonalElevation = 4.dp
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.PhotoCamera, null, modifier = Modifier.size(20.dp), tint = Color.White)
+                                Icon(DndIcons.Filled.PhotoCamera, null, modifier = Modifier.size(20.dp), tint = Color.White)
                             }
                         }
                     }
@@ -261,11 +265,11 @@ private fun MasterContent(
             } else {
                 // Middle Column: Stats and Spells
                 Column(modifier = Modifier.weight(1.2f)) {
-                    ExpandableSection(title = "Core Stats", icon = Icons.Default.FitnessCenter, color = StatsColor, initialExpanded = true) {
+                    ExpandableSection(title = "Core Stats", icon = DndIcons.Filled.FitnessCenter, color = StatsColor, initialExpanded = true) {
                         MasterStatsGrid(character, viewModel)
                     }
                     Spacer(Modifier.height(12.dp))
-                    ExpandableSection(title = "Spells & Magic", icon = Icons.Default.AutoFixHigh, color = CombatColor, initialExpanded = true) {
+                    ExpandableSection(title = "Spells & Magic", icon = DndIcons.Filled.AutoFixHigh, color = CombatColor, initialExpanded = true) {
                         Box(modifier = Modifier.heightIn(max = 700.dp)) {
                             SpellsTab(spells = character.spells, onEvent = viewModel::onEvent, isMasterMode = true)
                         }
@@ -274,14 +278,14 @@ private fun MasterContent(
 
                 // Right Column: Inventory and Features
                 Column(modifier = Modifier.weight(1f)) {
-                    ExpandableSection(title = "Combat Status", icon = Icons.Default.SportsMartialArts, color = CombatColor, initialExpanded = false) {
+                    ExpandableSection(title = "Combat Status", icon = DndIcons.Filled.SportsMartialArts, color = CombatColor, initialExpanded = false) {
                         // CombatTab internally uses a verticalScroll.
                         Box(modifier = Modifier.heightIn(max = 450.dp)) {
                             CombatTab(character, isMasterMode = state.isMasterMode, isScrollable = false)
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    ExpandableSection(title = "Equipment & Items", icon = Icons.Default.ShoppingBag, color = InventoryColor, initialExpanded = true) {
+                    ExpandableSection(title = "Equipment & Items", icon = DndIcons.Filled.ShoppingBag, color = InventoryColor, initialExpanded = true) {
                         // Constrain height to avoid infinity constraint crash with nested LazyVerticalGrid
                         Box(modifier = Modifier.heightIn(max = 450.dp)) {
                             InventoryTab(items = character.items, onEvent = viewModel::onEvent, isMasterMode = true)
@@ -299,12 +303,12 @@ private fun MasterContent(
 
         if (!state.isEditing) {
             Spacer(Modifier.height(16.dp))
-            ExpandableSection(title = "Personal Notes", icon = Icons.Default.Description, color = NotesColor, initialExpanded = true) {
+            ExpandableSection(title = "Personal Notes", icon = DndIcons.Filled.Description, color = NotesColor, initialExpanded = true) {
                 MasterNotesSection(notes = character.notes, onEvent = viewModel::onEvent, isMasterMode = state.isMasterMode)
             }
 
             Spacer(Modifier.height(16.dp))
-            ExpandableSection(title = "Biography", icon = Icons.AutoMirrored.Filled.Notes, color = MaterialTheme.colorScheme.secondary, initialExpanded = false) {
+            ExpandableSection(title = "Biography", icon = DndIcons.Filled.Notes, color = MaterialTheme.colorScheme.secondary, initialExpanded = false) {
                 if (state.isMasterMode) {
                     OutlinedTextField(
                         value = character.description,
@@ -365,7 +369,7 @@ private fun ExpandableSection(
                     Text(text = title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 }
                 Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, 
+                    imageVector = if (expanded) DndIcons.Filled.ExpandLess else DndIcons.Filled.ExpandMore,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -422,7 +426,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = (edited.level - 1).coerceAtLeast(1)))) }) {
-                Icon(Icons.Default.Remove, null)
+                Icon(DndIcons.Filled.Remove, null)
             }
             Text("Lvl ${edited.level}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
             IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.EditCharacter(edited.copy(level = (edited.level + 1).coerceAtMost(20)))) }) {
@@ -518,7 +522,7 @@ private fun EditFields(edited: com.dnd.helper.domain.model.Character, state: Cha
                 if (edited.imageUrl == "url will appear after generation") {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
                 } else {
-                    Icon(Icons.Default.AutoFixHigh, null, modifier = Modifier.size(18.dp))
+                    Icon(DndIcons.Filled.AutoFixHigh, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Generate", style = MaterialTheme.typography.labelLarge)
                 }
@@ -565,7 +569,7 @@ private fun MasterHeader(character: com.dnd.helper.domain.model.Character, viewM
                     onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateLevel(-amount)) },
                     modifier = Modifier.size(24.dp)
                 ) {
-                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(14.dp))
+                    Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(14.dp))
                 }
                 
                 Box(
@@ -626,12 +630,12 @@ private fun MasterCombatStatsRow(character: com.dnd.helper.domain.model.Characte
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.Shield, null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(DndIcons.Filled.Shield, null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
             Text(combat.armorClass.toString(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             Text("AC", style = MaterialTheme.typography.labelSmall)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.Lightbulb, null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.secondary)
+            Icon(DndIcons.Filled.Lightbulb, null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.secondary)
             val initString = if (combat.initiative >= 0) "+${combat.initiative}" else "${combat.initiative}"
             Text(initString, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
             Text("Initiative", style = MaterialTheme.typography.labelSmall)
@@ -707,7 +711,7 @@ private fun MasterHealthSection(character: com.dnd.helper.domain.model.Character
                         onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateMaxHp(-amount)) },
                         modifier = Modifier.size(20.dp)
                     ) {
-                        Icon(Icons.Default.Remove, null, modifier = Modifier.size(14.dp))
+                        Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(14.dp))
                     }
                     IconButton(
                         onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateMaxHp(amount)) },
@@ -738,7 +742,7 @@ private fun MasterHealthSection(character: com.dnd.helper.domain.model.Character
             )
             Spacer(modifier = Modifier.height(4.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateHp(-amount)) }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Remove, null, modifier = Modifier.size(20.dp)) }
+                IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateHp(-amount)) }, modifier = Modifier.size(32.dp)) { Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(20.dp)) }
                 
                 Box(
                     modifier = Modifier
@@ -1005,11 +1009,11 @@ private fun DeathSaveDiamond(filled: Boolean, color: Color) {
 @Composable
 private fun MasterStatsGrid(character: com.dnd.helper.domain.model.Character, viewModel: CharacterDetailViewModel) {
     val stats = listOf(
-        MasterStatData("STR", character.stats.strength, "strength", Color(0xFFE53935), Icons.Default.FitnessCenter),
+        MasterStatData("STR", character.stats.strength, "strength", Color(0xFFE53935), DndIcons.Filled.FitnessCenter),
         MasterStatData("DEX", character.stats.dexterity, "dexterity", Color(0xFF43A047), Icons.AutoMirrored.Filled.DirectionsRun),
         MasterStatData("CON", character.stats.constitution, "constitution", Color(0xFFFB8C00), Icons.Default.Favorite),
-        MasterStatData("INT", character.stats.intelligence, "intelligence", Color(0xFF1E88E5), Icons.Default.Psychology),
-        MasterStatData("WIS", character.stats.wisdom, "wisdom", Color(0xFF8E24AA), Icons.Default.Visibility),
+        MasterStatData("INT", character.stats.intelligence, "intelligence", Color(0xFF1E88E5), DndIcons.Filled.Psychology),
+        MasterStatData("WIS", character.stats.wisdom, "wisdom", Color(0xFF8E24AA), DndIcons.Filled.Visibility),
         MasterStatData("CHA", character.stats.charisma, "charisma", Color(0xFFFDD835), Icons.Default.Star)
     )
     
@@ -1082,7 +1086,7 @@ private fun MasterStatCard(
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.UpdateStat(stat.key, -amount)) }, modifier = Modifier.size(24.dp)) { 
-                    Icon(Icons.Default.Remove, null, modifier = Modifier.size(16.dp)) 
+                    Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(16.dp))
                 }
                 
                 Box(

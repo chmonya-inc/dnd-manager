@@ -32,6 +32,14 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlu
 
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootPlugin> {
     rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.binaryen.BinaryenRootExtension> {
-        downloadBaseUrl = null
+        @Suppress("DEPRECATION")
+        version = "130"
     }
 }
+
+fun getVersion(ver: String): String {
+    return ver.split("/").last().replace("v", "")
+}
+
+extra["appBuildNumber"] = providers.environmentVariable("APP_BUILD_NUMBER").getOrElse("1")
+extra["appVersionNumber"] = getVersion(providers.environmentVariable("APP_VERSION_NUMBER").getOrElse("/v1.0.0"))
