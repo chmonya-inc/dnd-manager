@@ -34,9 +34,9 @@ jobs:
     - name: Apply deployment
       working-directory: ${{ github.workspace }}
       run: |
+        helm package --app-version=${{ inputs.version }} ${{ inputs.k8s-namespace }} && \
         helm secrets upgrade ${{ inputs.release-name }} .helm/${{ inputs.app-name }} \
           --install \
-          --app-version ${{ inputs.version }} \
           --set-string image.name=${{ inputs.image-name }} \
           --set-string image.tag=${{ inputs.image-tag }} \
           -f .helm/${{ inputs.app-name }}/values.yaml \
