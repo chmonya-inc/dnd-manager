@@ -47,6 +47,7 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       build-number: ${{ github.run_number }}
+      backend-url-desktop: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
     secrets: inherit
 
   build-app:
@@ -58,6 +59,8 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       build-number: ${{ github.run_number }}
+      backend-url-desktop: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
+      backend-url-android: ${{ secrets.APPS_SCRIPT_URL_ANDROID }}
     secrets: inherit
 
   deploy-api:

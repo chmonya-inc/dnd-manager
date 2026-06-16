@@ -9,6 +9,12 @@ on:
       version:
         required: true
         type: string
+      backend-url-android:
+        required: true
+        type: string
+      backend-url-desktop:
+        required: true
+        type: string
 
 jobs:
   build-android:
@@ -37,8 +43,8 @@ jobs:
         env:
           APP_BUILD_NUMBER: ${{ github.run_number }}
           APP_VERSION_NUMBER: ${{ inputs.version }}
-          APPS_SCRIPT_URL_ANDROID: ${{ secrets.APPS_SCRIPT_URL_ANDROID }}
-          APPS_SCRIPT_URL_DESKTOP: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
+          APPS_SCRIPT_URL_ANDROID: ${{ inputs.backend-url-android }}
+          APPS_SCRIPT_URL_DESKTOP: ${{ inputs.backend-url-desktop }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
       - uses: actions/upload-artifact@v7
         id: upload-artifact

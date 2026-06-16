@@ -9,6 +9,9 @@ on:
       build-number:
         required: true
         type: string
+      backend-url-desktop:
+        required: true
+        type: string
 
 jobs:
   build-windows:
@@ -32,7 +35,7 @@ jobs:
         env:
           APP_BUILD_NUMBER: ${{ inputs.build-number }}
           APP_VERSION_NUMBER: ${{ inputs.version }}
-          APPS_SCRIPT_URL_DESKTOP: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
+          APPS_SCRIPT_URL_DESKTOP: ${{ inputs.backend-url-desktop }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
       - uses: actions/upload-artifact@v7
         id: upload-artifact
