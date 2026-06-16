@@ -97,7 +97,7 @@ jobs:
     permissions:
       contents: write
     with:
-      version: ${{ github.ref_name }}
+      tag: ${{ github.ref_name }}
       artifact-ids: "${{ needs.build-app.outputs.artifact-id }},${{ needs.build-desktop.outputs.artifact-id }}"
     secrets: inherit
 
