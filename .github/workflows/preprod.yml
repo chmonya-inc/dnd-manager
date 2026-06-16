@@ -25,6 +25,7 @@ jobs:
     uses: chmonya-inc/dnd-manager/.github/workflows/approve.yml@v2
     permissions:
       issues: write
+    secrets: inherit
     with:
       issue-title: "Release ${{ needs.latest-release.outputs.version }}"
       issue-body: "Approve to create new release version ${{ needs.latest-release.outputs.version }}"
