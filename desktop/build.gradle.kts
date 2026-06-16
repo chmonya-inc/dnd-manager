@@ -34,14 +34,30 @@ compose.desktop {
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi,
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb,
             )
-            packageName = "D&D Helper"
             packageVersion = versionNumber
 
+            val isQa = project.hasProperty("qa")
+            packageName = "D&D Helper"
+
             windows {
-                // Fixed UpgradeCode is mandatory for MSI updates to work correctly
-                upgradeUuid = "67c9c3e4-8393-4a11-9231-6b834468f7f1"
                 menu = true
-                // iconFile.set(project.file("icon.ico")) // Раскомментируйте, если есть иконка
+                upgradeUuid = if (isQa) "77c9c3e4-8393-4a11-9231-6b834468f7f2" else "67c9c3e4-8393-4a11-9231-6b834468f7f1"
+                iconFile.set(project.file("src/main/resources/icon.png"))
+            }
+
+            buildTypes.release {
+                packageName = if (isQa) "D&D Helper QA" else "D&D Helper"
+                proguard {
+                    version.set("7.5.0")
+                    isEnabled.set(true)
+                    optimize.set(true)
+                    configurationFiles.from(project.file("proguard-rules.pro"))
+                }
+                windows {
+                    menu = true
+                    iconFile.set(project.file("src/main/resources/icon.png"))
+                    upgradeUuid = if (isQa) "77c9c3e4-8393-4a11-9231-6b834468f7f2" else "67c9c3e4-8393-4a11-9231-6b834468f7f1"
+                }
             }
 
             modules("java.net.http")
@@ -49,24 +65,25 @@ compose.desktop {
     }
 }
 
-val msiDirProvider = layout.buildDirectory.dir("compose/binaries/main/msi")
-
-tasks.matching { it.name == "packageDistributionForCurrentOS" }.configureEach {
+// Универсальный таск для переименования MSI
+tasks.matching { it.name.startsWith("package") && it.name.endsWith("Msi") }.configureEach {
     val localBuildNumber = buildNumber
-    val localMsiDirProvider = msiDirProvider
+    val isQa = project.hasProperty("qa")
+    val taskName = name
+    val buildDirProvider = layout.buildDirectory
 
     doLast {
-        // 2. Внутри doLast используем только наши чистые локальные переменные
-        val msiDir = localMsiDirProvider.get().asFile
+        val isRelease = taskName.contains("Release")
+        val typeDir = if (isRelease) "main-release" else "main"
+        val msiDir = buildDirProvider.dir("compose/binaries/$typeDir/msi").get().asFile
+        
         val msiFile = msiDir.listFiles()?.firstOrNull { it.extension == "msi" }
-
         if (msiFile != null) {
-            val newName = "${msiFile.nameWithoutExtension}-$localBuildNumber.msi"
+            val suffix = if (isQa) "-QA" else ""
+            val newName = "${msiFile.nameWithoutExtension}${suffix}-$localBuildNumber.msi"
             val newFile = File(msiDir, newName)
             msiFile.renameTo(newFile)
-            println("MSI успешно переименован в: $newName")
-        } else {
-            println("Файл MSI не найден для переименования")
+            println("MSI (${if (isRelease) "Release" else "Dev"}${if (isQa) " QA" else ""}) успешно переименован в: $newName")
         }
     }
 }

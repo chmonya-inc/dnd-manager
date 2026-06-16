@@ -52,6 +52,8 @@ android {
 
     buildTypes {
         debug {
+            applicationIdSuffix = ".qa"
+            versionNameSuffix = "-QA"
             signingConfig = signingConfigs.getByName("debug")
         }
         release {
@@ -66,8 +68,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            
-            signingConfig = signingConfigs.getByName("release")
+
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
