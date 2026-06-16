@@ -28,7 +28,7 @@ jobs:
       id: new_tag
       uses: mathieudutour/github-tag-action@v6.2
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ steps.generate_token.outputs.token }}
         dry_run: true
 
     - name: Await Manual Approval
@@ -43,4 +43,4 @@ jobs:
     - name: Bump version
       uses: mathieudutour/github-tag-action@v6.2
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ steps.generate_token.outputs.token }}
