@@ -24,20 +24,11 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Get latest release
-      id: latest_release
-      run: |
-        TAG=$(gh release view -R ${{ github.repository }} --json tagName --jq '.tagName') && \
-        echo version=${TAG#v} >> "$GITHUB_OUTPUT"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: bump version
       id: tag_version
       uses: mathieudutour/github-tag-action@v6.2
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        custom_tag: ${{ steps.latest_release.outputs.version }}
 
     - name: Await Manual Approval
       uses: trstringer/manual-approval@v1
