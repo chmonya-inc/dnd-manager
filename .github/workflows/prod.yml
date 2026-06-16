@@ -14,7 +14,7 @@ jobs:
     - name: Get latest release
       id: tag
       run: |
-        TAG=${{ github.ref }} && \
+        TAG=${{ github.ref_name }} && \
         echo version=${TAG#v} >> "$GITHUB_OUTPUT"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
