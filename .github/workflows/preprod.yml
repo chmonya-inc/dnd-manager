@@ -1,4 +1,4 @@
-name: Test build and deploy
+name: Bump tag version and wait for approval to create new release tag
 
 on:
   push:
@@ -6,11 +6,12 @@ on:
       - master
 
 jobs:
-  create-release:
+  latest-release:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.latest_release.outputs.version }}
     permissions:
       issues: write
-      contents: write
     steps:
     - name: Get latest release
       id: latest_release
@@ -20,12 +21,17 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: manual-approval
-      uses: chmonya-inc/dnd-manager/.github/workflows/approve.yml@v1
-      with:
-        issue-title: "Release ${{ steps.latest_release.outputs.version }}"
-        issue-body: "Approve to create new release version ${{ steps.latest_release.outputs.version }}"
+  manual-approval:
+    name: manual-approval
+    needs: latest-release
+    uses: chmonya-inc/dnd-manager/.github/workflows/approve.yml@v2
+    with:
+      issue-title: "Release ${{ needs.latest-release.outputs.version }}"
+      issue-body: "Approve to create new release version ${{ needs.latest-release.outputs.version }}"
 
+  bump-new-tag:
+    runs-on: ubuntu-latest
+    steps:
     - name: Checkout Code
       uses: actions/checkout@v4
       with:
@@ -38,15 +44,6 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         default_bump: patch
         dry_run: true
-
-    - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.tag_version.outputs.new_tag }}
-        release_name: Release ${{ steps.tag_version.outputs.new_tag }}
-        body: ${{ steps.tag_version.outputs.changelog }}
 
     - name: Bump version and push tag
       uses: rickstaa/action-create-tag@v1
