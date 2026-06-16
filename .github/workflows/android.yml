@@ -3,6 +3,9 @@ name: Build mobile app
 on:
   workflow_call:
     inputs:
+      build-number:
+        required: true
+        type: string
       version:
         required: true
         type: string

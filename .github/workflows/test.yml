@@ -1,18 +1,31 @@
 name: Test build and deploy
 
 on:
+  push:
+    branches:
+      - develop
   pull_request:
     branches:
-      - master
-
+      - develop
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version:  ${{ steps.latest_release.outputs.release }}"
+    steps:
+    - name: Get latest release
+      id: latest_release
+      uses: pozetroninc/github-action-get-latest-release@v0.7.0
+      with:
+        repository: ${{ github.repository }}
+
   build-api:
     name: Build api
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-api
-      image-tag: ${{ github.sha }}
+      image-tag: ${{ steps.get_version.outputs.version }}-${{ github.run_number }}
       dockerfile-path: dockerfiles/api.Dockerfile
     secrets: inherit
 
@@ -21,7 +34,7 @@ jobs:
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-web
-      image-tag: ${{ github.sha }}
+      image-tag: ${{ steps.get_version.outputs.version }}-${{ github.run_number }}
       dockerfile-path: dockerfiles/web.Dockerfile
       use-config-secrets: true
     secrets: inherit
@@ -32,7 +45,8 @@ jobs:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/desktop.yml@v2
     with:
-      version: ${{ github.sha }}
+      version: ${{ steps.get_version.outputs.version }}
+      build-number: ${{ github.run_number }}
     secrets: inherit
 
   build-app:
@@ -41,16 +55,17 @@ jobs:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/android.yml@v2
     with:
-      version: ${{ github.sha }}
+      version: ${{ steps.get_version.outputs.version }}
+      build-number: ${{ github.run_number }}
     secrets: inherit
 
   deploy-api:
     needs: [build-api]
     uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
-      version: ${{ github.run_number }}
+      version: ${{ steps.get_version.outputs.version }}
       image-name: chmonya777/dndmanager-api
-      image-tag: ${{ github.sha }}
+      image-tag: ${{ steps.get_version.outputs.version }}-${{ github.run_number }}
       release-name: dndmanager-api
       k8s-namespace: dndmanager-test
       app-name: api
@@ -61,9 +76,9 @@ jobs:
     needs: [build-web]
     uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
-      version: ${{ github.run_number }}
+      version: ${{ steps.get_version.outputs.version }}
       image-name: chmonya777/dndmanager-web
-      image-tag: ${{ github.sha }}
+      image-tag: ${{ steps.get_version.outputs.version }}-${{ github.run_number }}
       release-name: dndmanager-web
       k8s-namespace: dndmanager-test
       app-name: web

@@ -24,7 +24,7 @@ jobs:
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-api
-      image-tag: needs.version.outputs.version
+      image-tag: ${{ needs.version.outputs.version }}
       dockerfile-path: dockerfiles/api.Dockerfile
     secrets: inherit
 
@@ -46,6 +46,7 @@ jobs:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/desktop.yml@v2
     with:
+      build-number: ${{ github.run_number }}
       version: ${{ needs.version.outputs.version }}
     secrets: inherit
 
@@ -56,6 +57,7 @@ jobs:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/android.yml@v2
     with:
+      build-number: ${{ github.run_number }}
       version: ${{ needs.version.outputs.version }}
     secrets: inherit
 
