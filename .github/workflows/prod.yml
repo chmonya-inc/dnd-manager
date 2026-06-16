@@ -2,10 +2,8 @@ name: Prod release
 
 on:
   push:
-    branches:
-      - release/**
     tags:
-      - release/**
+      - v*.*.*
 
 jobs:
   version:
