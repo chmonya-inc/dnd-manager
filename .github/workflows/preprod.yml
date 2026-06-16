@@ -24,8 +24,8 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: bump version
-      id: tag_version
+    - name: Get new app version
+      id: new_tag
       uses: mathieudutour/github-tag-action@v6.2
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -37,11 +37,10 @@ jobs:
         secret: ${{ steps.generate_token.outputs.token }}
         approvers: dnd-manager-developers
         minimum-approvals: 1
-        issue-title: "Release ${{ steps.tag_version.outputs.new_tag }}"
-        issue-body: "Approve to create new release version ${{ steps.tag_version.outputs.new_tag }}"
+        issue-title: "Release ${{ steps.new_tag.outputs.new_tag }}"
+        issue-body: "Approve to create new release version ${{ steps.new_tag.outputs.new_tag }}"
 
-    - name: push tag
-      uses: rickstaa/action-create-tag@v1
+    - name: Bump version
+      uses: mathieudutour/github-tag-action@v6.2
       with:
-        tag: ${{ steps.tag_version.outputs.new_tag }}
-        message: ${{ steps.tag_version.outputs.changelog }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
