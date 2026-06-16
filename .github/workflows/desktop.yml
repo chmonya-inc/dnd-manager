@@ -12,6 +12,10 @@ on:
       backend-url-desktop:
         required: true
         type: string
+    outputs:
+      artifact-id:
+        description: "ID of the uploaded MSI artifact"
+        value: ${{ jobs.build-windows.outputs.artifact-id }}
 
 jobs:
   build-windows:
