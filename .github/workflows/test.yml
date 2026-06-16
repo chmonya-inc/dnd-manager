@@ -18,7 +18,8 @@ jobs:
       id: latest_release
       run: |
         TAG=$(gh release view -R ${{ github.repository }} --json tagName --jq '.tagName') && \
-        echo version=${TAG#release*v} >> "$GITHUB_OUTPUT"
+        echo version=${TAG#release*v} >> "$GITHUB_OUTPUT" && \
+        cat "$GITHUB_OUTPUT"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
