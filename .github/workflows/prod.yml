@@ -46,8 +46,8 @@ jobs:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/desktop.yml@v2
     with:
-      build-number: ${{ github.run_number }}
       version: ${{ needs.version.outputs.version }}
+      build-number: ${{ github.run_number }}
     secrets: inherit
 
   build-app:
@@ -57,8 +57,8 @@ jobs:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/android.yml@v2
     with:
-      build-number: ${{ github.run_number }}
       version: ${{ needs.version.outputs.version }}
+      build-number: ${{ github.run_number }}
     secrets: inherit
 
   deploy-api:
