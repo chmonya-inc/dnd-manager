@@ -12,7 +12,7 @@ jobs:
   version:
     runs-on: ubuntu-latest
     outputs:
-      version:  ${{ steps.latest_release.outputs.release }}"
+      version: ${{ steps.latest_release.outputs.release }}"
     steps:
     - name: Get latest release
       id: latest_release
@@ -22,50 +22,54 @@ jobs:
 
   build-api:
     name: Build api
+    needs: version
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-api
-      image-tag: ${{ steps.get_version.outputs.version }}-${{ github.run_number }}
+      image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       dockerfile-path: dockerfiles/api.Dockerfile
     secrets: inherit
 
   build-web:
     name: Build web
+    needs: version
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-web
-      image-tag: ${{ steps.get_version.outputs.version }}-${{ github.run_number }}
+      image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       dockerfile-path: dockerfiles/web.Dockerfile
       use-config-secrets: true
     secrets: inherit
 
   build-desktop:
     name: Build desktop
+    needs: version
     permissions:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/desktop.yml@v2
     with:
-      version: ${{ steps.get_version.outputs.version }}
+      version: ${{ needs.version.outputs.version }}
       build-number: ${{ github.run_number }}
     secrets: inherit
 
   build-app:
     name: Build mobile app
+    needs: version
     permissions:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/android.yml@v2
     with:
-      version: ${{ steps.get_version.outputs.version }}
+      version: ${{ needs.version.outputs.version }}
       build-number: ${{ github.run_number }}
     secrets: inherit
 
   deploy-api:
-    needs: [build-api]
+    needs: [build-api, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
-      version: ${{ steps.get_version.outputs.version }}
+      version: ${{ needs.version.outputs.version }}
       image-name: chmonya777/dndmanager-api
-      image-tag: ${{ steps.get_version.outputs.version }}-${{ github.run_number }}
+      image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       release-name: dndmanager-api
       k8s-namespace: dndmanager-test
       app-name: api
@@ -73,12 +77,12 @@ jobs:
     secrets: inherit
 
   deploy-web:
-    needs: [build-web]
+    needs: [build-web, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
-      version: ${{ steps.get_version.outputs.version }}
+      version: ${{ needs.version.outputs.version }}
       image-name: chmonya777/dndmanager-web
-      image-tag: ${{ steps.get_version.outputs.version }}-${{ github.run_number }}
+      image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       release-name: dndmanager-web
       k8s-namespace: dndmanager-test
       app-name: web
