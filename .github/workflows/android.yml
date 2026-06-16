@@ -40,10 +40,9 @@ jobs:
           APPS_SCRIPT_URL_ANDROID: ${{ secrets.APPS_SCRIPT_URL_ANDROID }}
           APPS_SCRIPT_URL_DESKTOP: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         id: upload-artifact
         with:
-          name: dnd-manager-android-${{ inputs.version }}
           path: app/build/outputs/apk/debug/*.apk
           archive: false
           if-no-files-found: error

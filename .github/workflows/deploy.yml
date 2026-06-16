@@ -34,8 +34,8 @@ jobs:
     - name: Apply deployment
       working-directory: ${{ github.workspace }}
       run: |
-        helm package --app-version=${{ inputs.version }} .helm/${{ inputs.app-name }} && \
-        helm secrets upgrade -i --wait ${{ inputs.release-name }} ${{ inputs.release-name }}-${{ inputs.version }}.tgz \
+        helm package --app-version=${{ inputs.version }} --destination .helm/package .helm/${{ inputs.app-name }} && \
+        helm secrets upgrade -i --wait ${{ inputs.release-name }} .helm/package/*.tgz \
           --install \
           --set-string image.name=${{ inputs.image-name }} \
           --set-string image.tag=${{ inputs.image-tag }} \

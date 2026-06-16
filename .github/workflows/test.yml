@@ -28,7 +28,7 @@ jobs:
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-api
-      image-tag: "${{ needs.version.outputs.version }}-${{ github.run_number }}"
+      image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       dockerfile-path: dockerfiles/api.Dockerfile
     secrets: inherit
 
@@ -38,7 +38,7 @@ jobs:
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-web
-      image-tag: "${{ needs.version.outputs.version }}-${{ github.run_number }}"
+      image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       dockerfile-path: dockerfiles/web.Dockerfile
       use-config-secrets: true
     secrets: inherit
@@ -71,7 +71,7 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       image-name: chmonya777/dndmanager-api
-      image-tag: "${{ needs.version.outputs.version }}-${{ github.run_number }}"
+      image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       release-name: dndmanager-api
       k8s-namespace: dndmanager-test
       app-name: api
@@ -84,7 +84,7 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       image-name: chmonya777/dndmanager-web
-      image-tag: "${{ needs.version.outputs.version }}-${{ github.run_number }}"
+      image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       release-name: dndmanager-web
       k8s-namespace: dndmanager-test
       app-name: web

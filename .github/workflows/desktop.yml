@@ -34,10 +34,9 @@ jobs:
           APP_VERSION_NUMBER: ${{ inputs.version }}
           APPS_SCRIPT_URL_DESKTOP: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         id: upload-artifact
         with:
-          name: dnd-manager-desktop-${{ inputs.version }}
           path: desktop/build/compose/binaries/main/msi/*.msi
           archive: false
           if-no-files-found: error
