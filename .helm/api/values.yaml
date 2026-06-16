@@ -1,4 +1,3 @@
-dns: "dnd-manager.ip-ddns.com"
 subpath: "/api/"
 port: 9090
 db:

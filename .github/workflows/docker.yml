@@ -1,4 +1,4 @@
-name: Build docker image and deploy to k8s
+name: Build docker image
 
 on:
   workflow_call:
@@ -6,16 +6,10 @@ on:
       image-name:
         required: true
         type: string
+      image-tag:
+        required: true
+        type: string
       dockerfile-path:
-        required: true
-        type: string
-      release-name:
-        required: true
-        type: string
-      k8s-namespace:
-        required: true
-        type: string
-      app-name:
         required: true
         type: string
       build-args:
@@ -46,7 +40,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           push: true
-          tags: ${{ inputs.image-name }}:${{ github.sha }}
+          tags: ${{ inputs.image-name }}:${{ inputs.image-tag }}
           file: ${{ inputs.dockerfile-path }}
           build-args: |
             ${{ inputs.build-args }}
@@ -56,22 +50,3 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/arm64
-
-  deploy:
-    needs: build
-    runs-on: raspberrypi
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v6
-    - name: Apply deployment
-      working-directory: ${{ github.workspace }}
-      run: |
-        helm secrets upgrade ${{ inputs.release-name }} .helm/${{ inputs.app-name }} \
-          --install \
-          --set-string image.name=${{ inputs.image-name }} \
-          --set-string image.tag=$GITHUB_SHA \
-          -f .helm/${{ inputs.app-name }}/values.yaml \
-          -f .helm/.encrypted/secrets.yaml \
-          -n ${{ inputs.k8s-namespace }}
-    - name: Wait for deploy
-      run: kubectl rollout status deployment ${{ inputs.release-name }} -n ${{ inputs.k8s-namespace }} --timeout=300s

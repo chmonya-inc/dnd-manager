@@ -1,0 +1,45 @@
+name: Deploy service in k8s
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      image-name:
+        required: true
+        type: string
+      image-tag:
+        required: true
+        type: string
+      release-name:
+        required: true
+        type: string
+      k8s-namespace:
+        required: true
+        type: string
+      app-name:
+        required: true
+        type: string
+      environment:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: raspberrypi
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+    - name: Apply deployment
+      working-directory: ${{ github.workspace }}
+      run: |
+        helm package --app-version=${{ inputs.version }} --destination .helm/package .helm/${{ inputs.app-name }} && \
+        helm secrets upgrade -i --wait ${{ inputs.release-name }} .helm/package/*.tgz \
+          --install \
+          --set-string image.name=${{ inputs.image-name }} \
+          --set-string image.tag=${{ inputs.image-tag }} \
+          -f .helm/${{ inputs.app-name }}/values.yaml \
+          -f .helm/${{ inputs.app-name }}/values-${{ inputs.environment }}.yaml \
+          -f .helm/.encrypted/secrets.yaml \
+          -n ${{ inputs.k8s-namespace }}

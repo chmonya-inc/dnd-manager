@@ -1,0 +1,52 @@
+name: Bump tag version and wait for approval to create new release tag
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  latest-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.latest_release.outputs.version }}
+    permissions:
+      issues: write
+    steps:
+    - name: Get latest release
+      id: latest_release
+      run: |
+        TAG=$(gh release view -R ${{ github.repository }} --json tagName --jq '.tagName') && \
+        echo version=${TAG#release*v} >> "$GITHUB_OUTPUT"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  manual-approval:
+    name: manual-approval
+    needs: latest-release
+    uses: chmonya-inc/dnd-manager/.github/workflows/approve.yml@v2
+    with:
+      issue-title: "Release ${{ needs.latest-release.outputs.version }}"
+      issue-body: "Approve to create new release version ${{ needs.latest-release.outputs.version }}"
+
+  bump-new-tag:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Bump Version and Push Tag
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        default_bump: patch
+        dry_run: true
+
+    - name: Bump version and push tag
+      uses: rickstaa/action-create-tag@v1
+      with:
+        tag: ${{ steps.tag_version.outputs.new_tag }}
+        message: ${{ steps.tag_version.outputs.changelog }}

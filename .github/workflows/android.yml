@@ -1,17 +1,26 @@
-name: Release android app
+name: Build mobile app
 
 on:
-  push:
-    branches:
-      - 'release/all/v*.*.*'
-      - 'release/app/v*.*.*'
-    tags:
-      - 'release/all/v*.*.*'
-      - 'release/app/v*.*.*'
+  workflow_call:
+    inputs:
+      build-number:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      backend-url-android:
+        required: true
+        type: string
+      backend-url-desktop:
+        required: true
+        type: string
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    outputs:
+      artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
     permissions:
       contents: write
     steps:
@@ -33,11 +42,13 @@ jobs:
       - run: ./gradlew :app:assembleDebug
         env:
           APP_BUILD_NUMBER: ${{ github.run_number }}
-          APP_VERSION_NUMBER: ${{ github.ref_name }}
-          APPS_SCRIPT_URL_ANDROID: ${{ secrets.APPS_SCRIPT_URL_ANDROID }}
-          APPS_SCRIPT_URL_DESKTOP: ${{ secrets.APPS_SCRIPT_URL_DESKTOP }}
+          APP_VERSION_NUMBER: ${{ inputs.version }}
+          APPS_SCRIPT_URL_ANDROID: ${{ inputs.backend-url-android }}
+          APPS_SCRIPT_URL_DESKTOP: ${{ inputs.backend-url-desktop }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
+        id: upload-artifact
         with:
-          name: dnd-manager-android
           path: app/build/outputs/apk/debug/*.apk
+          archive: false
+          if-no-files-found: error
