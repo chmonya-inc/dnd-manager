@@ -15,6 +15,10 @@ on:
       backend-url-desktop:
         required: true
         type: string
+    outputs:
+      artifact-id:
+        description: "ID of the uploaded APK artifact"
+        value: ${{ jobs.build-android.outputs.artifact-id }}
 
 jobs:
   build-android:
