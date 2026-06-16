@@ -100,9 +100,16 @@ jobs:
     needs: [version, build-api, build-web, build-desktop, build-app, deploy-api, deploy-web, publish]
     if: failure()
     steps:
+      - name: Generate token
+        id: generate_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Delete failed tag and release
         run: |
           git push origin --delete "${{ github.ref_name }}"
           gh release delete "${{ github.ref_name }}" -y || true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
