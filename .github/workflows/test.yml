@@ -12,13 +12,15 @@ jobs:
   version:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.latest_release.outputs.release }}"
+      version: ${{ steps.latest_release.outputs.version }}"
     steps:
     - name: Get latest release
       id: latest_release
-      uses: pozetroninc/github-action-get-latest-release@v0.7.0
-      with:
-        repository: ${{ github.repository }}
+      run: |
+        TAG=$(gh release view -R ${{ github.repository }} --json tagName --jq '.tagName') && \
+        echo "version=${TAG#release*v}" >> "$GITHUB_OUTPUT"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-api:
     name: Build api
