@@ -14,6 +14,13 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+    - name: Generate token
+      id: generate_token
+      uses: actions/create-github-app-token@v3
+      with:
+        app-id: ${{ secrets.APP_ID }}
+        private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
     - name: Download artifacts
       uses: actions/download-artifact@v8
       with:
@@ -24,7 +31,7 @@ jobs:
       id: create_release
       uses: actions/create-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
       with:
         tag_name: ${{ inputs.version }}
         release_name: "DND Manager"
@@ -38,6 +45,6 @@ jobs:
 
     - uses: eregon/publish-release@v1
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
       with:
         release_id: ${{ steps.create_release.outputs.id }}
