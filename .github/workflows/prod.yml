@@ -94,8 +94,10 @@ jobs:
   publish:
     needs: [deploy-web, build-desktop, build-app, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/publish.yml@v2
+    permissions:
+      contents: write
     with:
-      version: ${{ needs.version.outputs.version }}
+      version: ${{ github.ref_name }}
       artifact-ids: "${{ needs.build-app.outputs.artifact-id }},${{ needs.build-desktop.outputs.artifact-id }}"
     secrets: inherit
 
