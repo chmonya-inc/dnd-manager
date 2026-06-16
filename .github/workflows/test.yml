@@ -18,10 +18,15 @@ jobs:
       id: latest_release
       run: |
         TAG=$(gh release view -R ${{ github.repository }} --json tagName --jq '.tagName') && \
-        echo version=${TAG#release*v} >> "$GITHUB_OUTPUT" && \
-        cat "$GITHUB_OUTPUT"
+        echo version=${TAG#release*v} >> "$GITHUB_OUTPUT"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  version-debug:
+    runs-on: ubuntu-latest
+    needs: version
+    steps:
+    - run: echo ${{ needs.version.outputs.version }}
 
   build-api:
     name: Build api
