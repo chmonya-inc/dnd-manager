@@ -9,11 +9,15 @@ jobs:
   version:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.get_version.outputs.version }}
+      version: ${{ steps.tag.outputs.version }}
     steps:
-    - id: get_version
-      name: Get version
-      uses: jannemattila/get-version-from-tag@v4
+    - name: Get latest release
+      id: tag
+      run: |
+        TAG=${{ github.ref }} && \
+        echo version=${TAG#v} >> "$GITHUB_OUTPUT"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-api:
     name: Build api
@@ -100,6 +104,10 @@ jobs:
     needs: [version, build-api, build-web, build-desktop, build-app, deploy-api, deploy-web, publish]
     if: failure()
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Generate token
         id: generate_token
         uses: actions/create-github-app-token@v3
