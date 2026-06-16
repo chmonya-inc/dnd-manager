@@ -27,19 +27,19 @@ spec:
               name: {{ .Release.Name }}
           - secretRef:
               name: {{ .Release.Name }}
-    livenessProbe:
-      httpGet:
-        path: {{ .Values.subpath }}
-        port: {{ .Values.port | int  }}
-      initialDelaySeconds: 10
-      periodSeconds: 15
-      timeoutSeconds: 3
-      failureThreshold: 3
-    readinessProbe:
-      httpGet:
-        path: {{ .Values.subpath }}
-        port: {{ .Values.port | int  }}
-      initialDelaySeconds: 5
-      periodSeconds: 5
-      timeoutSeconds: 3
-      failureThreshold: 2
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.subpath }}
+            port: {{ .Values.port | int  }}
+          initialDelaySeconds: 10
+          periodSeconds: 15
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.subpath }}
+            port: {{ .Values.port | int  }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
