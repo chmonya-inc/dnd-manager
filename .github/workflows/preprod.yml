@@ -10,8 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.latest_release.outputs.version }}
-    permissions:
-      issues: write
     steps:
     - name: Get latest release
       id: latest_release
@@ -25,12 +23,15 @@ jobs:
     name: manual-approval
     needs: latest-release
     uses: chmonya-inc/dnd-manager/.github/workflows/approve.yml@v2
+    permissions:
+      issues: write
     with:
       issue-title: "Release ${{ needs.latest-release.outputs.version }}"
       issue-body: "Approve to create new release version ${{ needs.latest-release.outputs.version }}"
 
   bump-new-tag:
     runs-on: ubuntu-latest
+    needs: manual-approval
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
