@@ -33,7 +33,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
       with:
-        tag_name: v${{ inputs.version }} # Move v to main pipeline later
+        tag_name: "v${{ inputs.version }}" # Move v to main pipeline later
         release_name: "DND Manager"
         draft: true
         prerelease: false
