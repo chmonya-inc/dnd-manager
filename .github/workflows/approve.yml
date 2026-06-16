@@ -3,7 +3,10 @@ name: Create manual approve issue
 on:
   workflow_call:
     inputs:
-      app-name:
+      issue-title:
+        type: string
+        required: true
+      issue-body:
         type: string
 
 jobs:
@@ -23,5 +26,5 @@ jobs:
           secret: ${{ steps.generate_token.outputs.token }}
           approvers: dnd-manager-developers
           minimum-approvals: 1
-          issue-title: "${{ inputs.app-name }} build"
-          issue-body: "Please approve or deny the build"
+          issue-title: "{{ inputs.issue-title }}"
+          issue-body: "{{ inputs.issue-body }}"
