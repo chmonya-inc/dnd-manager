@@ -24,6 +24,9 @@ dependencies {
     implementation(libs.kotlinx.coroutines.swing)
 }
 
+// Определяем контекст сборки по имени задачи
+val isReleaseTask = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+
 compose.desktop {
     application {
         mainClass = "com.dnd.helper.MainKt"
@@ -36,27 +39,22 @@ compose.desktop {
             )
             packageVersion = versionNumber
 
-            val isQa = project.hasProperty("qa")
-            packageName = "D&D Helper"
+            // Если запущена Release задача - используем продакшн имя, иначе QA
+            packageName = if (isReleaseTask) "D&D Helper" else "D&D Helper QA"
 
             windows {
                 menu = true
-                upgradeUuid = if (isQa) "77c9c3e4-8393-4a11-9231-6b834468f7f2" else "67c9c3e4-8393-4a11-9231-6b834468f7f1"
                 iconFile.set(project.file("src/main/resources/icon.png"))
+                // Разные ID, чтобы QA и Prod не конфликтовали при установке
+                upgradeUuid = if (isReleaseTask) "67c9c3e4-8393-4a11-9231-6b834468f7f1" else "77c9c3e4-8393-4a11-9231-6b834468f7f2"
             }
 
             buildTypes.release {
-                packageName = if (isQa) "D&D Helper QA" else "D&D Helper"
                 proguard {
                     version.set("7.5.0")
                     isEnabled.set(true)
                     optimize.set(true)
                     configurationFiles.from(project.file("proguard-rules.pro"))
-                }
-                windows {
-                    menu = true
-                    iconFile.set(project.file("src/main/resources/icon.png"))
-                    upgradeUuid = if (isQa) "77c9c3e4-8393-4a11-9231-6b834468f7f2" else "67c9c3e4-8393-4a11-9231-6b834468f7f1"
                 }
             }
 
@@ -68,7 +66,6 @@ compose.desktop {
 // Универсальный таск для переименования MSI
 tasks.matching { it.name.startsWith("package") && it.name.endsWith("Msi") }.configureEach {
     val localBuildNumber = buildNumber
-    val isQa = project.hasProperty("qa")
     val taskName = name
     val buildDirProvider = layout.buildDirectory
 
@@ -79,11 +76,10 @@ tasks.matching { it.name.startsWith("package") && it.name.endsWith("Msi") }.conf
         
         val msiFile = msiDir.listFiles()?.firstOrNull { it.extension == "msi" }
         if (msiFile != null) {
-            val suffix = if (isQa) "-QA" else ""
-            val newName = "${msiFile.nameWithoutExtension}${suffix}-$localBuildNumber.msi"
+            val newName = "${msiFile.nameWithoutExtension}-$localBuildNumber.msi"
             val newFile = File(msiDir, newName)
             msiFile.renameTo(newFile)
-            println("MSI (${if (isRelease) "Release" else "Dev"}${if (isQa) " QA" else ""}) успешно переименован в: $newName")
+            println("MSI (${if (isRelease) "Release" else "QA"}) успешно переименован в: $newName")
         }
     }
 }

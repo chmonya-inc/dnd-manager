@@ -46,7 +46,7 @@ android {
     applicationVariants.all {
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
-            output.outputFileName = "DND-Helper-Android-${name}-${versionName}-${buildNumber}.apk"
+            output.outputFileName = "DND-Helper-${name}-${versionName}-${buildNumber}.apk"
         }
     }
 
