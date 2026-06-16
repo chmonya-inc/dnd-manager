@@ -27,5 +27,5 @@ jobs:
           secret: ${{ steps.generate_token.outputs.token }}
           approvers: dnd-manager-developers
           minimum-approvals: 1
-          issue-title: "{{ inputs.issue-title }}"
-          issue-body: "{{ inputs.issue-body }}"
+          issue-title: ${{ inputs.issue-title }}
+          issue-body: ${{ inputs.issue-body }}
