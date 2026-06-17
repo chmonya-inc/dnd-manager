@@ -1,7 +1,9 @@
 name: Bump tag version
 
 on:
-  push:
+  pull_request:
+    types:
+      - closed
     branches:
       - master
 
