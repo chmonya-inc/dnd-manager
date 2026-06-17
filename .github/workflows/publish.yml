@@ -30,25 +30,10 @@ jobs:
       with:
         artifact-ids: ${{ inputs.artifact-ids }}
         path: release
+        merge-multiple: true
 
-    - name: Create Draft Release
-      id: create_release
-      uses: actions/create-release@v1
+    - name: Create Draft Release and Upload Assets
+      run: |
+        gh release create ${{ inputs.tag }} ./release/* --title "DND Manager" --clobber
       env:
         GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-      with:
-        tag_name: ${{ inputs.tag }}
-        release_name: "DND Manager"
-        draft: true
-        prerelease: false
-
-    - name: Upload Multiple Assets
-      run: gh release upload ${{ inputs.tag }} ./release/* --clobber
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - uses: eregon/publish-release@v1
-      env:
-        GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-      with:
-        release_id: ${{ steps.create_release.outputs.id }}
