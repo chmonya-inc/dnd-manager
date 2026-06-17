@@ -1,4 +1,4 @@
-name: Bump tag version and wait for approval to create new release tag
+name: Bump tag version
 
 on:
   push:
