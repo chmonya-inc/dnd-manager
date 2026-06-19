@@ -3,10 +3,13 @@ name: Build mobile app
 on:
   workflow_call:
     inputs:
+      version:
+        required: true
+        type: string
       build-number:
         required: true
         type: string
-      version:
+      build-script:
         required: true
         type: string
       backend-url-android:
@@ -43,7 +46,7 @@ jobs:
             echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > debug.keystore
           fi
       - run: chmod +x gradlew
-      - run: ./gradlew :app:assembleDebug
+      - run: ./gradlew ${{ inputs.build-script }}
         env:
           APP_BUILD_NUMBER: ${{ github.run_number }}
           APP_VERSION_NUMBER: ${{ inputs.version }}
