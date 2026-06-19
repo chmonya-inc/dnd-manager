@@ -62,7 +62,7 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       build-number: ${{ github.run_number }}
-      build-script: ":desktop:assembleDebug"
+      build-script: ":app:assembleDebug"
       backend-url-android: ${{ vars.APPS_SCRIPT_URL_ANDROID_TEST }}
       backend-url-desktop: ${{ vars.APPS_SCRIPT_URL_DESKTOP_TEST }}
     secrets: inherit
