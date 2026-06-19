@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - v*.*.*
+    branches:
+      - master
 
 jobs:
   version:
@@ -49,6 +51,7 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       build-number: ${{ github.run_number }}
+      build-script: ":desktop:packageReleaseMsi"
       backend-url-desktop: ${{ vars.APPS_SCRIPT_URL_DESKTOP }}
     secrets: inherit
 
@@ -61,6 +64,7 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
       build-number: ${{ github.run_number }}
+      build-script: ":app:assembleRelease"
       backend-url-desktop: ${{ vars.APPS_SCRIPT_URL_DESKTOP }}
       backend-url-android: ${{ vars.APPS_SCRIPT_URL_ANDROID }}
     secrets: inherit
@@ -98,6 +102,7 @@ jobs:
       contents: write
     with:
       tag: ${{ github.ref_name }}
+      version: ${{ needs.version.outputs.version }}
       artifact-ids: "${{ needs.build-app.outputs.artifact-id }},${{ needs.build-desktop.outputs.artifact-id }}"
     secrets: inherit
 

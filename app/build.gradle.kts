@@ -46,12 +46,14 @@ android {
     applicationVariants.all {
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
-            output.outputFileName = "DND-Helper-Android-${name}-${versionName}-${buildNumber}.apk"
+            output.outputFileName = "DND-Helper-${name}-${versionName}-${buildNumber}.apk"
         }
     }
 
     buildTypes {
         debug {
+            applicationIdSuffix = ".qa"
+            versionNameSuffix = "-QA"
             signingConfig = signingConfigs.getByName("debug")
         }
         release {
@@ -66,8 +68,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            
-            signingConfig = signingConfigs.getByName("release")
+
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

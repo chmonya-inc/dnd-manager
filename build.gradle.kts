@@ -42,4 +42,4 @@ fun getVersion(ver: String): String {
 }
 
 extra["appBuildNumber"] = providers.environmentVariable("APP_BUILD_NUMBER").getOrElse("1")
-extra["appVersionNumber"] = getVersion(providers.environmentVariable("APP_VERSION_NUMBER").getOrElse("/v1.0.0"))
+extra["appVersionNumber"] = getVersion(providers.environmentVariable("APP_VERSION_NUMBER").getOrElse("1.0.0"))
