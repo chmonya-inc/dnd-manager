@@ -35,8 +35,8 @@ on:
 
 jobs:
   build:
-    name: ${{ input.platform }}
-    runs-on: ${{ input.runs-on }}
+    name: ${{ inputs.platform }}
+    runs-on: ${{ inputs.runs-on }}
     outputs:
       artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
     permissions:
