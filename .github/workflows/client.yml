@@ -1,4 +1,4 @@
-name: Build mobile app
+name: Release desktop
 
 on:
   workflow_call:
@@ -6,6 +6,13 @@ on:
       version:
         required: true
         type: string
+      platform:
+        required: true
+        type: string
+      runs-on:
+        required: true
+        type: string
+        default: ubuntu
       build-number:
         required: true
         type: string
@@ -23,12 +30,13 @@ on:
         type: string
     outputs:
       artifact-id:
-        description: "ID of the uploaded APK artifact"
-        value: ${{ jobs.build-android.outputs.artifact-id }}
+        description: "ID of the uploaded MSI artifact"
+        value: ${{ jobs.build.outputs.artifact-id }}
 
 jobs:
-  build-android:
-    runs-on: ubuntu-latest
+  build:
+    name: ${{ input.platform }}
+    runs-on: ${{ input.runs-on }}
     outputs:
       artifact-id: ${{ steps.upload-artifact.outputs.artifact-id }}
     permissions:
@@ -43,18 +51,13 @@ jobs:
           distribution: 'temurin'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-      - name: Decode Keystore
-        run: |
-          if [ ! -z "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > debug.keystore
-          fi
       - run: chmod +x gradlew
       - run: ./gradlew ${{ inputs.build-script }}
         env:
-          APP_BUILD_NUMBER: ${{ github.run_number }}
+          APP_BUILD_NUMBER: ${{ inputs.build-number }}
           APP_VERSION_NUMBER: ${{ inputs.version }}
-          APPS_SCRIPT_URL_ANDROID: ${{ inputs.backend-url-android }}
           APPS_SCRIPT_URL_DESKTOP: ${{ inputs.backend-url-desktop }}
+          APPS_SCRIPT_URL_ANDROID: ${{ inputs.backend-url-android }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
       - uses: actions/upload-artifact@v7
         id: upload-artifact

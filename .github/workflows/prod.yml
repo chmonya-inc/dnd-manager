@@ -45,13 +45,16 @@ jobs:
     needs: version
     permissions:
       contents: write
-    uses: chmonya-inc/dnd-manager/.github/workflows/desktop.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/client.yml@v2
     with:
       version: ${{ needs.version.outputs.version }}
+      platform: windows
+      runs-on: windows-latest
       build-number: ${{ github.run_number }}
       build-script: ":desktop:packageReleaseMsi"
       build-path: desktop/build/compose/binaries/main-release/msi/*.msi
       backend-url-desktop: ${{ vars.APPS_SCRIPT_URL_DESKTOP }}
+      backend-url-android: ${{ vars.APPS_SCRIPT_URL_ANDROID }}
     secrets: inherit
 
   build-app:
@@ -59,9 +62,11 @@ jobs:
     needs: version
     permissions:
       contents: write
-    uses: chmonya-inc/dnd-manager/.github/workflows/android.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/client.yml@v2
     with:
       version: ${{ needs.version.outputs.version }}
+      platform: android
+      runs-on: ubuntu-latest
       build-number: ${{ github.run_number }}
       build-script: ":app:assembleRelease"
       build-path: app/build/outputs/apk/release/*.apk
