@@ -12,6 +12,9 @@ on:
       build-script:
         required: true
         type: string
+      build-path:
+        required: true
+        type: string
       backend-url-desktop:
         required: true
         type: string
@@ -47,7 +50,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         id: upload-artifact
         with:
-          path: desktop/build/compose/binaries/main/msi/*.msi
+          path: ${{ inputs.build-path }}
           archive: false
           if-no-files-found: error
           retention-days: 3
