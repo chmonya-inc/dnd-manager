@@ -12,6 +12,9 @@ on:
       build-script:
         required: true
         type: string
+      build-path:
+        required: true
+        type: string
       backend-url-android:
         required: true
         type: string
@@ -56,7 +59,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         id: upload-artifact
         with:
-          path: app/build/outputs/apk/debug/*.apk
+          path: ${{ inputs.build-path }}
           archive: false
           if-no-files-found: error
           retention-days: 3

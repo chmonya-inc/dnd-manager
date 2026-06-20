@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - v*.*.*
-    branches:
-      - master
 
 jobs:
   version:
@@ -52,6 +50,7 @@ jobs:
       version: ${{ needs.version.outputs.version }}
       build-number: ${{ github.run_number }}
       build-script: ":desktop:packageReleaseMsi"
+      build-path: build/compose/binaries/main-release/msi/*.msi
       backend-url-desktop: ${{ vars.APPS_SCRIPT_URL_DESKTOP }}
     secrets: inherit
 
@@ -65,6 +64,7 @@ jobs:
       version: ${{ needs.version.outputs.version }}
       build-number: ${{ github.run_number }}
       build-script: ":app:assembleRelease"
+      build-path: buapp/build/outputs/apk/release/*.apk
       backend-url-desktop: ${{ vars.APPS_SCRIPT_URL_DESKTOP }}
       backend-url-android: ${{ vars.APPS_SCRIPT_URL_ANDROID }}
     secrets: inherit
