@@ -68,6 +68,6 @@ jobs:
           tags: ${{ inputs.image-name }}:${{ inputs.image-tag }}
           file: ${{ inputs.dockerfile-path }}
           build-args: ${{ steps.prepare.outputs.build_args }}
-          cache-from: type=gha,scope=${{ inputs.image-name }}
-          cache-to: type=gha,scope=${{ inputs.image-name }},mode=max
+          cache-from: type=registry,ref=${{ inputs.image-name }}:buildcache
+          cache-to: type=registry,ref=${{ inputs.image-name }}:buildcache,mode=max
           platforms: linux/arm64
