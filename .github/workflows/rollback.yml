@@ -1,0 +1,19 @@
+name: Deploy service in k8s
+
+on:
+  workflow_call:
+    inputs:
+      release-name:
+        required: true
+        type: string
+      k8s-namespace:
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: raspberrypi
+    steps:
+    - name: Rollback release
+      run: |
+        helm rollback ${{ inputs.release-name }} --namespace ${{ inputs.k8s-namespace }}

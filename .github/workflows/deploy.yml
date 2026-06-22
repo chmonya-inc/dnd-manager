@@ -37,6 +37,7 @@ jobs:
         helm package --app-version=${{ inputs.version }} --destination .helm/package .helm/${{ inputs.app-name }} && \
         helm secrets upgrade -i --wait ${{ inputs.release-name }} .helm/package/*.tgz \
           --install \
+          --atomic \
           --set-string image.name=${{ inputs.image-name }} \
           --set-string image.tag=${{ inputs.image-tag }} \
           -f .helm/${{ inputs.app-name }}/values.yaml \
