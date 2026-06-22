@@ -45,20 +45,25 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Полная история для работы git-версионирования
+
       - uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
       - run: chmod +x gradlew
-      - run: ./gradlew ${{ inputs.build-script }}
+
+      - run: ./gradlew ${{ inputs.build-script }} --build-cache
         env:
           APP_BUILD_NUMBER: ${{ inputs.build-number }}
           APP_VERSION_NUMBER: ${{ inputs.version }}
           APPS_SCRIPT_URL_DESKTOP: ${{ inputs.backend-url-desktop }}
           APPS_SCRIPT_URL_ANDROID: ${{ inputs.backend-url-android }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+
       - uses: actions/upload-artifact@v7
         id: upload-artifact
         with:
