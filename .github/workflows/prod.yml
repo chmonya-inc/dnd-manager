@@ -114,7 +114,7 @@ jobs:
   cleanup-on-failure:
     runs-on: ubuntu-latest
     needs: [version, build-api, build-web, build-desktop, build-app, deploy-api, deploy-web, publish]
-    if: failure()
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     permissions:
       contents: write
     steps:
@@ -135,3 +135,19 @@ jobs:
           gh release delete "${{ github.ref_name }}" -y || true
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+  auto-rollback-api:
+    needs: [deploy-web, publish]
+    if: always() && contains(needs.*.result, 'failure')
+    uses: chmonya-inc/dnd-manager/.github/workflows/rollback.yml@v2
+    with:
+      release-name: dndmanager-api
+      k8s-namespace: dndmanager
+
+  auto-rollback-web:
+    needs: [publish]
+    if: always() && contains(needs.*.result, 'failure')
+    uses: chmonya-inc/dnd-manager/.github/workflows/rollback.yml@v2
+    with:
+      release-name: dndmanager-web
+      k8s-namespace: dndmanager
