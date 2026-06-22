@@ -33,13 +33,11 @@ COPY app/build.gradle.kts app/
 # Load dependencies
 RUN ./gradlew dependencies --no-daemon
 
-# Copy ALL build files
-COPY shared shared
+# Copy build files
+COPY shared/core shared/core
+COPY shared/player shared/player
 COPY models models
 COPY server server
-COPY desktop desktop
-COPY web web
-COPY app app
 
 # Build only the web (using Production for small size and better optimization)
 RUN ./gradlew :web:wasmJsBrowserDistribution --no-daemon --max-workers=1 -Dorg.gradle.jvmargs=-Xmx4096m
