@@ -158,7 +158,10 @@ fun MasterCharacterDetailScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showDiceDialog = true }) {
-                Text(text = "🎲", style = MaterialTheme.typography.headlineSmall)
+                Icon(
+                    imageVector = DndIcons.Filled.Casino,
+                    contentDescription = "Roll Dice"
+                )
             }
         }
     ) { padding ->

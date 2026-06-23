@@ -51,6 +51,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,11 +68,13 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.dnd.helper.di.isWeb
 import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
 import com.dnd.helper.theme.DndIcons
 import com.dnd.helper.theme.ThemeDialog
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.math.roundToInt
@@ -264,7 +267,10 @@ fun MainDesktopScreen(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
                     ) {
-                        Text(text = "🎲", style = MaterialTheme.typography.titleLarge)
+                        Icon(
+                            imageVector = DndIcons.Filled.Casino,
+                            contentDescription = "Roll Dice"
+                        )
                     }
 
                     Spacer(Modifier.height(12.dp))
@@ -527,6 +533,18 @@ private fun SessionsDialog(
                     label = { Text("Join Existing Session ID (Optional)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
+                    trailingIcon = {
+                        if (newId.isEmpty() && isWeb) {
+                            val scope = rememberCoroutineScope()
+                            IconButton(onClick = { 
+                                scope.launch {
+                                    com.dnd.helper.di.pasteFromClipboard()?.let { newId = it }
+                                }
+                            }) {
+                                Icon(DndIcons.Filled.ContentPaste, contentDescription = "Paste", modifier = Modifier.size(20.dp))
+                            }
+                        }
+                    }
                 )
                 Spacer(Modifier.height(8.dp))
                 Button(

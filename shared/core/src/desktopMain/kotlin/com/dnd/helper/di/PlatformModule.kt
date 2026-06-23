@@ -320,3 +320,13 @@ actual fun readFileContent(path: String): String? {
         null
     }
 }
+
+actual suspend fun pasteFromClipboard(): String? {
+    return try {
+        val clipboard = java.awt.Toolkit.getDefaultToolkit().systemClipboard
+        val data = clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor)
+        data as? String
+    } catch (e: Exception) {
+        null
+    }
+}
