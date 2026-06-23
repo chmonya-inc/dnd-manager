@@ -127,3 +127,7 @@ actual fun pickFile(title: String, allowedExtensions: List<String>): String? {
 actual fun readFileContent(path: String): String? {
     return null
 }
+
+actual suspend fun pasteFromClipboard(): String? {
+    return null
+}

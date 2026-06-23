@@ -262,16 +262,14 @@ object DndIcons {
         val DirectionsRun: ImageVector = buildIcon("Filled.DirectionsRun") {
             path(fill = SolidColor(Color.Black)) {
                 moveTo(13.49f, 5.48f); curveToRelative(1.1f, 0f, 2f, -0.9f, 2f, -2f); reflectiveCurveToRelative(-0.9f, -2f, -2f, -2f); reflectiveCurveToRelative(-2f, 0.9f, -2f, 2f); reflectiveCurveToRelative(0.9f, 2f, 2f, 2f); close()
-                moveTo(13.49f, 11.5f); lineTo(9.5f, 9.55f); verticalLineTo(14f); horizontalLineToRelative(-2f); verticalLineTo(7.22f); lineToRelative(4.91f, -2.02f); curveToRelative(0.82f, -0.33f, 1.74f, 0.07f, 2.07f, 0.89f); lineToRelative(1.02f, 2.54f); curveToRelative(0.5f, 1.25f, 1.75f, 2.02f, 3f, 2.02f); verticalLineToRelative(2f); curveToRelative(-1.75f, 0f, -3.33f, -1f, -4.1f, -2.5f); lineToRelative(-0.55f, -1.35f); close()
-                moveTo(12.13f, 22.39f); lineToRelative(-4.84f, -3.81f); lineToRelative(1.25f, -1.58f); lineToRelative(3.59f, 2.83f); lineToRelative(5.15f, -8.73f); lineToRelative(1.72f, 1.01f); lineToRelative(-6.87f, 10.28f); close()
+                moveTo(9.89f, 19.38f); lineToRelative(1f, -2.5f); lineToRelative(2.13f, 1.93f); verticalLineTo(24f); horizontalLineToRelative(2f); verticalLineToRelative(-6.04f); lineToRelative(-2.12f, -2.12f); lineToRelative(-1.37f, -2.95f); lineToRelative(2.39f, -2.31f); curveToRelative(1.28f, 1.45f, 3.09f, 2.45f, 5.08f, 2.65f); verticalLineToRelative(-2f); curveToRelative(-1.5f, -0.16f, -2.85f, -0.98f, -3.79f, -2.12f); lineTo(13.78f, 7.3f); curveToRelative(-0.32f, -0.42f, -0.81f, -0.7f, -1.36f, -0.71f); curveToRelative(-0.52f, -0.01f, -1.04f, 0.22f, -1.42f, 0.61f); lineTo(6.72f, 11.2f); curveToRelative(-0.39f, 0.41f, -0.39f, 1.08f, 0.01f, 1.49f); curveToRelative(0.4f, 0.4f, 1.05f, 0.39f, 1.44f, -0.02f); lineToRelative(3.35f, -3.32f); verticalLineToRelative(11.77f); lineToRelative(-4.14f, -1.85f); lineToRelative(-0.88f, 1.83f); lineToRelative(4.89f, 2.27f); close()
             }
         }
 
         val DirectionsWalk: ImageVector = buildIcon("Filled.DirectionsWalk") {
             path(fill = SolidColor(Color.Black)) {
                 moveTo(13.5f, 5.5f); curveToRelative(1.1f, 0f, 2f, -0.9f, 2f, -2f); reflectiveCurveToRelative(-0.9f, -2f, -2f, -2f); reflectiveCurveToRelative(-2f, 0.9f, -2f, 2f); reflectiveCurveToRelative(0.9f, 2f, 2f, 2f); close()
-                moveTo(13.5f, 12f); lineTo(9.51f, 9.53f); verticalLineTo(14f); horizontalLineToRelative(-2f); verticalLineTo(7.24f); lineToRelative(4.93f, -2.03f); curveToRelative(0.82f, -0.33f, 1.74f, 0.07f, 2.07f, 0.89f); lineToRelative(0.96f, 2.4f); curveToRelative(0.5f, 1.25f, 1.75f, 2f, 3f, 2f); verticalLineToRelative(2f); curveToRelative(-1.75f, 0f, -3.29f, -1f, -4.05f, -2.51f); lineToRelative(-0.41f, -1.02f); close()
-                moveTo(12.2f, 22.46f); lineToRelative(-4.88f, -3.85f); lineToRelative(1.26f, -1.6f); lineToRelative(3.62f, 2.85f); lineToRelative(2.81f, -12.13f); lineToRelative(1.96f, 0.45f); lineToRelative(-4.77f, 14.28f); close()
+                moveTo(9.8f, 8.9f); lineTo(7f, 23f); horizontalLineToRelative(2.1f); lineToRelative(1.8f, -8f); lineToRelative(2.1f, 2f); verticalLineToRelative(6f); horizontalLineToRelative(2f); verticalLineToRelative(-7.5f); lineToRelative(-2.1f, -2f); lineToRelative(0.6f, -3f); curveToRelative(1.3f, 1.5f, 3.3f, 2.5f, 5.5f, 2.5f); verticalLineToRelative(-2f); curveToRelative(-1.9f, 0f, -3.5f, -1f, -4.3f, -2.4f); lineToRelative(-1f, -1.6f); curveToRelative(-0.4f, -0.6f, -1f, -1f, -1.7f, -1f); curveToRelative(-0.3f, 0f, -0.5f, 0.1f, -0.8f, 0.1f); lineTo(6f, 8.3f); verticalLineTo(13f); horizontalLineToRelative(2f); verticalLineTo(9.6f); lineToRelative(1.8f, -0.7f); close()
             }
         }
 
@@ -306,6 +304,17 @@ object DndIcons {
                 moveTo(12f, 17f); curveToRelative(1.1f, 0f, 2f, -0.9f, 2f, -2f); reflectiveCurveToRelative(-0.9f, -2f, -2f, -2f); reflectiveCurveToRelative(-2f, 0.9f, -2f, 2f); reflectiveCurveToRelative(0.9f, 2f, 2f, 2f); close()
                 moveTo(18f, 8f); horizontalLineToRelative(-1f); verticalLineTo(6f); curveToRelative(0f, -2.76f, -2.24f, -5f, -5f, -5f); reflectiveCurveTo(7f, 3.24f, 7f, 6f); horizontalLineToRelative(2f); curveToRelative(0f, -1.66f, 1.34f, -3f, 3f, -3f); reflectiveCurveToRelative(3f, 1.34f, 3f, 3f); verticalLineToRelative(2f); horizontalLineTo(6f); curveToRelative(-1.1f, 0f, -2f, 0.9f, -2f, 2f); verticalLineToRelative(10f); curveToRelative(0f, 1.1f, 0.9f, 2f, 2f, 2f); horizontalLineToRelative(12f); curveToRelative(1.1f, 0f, 2f, -0.9f, 2f, -2f); verticalLineTo(10f); curveToRelative(0f, -1.1f, -0.9f, -2f, -2f, -2f); close()
                 moveTo(18f, 20f); horizontalLineTo(6f); verticalLineTo(10f); horizontalLineToRelative(12f); verticalLineToRelative(10f); close()
+            }
+        }
+
+        val Casino: ImageVector = buildIcon("Filled.Casino") {
+            path(fill = SolidColor(Color.Black)) {
+                moveTo(19f, 3f); horizontalLineTo(5f); curveToRelative(-1.1f, 0f, -2f, 0.9f, -2f, 2f); verticalLineToRelative(14f); curveToRelative(0f, 1.1f, 0.9f, 2f, 2f, 2f); horizontalLineToRelative(14f); curveToRelative(1.1f, 0f, 2f, -0.9f, 2f, -2f); verticalLineTo(5f); curveToRelative(0f, -1.1f, -0.9f, -2f, -2f, -2f); close()
+                moveTo(7.5f, 18f); curveToRelative(-0.83f, 0f, -1.5f, -0.67f, -1.5f, -1.5f); reflectiveCurveTo(6.67f, 15f, 7.5f, 15f); reflectiveCurveToRelative(1.5f, 0.67f, 1.5f, 1.5f); reflectiveCurveTo(8.33f, 18f, 7.5f, 18f); close()
+                moveTo(7.5f, 9f); curveTo(6.67f, 9f, 6f, 8.33f, 6f, 7.5f); reflectiveCurveTo(6.67f, 6f, 7.5f, 6f); reflectiveCurveTo(9f, 6.67f, 9f, 7.5f); reflectiveCurveTo(8.33f, 9f, 7.5f, 9f); close()
+                moveTo(12f, 13.5f); curveToRelative(-0.83f, 0f, -1.5f, -0.67f, -1.5f, -1.5f); reflectiveCurveToRelative(0.67f, -1.5f, 1.5f, -1.5f); reflectiveCurveToRelative(1.5f, 0.67f, 1.5f, 1.5f); reflectiveCurveToRelative(-0.67f, 1.5f, -1.5f, 1.5f); close()
+                moveTo(16.5f, 18f); curveToRelative(-0.83f, 0f, -1.5f, -0.67f, -1.5f, -1.5f); reflectiveCurveToRelative(0.67f, -1.5f, 1.5f, -1.5f); reflectiveCurveToRelative(1.5f, 0.67f, 1.5f, 1.5f); reflectiveCurveToRelative(-0.67f, 1.5f, -1.5f, 1.5f); close()
+                moveTo(16.5f, 9f); curveToRelative(-0.83f, 0f, -1.5f, -0.67f, -1.5f, -1.5f); reflectiveCurveTo(15.67f, 6f, 16.5f, 6f); reflectiveCurveTo(18f, 6.67f, 18f, 7.5f); reflectiveCurveTo(17.33f, 9f, 16.5f, 9f); close()
             }
         }
 
@@ -403,6 +412,14 @@ object DndIcons {
                 moveTo(16f, 1f); horizontalLineTo(4f); curveToRelative(-1.1f, 0f, -2f, 0.9f, -2f, 2f); verticalLineToRelative(14f); horizontalLineToRelative(2f); verticalLineTo(3f); horizontalLineToRelative(12f); verticalLineTo(1f); close()
                 moveTo(19f, 5f); horizontalLineTo(8f); curveToRelative(-1.13f, 0f, -2f, 0.9f, -2f, 2f); verticalLineToRelative(14f); curveToRelative(0f, 1.1f, 0.87f, 2f, 2f, 2f); horizontalLineToRelative(11f); curveToRelative(1.13f, 0f, 2f, -0.9f, 2f, -2f); verticalLineTo(7f); curveToRelative(0f, -1.1f, -0.87f, -2f, -2f, -2f); close()
                 moveTo(19f, 21f); horizontalLineTo(8f); verticalLineTo(7f); horizontalLineToRelative(11f); verticalLineToRelative(14f); close()
+            }
+        }
+
+        val ContentPaste: ImageVector = buildIcon("Filled.ContentPaste") {
+            path(fill = SolidColor(Color.Black)) {
+                moveTo(19f, 2f); horizontalLineToRelative(-4.18f); curveTo(14.4f, 0.84f, 13.3f, 0f, 12f, 0f); curveToRelative(-1.3f, 0f, -2.4f, 0.84f, -2.82f, 2f); horizontalLineTo(5f); curveToRelative(-1.1f, 0f, -2f, 0.9f, -2f, 2f); verticalLineToRelative(16f); curveToRelative(0f, 1.1f, 0.9f, 2f, 2f, 2f); horizontalLineToRelative(14f); curveToRelative(1.1f, 0f, 2f, -0.9f, 2f, -2f); verticalLineTo(4f); curveToRelative(0f, -1.1f, -0.9f, -2f, -2f, -2f); close()
+                moveTo(12f, 2f); curveToRelative(0.55f, 0f, 1f, 0.45f, 1f, 1f); reflectiveCurveToRelative(-0.45f, 1f, -1f, 1f); reflectiveCurveToRelative(-1f, -0.45f, -1f, -1f); reflectiveCurveToRelative(0.45f, -1f, 1f, -1f); close()
+                moveTo(19f, 20f); horizontalLineTo(5f); verticalLineTo(4f); horizontalLineToRelative(2f); verticalLineToRelative(3f); horizontalLineToRelative(10f); verticalLineTo(4f); horizontalLineToRelative(2f); verticalLineToRelative(16f); close()
             }
         }
 

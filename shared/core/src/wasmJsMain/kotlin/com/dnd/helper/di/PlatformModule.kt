@@ -5,6 +5,7 @@ import kotlinx.serialization.json.*
 import kotlinx.serialization.encodeToString
 import org.koin.dsl.module
 import kotlinx.browser.localStorage
+import kotlinx.coroutines.await
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -122,3 +123,16 @@ actual fun pickFile(title: String, allowedExtensions: List<String>): String? {
 actual fun readFileContent(path: String): String? {
     return null
 }
+
+actual suspend fun pasteFromClipboard(): String? {
+    return try {
+        val clipboard = kotlinx.browser.window.navigator.clipboard
+        val promise = clipboard.readText()
+        val text = promise.toArisPromise<JsString>().await<JsString>()
+        text.toString()
+    } catch (e: Exception) {
+        null
+    }
+}
+
+private fun <T : JsAny> JsAny.toArisPromise(): kotlin.js.Promise<T> = this.unsafeCast()
