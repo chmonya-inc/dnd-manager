@@ -1,1 +1,2 @@
 dns: "dnd-manager.ip-ddns.com"
+replicas: 2
