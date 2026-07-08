@@ -13,6 +13,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.request.header
 import io.ktor.serialization.kotlinx.json.json
@@ -38,6 +39,29 @@ val coreModule = module {
             install(io.ktor.client.plugins.DefaultRequest) {
                 header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 header("ngrok-skip-browser-warning", "true")
+            }
+            install(io.ktor.client.plugins.auth.Auth) {
+                bearer {
+                    loadTokens {
+                        val storage = org.koin.core.context.GlobalContext.get().get<com.dnd.helper.domain.storage.CharacterStorage>()
+                        val token = storage.getAuthToken()
+                        if (token != null) io.ktor.client.plugins.auth.providers.BearerTokens(token, token) else null
+                    }
+                    refreshTokens {
+                        val authRepo = org.koin.core.context.GlobalContext.get().get<com.dnd.helper.domain.repository.AuthRepository>()
+                        val result = authRepo.refresh()
+                        if (result.isSuccess) {
+                            val newToken = result.getOrNull()!!.accessToken
+                            io.ktor.client.plugins.auth.providers.BearerTokens(newToken, newToken)
+                        } else {
+                            // Refresh failed — clear tokens so user is redirected to login
+                            val storage = org.koin.core.context.GlobalContext.get().get<com.dnd.helper.domain.storage.CharacterStorage>()
+                            storage.saveAuthToken(null)
+                            storage.saveRefreshToken(null)
+                            null
+                        }
+                    }
+                }
             }
             install(Logging) {
                 level = LogLevel.INFO
@@ -70,5 +94,6 @@ val coreModule = module {
     single { com.dnd.helper.data.remote.AiImageService(get(), get()) }
     single<com.dnd.helper.domain.repository.EditingRepository> { com.dnd.helper.data.repository.EditingRepositoryImpl(get(), get()) }
     single<CharacterRepository> { CharacterRepositoryImpl(get(), get()) }
+    single<com.dnd.helper.domain.repository.AuthRepository> { com.dnd.helper.data.repository.AuthRepositoryImpl(get(), get()) }
     single { ThemeViewModel(get()) }
 }

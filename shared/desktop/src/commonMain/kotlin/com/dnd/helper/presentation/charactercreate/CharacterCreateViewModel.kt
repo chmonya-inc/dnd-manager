@@ -19,10 +19,11 @@ class CharacterCreateViewModel(
     private val repository: CharacterRepository,
     private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
     private val api: com.dnd.helper.data.remote.DndApiDataSource,
+    private val storage: com.dnd.helper.domain.storage.CharacterStorage,
 ) : ViewModel() {
 
     private var tempId = "temp-char-${Random.nextInt(1000000, 9999999)}"
-    private val _state = MutableStateFlow(CharacterCreateState())
+    private val _state = MutableStateFlow(CharacterCreateState(sessionId = storage.getTableId() ?: ""))
     val state: StateFlow<CharacterCreateState> = _state.asStateFlow()
 
     init {
@@ -115,6 +116,9 @@ class CharacterCreateViewModel(
             is CharacterCreateEvent.NameChanged -> {
                 _state.value = _state.value.copy(name = event.value)
                 updateDefaultPrompt()
+            }
+            is CharacterCreateEvent.SessionIdChanged -> {
+                _state.value = _state.value.copy(sessionId = event.value)
             }
             is CharacterCreateEvent.PlayerNameChanged -> _state.value = _state.value.copy(playerName = event.value)
             is CharacterCreateEvent.RaceChanged -> {
@@ -516,10 +520,18 @@ class CharacterCreateViewModel(
         val deathSaveSuccesses = s.deathSaveSuccesses.toIntOrNull()?.coerceIn(0, 3) ?: 0
         val deathSaveFailures = s.deathSaveFailures.toIntOrNull()?.coerceIn(0, 3) ?: 0
 
+        if (s.sessionId.isBlank()) {
+            _state.value = s.copy(error = "Session ID is required")
+            return
+        }
+
         if (s.name.isBlank()) {
             _state.value = s.copy(error = "Name is required")
             return
         }
+
+        // Save session ID so the repository uses the correct session for this character
+        storage.saveTableId(s.sessionId.trim())
 
         val character = Character(
             id = tempId,

@@ -36,7 +36,7 @@ object Presenter
 val desktopModule = module {
     factory { LibraryViewModel(get(), get()) }
     factory { RulesLibraryViewModel(get()) }
-    factory { CharacterCreateViewModel(get(), get(), get()) }
+    factory { CharacterCreateViewModel(get(), get(), get(), get()) }
     factory { com.dnd.helper.presentation.monstercreate.MonsterCreateViewModel(get(), get(), get()) }
     factory { com.dnd.helper.presentation.itemcreate.ItemCreateViewModel(get(), get(), get()) }
     factory { LogViewModel(get()) }
@@ -53,11 +53,22 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
         appModules = listOf(playerModule, desktopModule)
     ) {
         val navController = rememberNavController()
+        val authRepository = org.koin.compose.koinInject<com.dnd.helper.domain.repository.AuthRepository>()
+        val startDest: Any = if (authRepository.getRefreshToken() != null) MainDesktop else AuthRoute
 
         NavHost(
             navController = navController,
-            startDestination = MainDesktop
+            startDestination = startDest
         ) {
+            composable<AuthRoute> {
+                com.dnd.helper.presentation.auth.AuthScreen(
+                    onAuthSuccess = {
+                        navController.navigate(MainDesktop) {
+                            popUpTo(AuthRoute) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable<MainDesktop> {
                 MainDesktopScreen()
             }

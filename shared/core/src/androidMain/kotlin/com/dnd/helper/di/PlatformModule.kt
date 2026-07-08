@@ -106,6 +106,22 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
     override fun clearApiCache() {
         // Android implementation placeholder
     }
+
+    override fun saveAuthToken(token: String?) {
+        prefs.edit().putString("auth_token", token).apply()
+    }
+
+    override fun getAuthToken(): String? {
+        return prefs.getString("auth_token", null)
+    }
+
+    override fun saveRefreshToken(token: String?) {
+        prefs.edit().putString("refresh_token", token).apply()
+    }
+
+    override fun getRefreshToken(): String? {
+        return prefs.getString("refresh_token", null)
+    }
 }
 
 actual val platformModule = module {

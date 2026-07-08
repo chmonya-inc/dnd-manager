@@ -57,6 +57,7 @@ object DatabaseFactory {
             }
 
             SchemaUtils.createMissingTablesAndColumns(
+                Users,
                 Characters,
                 Locations,
                 Battlefields,
