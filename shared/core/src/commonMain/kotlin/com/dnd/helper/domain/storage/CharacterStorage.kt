@@ -28,4 +28,9 @@ interface CharacterStorage {
     fun getAuthToken(): String?
     fun saveRefreshToken(token: String?)
     fun getRefreshToken(): String?
+    fun saveUserId(userId: String?)
+    fun getUserId(): String?
+    fun getUserIdFlow(): kotlinx.coroutines.flow.Flow<String?>
+    fun saveUserRole(role: String?)
+    fun getUserRole(): String?
 }

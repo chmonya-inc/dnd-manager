@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class WasmCharacterStorage : CharacterStorage {
     private val _serverAddressFlow = MutableStateFlow(getServerAddress())
     private val _tableIdFlow = MutableStateFlow(getTableId())
+    private val _userIdFlow = MutableStateFlow(getUserId())
 
     override fun saveCharacterId(id: String) {
         localStorage.setItem("last_character_id", id)
@@ -126,6 +127,35 @@ class WasmCharacterStorage : CharacterStorage {
 
     override fun getRefreshToken(): String? {
         return localStorage.getItem("refresh_token")
+    }
+
+    override fun saveUserId(userId: String?) {
+        if (userId == null) {
+            localStorage.removeItem("user_id")
+        } else {
+            localStorage.setItem("user_id", userId)
+        }
+        _userIdFlow.value = userId
+    }
+
+    override fun getUserId(): String? {
+        return localStorage.getItem("user_id")
+    }
+
+    override fun getUserIdFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _userIdFlow.asStateFlow()
+    }
+
+    override fun saveUserRole(role: String?) {
+        if (role == null) {
+            localStorage.removeItem("user_role")
+        } else {
+            localStorage.setItem("user_role", role)
+        }
+    }
+
+    override fun getUserRole(): String? {
+        return localStorage.getItem("user_role")
     }
 }
 

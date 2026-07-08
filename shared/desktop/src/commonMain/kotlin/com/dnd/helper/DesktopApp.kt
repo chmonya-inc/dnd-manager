@@ -41,8 +41,9 @@ val desktopModule = module {
     factory { com.dnd.helper.presentation.itemcreate.ItemCreateViewModel(get(), get(), get()) }
     factory { LogViewModel(get()) }
     factory { MusicViewModel(get(), get()) }
-    factory { SessionsViewModel(get(), get()) }
-    factory { SettingsViewModel(get()) }
+    factory { SessionsViewModel(get(), get(), get()) }
+    factory { SettingsViewModel(get(), get()) }
+    factory { AssignCharacterViewModel(get()) }
     single { PresentationViewModel(get()) }
 }
 
@@ -62,6 +63,7 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
         ) {
             composable<AuthRoute> {
                 com.dnd.helper.presentation.auth.AuthScreen(
+                    forceMasterRole = true,
                     onAuthSuccess = {
                         navController.navigate(MainDesktop) {
                             popUpTo(AuthRoute) { inclusive = true }
@@ -70,12 +72,23 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
                 )
             }
             composable<MainDesktop> {
-                MainDesktopScreen()
+                MainDesktopScreen(
+                    onLogout = {
+                        navController.navigate(AuthRoute) {
+                            popUpTo(MainDesktop) { inclusive = true }
+                        }
+                    }
+                )
             }
             composable<Start> {
                 StartScreen(
                     onLoadCharacter = { characterId ->
                         navController.navigate(CharacterDetail(id = characterId))
+                    },
+                    onLogout = {
+                        navController.navigate(AuthRoute) {
+                            popUpTo(Start) { inclusive = true }
+                        }
                     }
                 )
             }

@@ -106,6 +106,7 @@ private val tabs = primaryTabs + secondaryTabs
 
 @Composable
 fun MainDesktopScreen(
+    onLogout: () -> Unit = {},
     presentationViewModel: PresentationViewModel = koinViewModel()
 ) {
     var selectedTab by remember { mutableStateOf<DesktopTab>(DesktopTab.Characters) }
@@ -351,7 +352,7 @@ fun MainDesktopScreen(
                         )
                         DesktopTab.Logs -> LogScreen()
                         DesktopTab.Presenter -> PresentationScreen()
-                        DesktopTab.Settings -> SettingsScreen()
+                        DesktopTab.Settings -> SettingsScreen(onLogout = onLogout)
                     }
                 }
 

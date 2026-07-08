@@ -144,6 +144,7 @@ class DesktopCharacterStorage : CharacterStorage {
     private val prefs = Preferences.userRoot().node("com.dnd.helper")
     private val _serverAddressFlow = kotlinx.coroutines.flow.MutableStateFlow(getServerAddress())
     private val _tableIdFlow = kotlinx.coroutines.flow.MutableStateFlow(getTableId())
+    private val _userIdFlow = kotlinx.coroutines.flow.MutableStateFlow(getUserId())
 
     override fun saveCharacterId(id: String) {
         prefs.put("last_character_id", id)
@@ -294,6 +295,35 @@ class DesktopCharacterStorage : CharacterStorage {
 
     override fun getRefreshToken(): String? {
         return prefs.get("refresh_token", null)
+    }
+
+    override fun saveUserId(userId: String?) {
+        if (userId == null) {
+            prefs.remove("user_id")
+        } else {
+            prefs.put("user_id", userId)
+        }
+        _userIdFlow.value = userId
+    }
+
+    override fun getUserId(): String? {
+        return prefs.get("user_id", null)
+    }
+
+    override fun getUserIdFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _userIdFlow.asStateFlow()
+    }
+
+    override fun saveUserRole(role: String?) {
+        if (role == null) {
+            prefs.remove("user_role")
+        } else {
+            prefs.put("user_role", role)
+        }
+    }
+
+    override fun getUserRole(): String? {
+        return prefs.get("user_role", null)
     }
 }
 

@@ -16,7 +16,8 @@ data class SettingsState(
 )
 
 class SettingsViewModel(
-    private val storage: CharacterStorage
+    private val storage: CharacterStorage,
+    private val authRepository: com.dnd.helper.domain.repository.AuthRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -52,5 +53,9 @@ class SettingsViewModel(
     fun updateGenerationSteps(steps: Int) {
         storage.saveGenerationSteps(steps)
         _state.value = _state.value.copy(generationSteps = steps)
+    }
+
+    fun logout() {
+        authRepository.logout()
     }
 }

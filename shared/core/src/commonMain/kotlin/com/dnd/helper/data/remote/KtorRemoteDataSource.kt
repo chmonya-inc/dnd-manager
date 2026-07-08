@@ -1,6 +1,10 @@
 package com.dnd.helper.data.remote
 
 import com.dnd.helper.data.config.GoogleAppsScriptConfig
+import com.dnd.helper.data.remote.dto.auth.AssignByUsernameRequest
+import com.dnd.helper.data.remote.dto.auth.AssignCharacterRequest
+import com.dnd.helper.data.remote.dto.auth.CampaignDto
+import com.dnd.helper.data.remote.dto.auth.MyCharacterDto
 import com.dnd.helper.domain.common.AppError
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.model.*
@@ -203,6 +207,51 @@ class KtorRemoteDataSource(
 
     suspend fun deleteEvent(id: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/events/$id") }
+
+    // --- Campaign & Character Assignment ---
+
+    suspend fun assignCharacter(characterId: String, sessionId: String, ownerUserId: String?): Result<Unit> =
+        safeApiCall {
+            httpClient.post("${baseUrl()}/api/characters/assign") {
+                contentType(ContentType.Application.Json)
+                setBody(AssignCharacterRequest(
+                    characterId = characterId,
+                    sessionId = sessionId,
+                    ownerUserId = ownerUserId
+                ))
+            }
+        }
+
+    suspend fun assignCharacterByUsername(characterId: String, sessionId: String, username: String?): Result<Unit> =
+        safeApiCall {
+            httpClient.post("${baseUrl()}/api/characters/assign-by-username") {
+                contentType(ContentType.Application.Json)
+                setBody(AssignByUsernameRequest(
+                    characterId = characterId,
+                    sessionId = sessionId,
+                    username = username
+                ))
+            }
+        }
+
+    suspend fun getMyCharacters(): Result<List<MyCharacterDto>> =
+        safeApiCall { httpClient.get("${baseUrl()}/api/my-characters") }
+
+    suspend fun getCampaigns(): Result<List<CampaignDto>> =
+        safeApiCall { httpClient.get("${baseUrl()}/api/campaigns") }
+
+    suspend fun createCampaign(name: String, sessionId: String): Result<CampaignDto> =
+        safeApiCall {
+            httpClient.post("${baseUrl()}/api/campaigns") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf(
+                    "id" to "",
+                    "name" to name,
+                    "ownerId" to "",
+                    "sessionId" to sessionId
+                ))
+            }
+        }
 
     private suspend inline fun <reified T> safeApiCall(
         call: () -> io.ktor.client.statement.HttpResponse

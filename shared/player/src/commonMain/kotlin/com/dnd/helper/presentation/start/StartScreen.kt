@@ -3,6 +3,7 @@ package com.dnd.helper.presentation.start
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,15 +11,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,7 +39,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dnd.helper.di.isWeb
@@ -37,122 +47,138 @@ import com.dnd.helper.theme.ThemeDialog
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StartScreen(
     onLoadCharacter: (String) -> Unit,
+    onLogout: () -> Unit = {},
     viewModel: StartViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showLogoutConfirmation by remember { mutableStateOf(false) }
+
+    val pullToRefreshState = rememberPullToRefreshState()
 
     if (showThemeDialog) {
         ThemeDialog(onDismiss = { showThemeDialog = false })
+    }
+
+    if (showLogoutConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showLogoutConfirmation = false },
+            title = { Text("Logout") },
+            text = { Text("Are you sure you want to log out?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLogoutConfirmation = false
+                    viewModel.onEvent(StartEvent.Logout)
+                    onLogout()
+                }) {
+                    Text("Logout", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutConfirmation = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            IconButton(
-                onClick = { showThemeDialog = true },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .statusBarsPadding()
-                    .padding(16.dp)
-            ) {
-                Icon(DndIcons.Filled.Palette, "Theme")
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "D&D Helper",
-                    style = MaterialTheme.typography.displayMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = "Enter your Character ID and Session Table to begin",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Spacer(modifier = Modifier.height(32.dp))
-                
-                OutlinedTextField(
-                    value = state.characterId,
-                    onValueChange = { viewModel.onEvent(StartEvent.CharacterIdChanged(it)) },
-                    label = { Text("Character ID") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    trailingIcon = {
-                        if (state.characterId.isNotBlank()) {
-                            IconButton(onClick = { viewModel.onEvent(StartEvent.CharacterIdChanged("")) }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear")
-                            }
-                        } else if (isWeb) {
-                            val scope = rememberCoroutineScope()
-                            IconButton(onClick = { 
-                                scope.launch {
-                                    com.dnd.helper.di.pasteFromClipboard()?.let { 
-                                        viewModel.onEvent(StartEvent.CharacterIdChanged(it)) 
-                                    }
-                                }
-                            }) {
-                                Icon(DndIcons.Filled.ContentPaste, contentDescription = "Paste", modifier = Modifier.size(20.dp))
-                            }
-                        }
-                    }
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = state.tableId,
-                    onValueChange = { viewModel.onEvent(StartEvent.TableIdChanged(it)) },
-                    label = { Text("Game ID or Spreadsheet ID") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    trailingIcon = {
-                        if (state.tableId.isNotBlank()) {
-                            IconButton(onClick = { viewModel.onEvent(StartEvent.TableIdChanged("")) }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear")
-                            }
-                        } else if (isWeb) {
-                            val scope = rememberCoroutineScope()
-                            IconButton(onClick = { 
-                                scope.launch {
-                                    com.dnd.helper.di.pasteFromClipboard()?.let { 
-                                        viewModel.onEvent(StartEvent.TableIdChanged(it)) 
-                                    }
-                                }
-                            }) {
-                                Icon(DndIcons.Filled.ContentPaste, contentDescription = "Paste", modifier = Modifier.size(20.dp))
-                            }
-                        }
-                    }
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Button(
-                    onClick = { 
-                        viewModel.onEvent(StartEvent.LoadCharacter)
-                        onLoadCharacter(state.characterId)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = state.characterId.isNotBlank()
+        PullToRefreshBox(
+            isRefreshing = state.isLoadingMyCharacters,
+            onRefresh = { viewModel.onEvent(StartEvent.RefreshMyCharacters) },
+            state = pullToRefreshState,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Top-right actions
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .padding(16.dp)
                 ) {
-                    Text("Load Character")
+                    IconButton(onClick = { showThemeDialog = true }) {
+                        Icon(DndIcons.Filled.Palette, "Theme")
+                    }
+                    IconButton(onClick = { showLogoutConfirmation = true }) {
+                        Icon(DndIcons.Filled.Logout, "Logout")
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
+                ) {
+                    Text(
+                        text = "D&D Helper",
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    // === My Characters Section ===
+                    Text(
+                        text = "My Characters",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    if (state.isLoadingMyCharacters && state.myCharacters.isEmpty()) {
+                        CircularProgressIndicator()
+                    } else if (state.myCharacters.isEmpty() && !state.isLoadingMyCharacters) {
+                        Text(
+                            text = "No characters assigned to you yet.\nAsk your DM to assign one!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(state.myCharacters) { myChar ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = {
+                                        viewModel.onEvent(StartEvent.LoadMyCharacter(myChar.character.id))
+                                        onLoadCharacter(myChar.character.id)
+                                    }
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = myChar.character.name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "Level ${myChar.character.level} ${myChar.character.race} ${myChar.character.characterClass}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        myChar.campaignName?.let { campaign ->
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "Campaign: $campaign",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

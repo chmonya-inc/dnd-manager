@@ -82,17 +82,20 @@ fun Application.configureAuthRouting() {
                 val userId = UUID.randomUUID().toString()
                 val hash = BCrypt.hashpw(request.password, BCrypt.gensalt())
 
+                val role = if (request.role == "MASTER") "MASTER" else "PLAYER"
+
                 transaction {
                     Users.insert {
                         it[id] = userId
                         it[username] = request.username
                         it[passwordHash] = hash
+                        it[Users.role] = role
                     }
                 }
 
                 call.respond(
                     HttpStatusCode.OK,
-                    AuthResponse(generateAccessToken(userId), generateRefreshToken(userId), UserDto(userId, request.username))
+                    AuthResponse(generateAccessToken(userId), generateRefreshToken(userId), UserDto(userId, request.username, role))
                 )
             }
 
@@ -115,9 +118,10 @@ fun Application.configureAuthRouting() {
                 }
 
                 val userId = userRow[Users.id]
+                val userRole = userRow[Users.role]
                 call.respond(
                     HttpStatusCode.OK,
-                    AuthResponse(generateAccessToken(userId), generateRefreshToken(userId), UserDto(userId, request.username))
+                    AuthResponse(generateAccessToken(userId), generateRefreshToken(userId), UserDto(userId, request.username, userRole))
                 )
             }
 
@@ -139,9 +143,10 @@ fun Application.configureAuthRouting() {
                 }
 
                 val username = userRow[Users.username]
+                val userRole = userRow[Users.role]
                 call.respond(
                     HttpStatusCode.OK,
-                    AuthResponse(generateAccessToken(userId), generateRefreshToken(userId), UserDto(userId, username))
+                    AuthResponse(generateAccessToken(userId), generateRefreshToken(userId), UserDto(userId, username, userRole))
                 )
             }
         }

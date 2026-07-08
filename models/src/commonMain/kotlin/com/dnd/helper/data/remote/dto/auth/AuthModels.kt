@@ -11,7 +11,8 @@ data class LoginRequest(
 @Serializable
 data class RegisterRequest(
     val username: String,
-    val password: String
+    val password: String,
+    val role: String = "PLAYER" // MASTER or PLAYER
 )
 
 @Serializable
@@ -29,5 +30,35 @@ data class AuthResponse(
 @Serializable
 data class UserDto(
     val id: String,
-    val username: String
+    val username: String,
+    val role: String = "PLAYER" // MASTER or PLAYER
+)
+
+@Serializable
+data class AssignCharacterRequest(
+    val characterId: String,
+    val sessionId: String,
+    val ownerUserId: String? // null to unassign
+)
+
+@Serializable
+data class AssignByUsernameRequest(
+    val characterId: String,
+    val sessionId: String,
+    val username: String? // null to unassign
+)
+
+@Serializable
+data class MyCharacterDto(
+    val character: com.dnd.helper.domain.model.Character,
+    val sessionId: String,
+    val campaignName: String?
+)
+
+@Serializable
+data class CampaignDto(
+    val id: String,
+    val name: String,
+    val ownerId: String,
+    val sessionId: String
 )

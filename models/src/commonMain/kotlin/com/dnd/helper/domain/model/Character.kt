@@ -8,6 +8,8 @@ data class Character(
     val id: String,
     val name: String,
     val playerName: String,
+    val ownerUserId: String? = null,
+    val ownerUsername: String? = null,
     val race: String,
     val subrace: String = "",
     val characterClass: String,

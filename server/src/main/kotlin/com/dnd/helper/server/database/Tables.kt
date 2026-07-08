@@ -15,6 +15,15 @@ object Users : Table("users") {
     val id = varchar("id", 50)
     val username = varchar("username", 100).uniqueIndex()
     val passwordHash = varchar("password_hash", 255)
+    val role = varchar("role", 20).default("PLAYER") // MASTER or PLAYER
+    override val primaryKey = PrimaryKey(id)
+}
+
+object Campaigns : Table("campaigns") {
+    val id = varchar("id", 50)
+    val name = varchar("name", 200)
+    val ownerId = varchar("owner_id", 50) // references Users.id (the Master)
+    val sessionId = varchar("session_id", 50) // links to the existing session/table concept
     override val primaryKey = PrimaryKey(id)
 }
 

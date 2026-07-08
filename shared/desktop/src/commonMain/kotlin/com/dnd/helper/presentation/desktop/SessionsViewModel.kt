@@ -7,6 +7,7 @@ import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
 import com.dnd.helper.data.import.SessionImporter
+import com.dnd.helper.data.remote.KtorRemoteDataSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -15,7 +16,8 @@ import kotlinx.serialization.json.Json
 
 class SessionsViewModel(
     private val storage: CharacterStorage,
-    private val repository: CharacterRepository
+    private val repository: CharacterRepository,
+    private val remoteDataSource: KtorRemoteDataSource
 ) : ViewModel() {
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -71,6 +73,11 @@ class SessionsViewModel(
         
         _state.value = _state.value.copy(sessions = updated)
         saveSessions(updated)
+
+        // Also register as a campaign on the server (linked to the logged-in master)
+        viewModelScope.launch {
+            remoteDataSource.createCampaign(name, finalId)
+        }
     }
 
     fun importData() {

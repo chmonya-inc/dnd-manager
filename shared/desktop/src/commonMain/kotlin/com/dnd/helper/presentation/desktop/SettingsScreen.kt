@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -43,6 +44,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun SettingsScreen(
+    onLogout: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -203,6 +205,36 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp)
                     )
+                }
+            }
+        }
+        
+        HorizontalDivider()
+
+        // Account Section
+        SettingsSection(
+            title = "Account",
+            icon = Icons.Default.Person
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    "Manage your master account session.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                
+                Button(
+                    onClick = { 
+                        viewModel.logout()
+                        onLogout()
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Icon(DndIcons.Filled.Logout, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Logout from Master Account")
                 }
             }
         }

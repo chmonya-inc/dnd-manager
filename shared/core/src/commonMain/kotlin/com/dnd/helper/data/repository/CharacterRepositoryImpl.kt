@@ -27,9 +27,10 @@ class CharacterRepositoryImpl(
         repositoryScope.launch {
             combine(
                 storage.getServerAddressFlow(),
-                storage.getTableIdFlow()
-            ) { _, _ -> }.collect {
-                println("[CharacterRepository] Server address or Table ID changed, clearing caches")
+                storage.getTableIdFlow(),
+                storage.getUserIdFlow()
+            ) { _, _, _ -> }.collect {
+                println("[CharacterRepository] Server, Table, or User changed, clearing caches")
                 clearCaches()
                 
                 // Trigger refresh in all observing ViewModels
