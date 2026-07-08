@@ -53,9 +53,17 @@ class AuthRepositoryImpl(
 
     override fun saveAuthToken(token: String?) = storage.saveAuthToken(token)
 
+    override fun getUserId(): String? = storage.getUserId()
+
+    override fun getUserRole(): String? = storage.getUserRole()
+
     override fun logout() {
         storage.saveAuthToken(null)
         storage.saveRefreshToken(null)
+        storage.saveUserId(null)
+        storage.saveUserRole(null)
+        storage.saveCharacterId("")
+        storage.saveTableId("")
     }
 
     private suspend inline fun <reified T> authRequest(
@@ -72,6 +80,8 @@ class AuthRepositoryImpl(
                 val authResponse = response.body<AuthResponse>()
                 storage.saveAuthToken(authResponse.accessToken)
                 storage.saveRefreshToken(authResponse.refreshToken)
+                storage.saveUserId(authResponse.user.id)
+                storage.saveUserRole(authResponse.user.role)
                 Result.success(authResponse)
             } else {
                 val errorBody = try {

@@ -11,5 +11,7 @@ interface AuthRepository {
     fun getAuthToken(): String?
     fun getRefreshToken(): String?
     fun saveAuthToken(token: String?)
+    fun getUserId(): String?
+    fun getUserRole(): String?
     fun logout()
 }

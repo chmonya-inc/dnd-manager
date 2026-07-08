@@ -12,6 +12,7 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.transactions.transaction
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 
@@ -50,8 +51,15 @@ fun Route.configureApiRouting() {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
                 val principal = call.principal<JWTPrincipal>()
                 val userId = principal?.payload?.getClaim("userId")?.asString()
+                
+                val userRole = transaction {
+                    Users.selectAll().where { Users.id eq (userId ?: "") }.singleOrNull()?.get(Users.role)
+                }
+                
                 val char = call.receive<Character>()
-                handleSaveCharacter(char, sessionId, userId)
+                // Only pass userId if the user is a PLAYER, so MASTER doesn't overwrite ownership
+                val ownershipId = if (userRole == "PLAYER") userId else null
+                handleSaveCharacter(char, sessionId, ownershipId)
                 SessionManager.notifyUpdate(sessionId, "characters", char.id)
                 call.respond(HttpStatusCode.OK)
             }
@@ -221,12 +229,14 @@ private suspend fun handleGetInitialData(sessionId: String): InitialData {
 }
 
 private suspend fun handleGetCharacters(sessionId: String): List<Character> = dbQuery {
-    Characters.selectAll().where { Characters.sessionId eq sessionId }.map { rowToCharacter(it) }
+    Characters.leftJoin(Users, { Characters.userId }, { Users.id })
+        .selectAll().where { Characters.sessionId eq sessionId }.map { rowToCharacter(it) }
 }
 
 private suspend fun handleGetCharacter(id: String?, sessionId: String): Character? = dbQuery {
     if (id == null) return@dbQuery null
-    Characters.selectAll().where { (Characters.id eq id) and (Characters.sessionId eq sessionId) }.singleOrNull()?.let { rowToCharacter(it) }
+    Characters.leftJoin(Users, { Characters.userId }, { Users.id })
+        .selectAll().where { (Characters.id eq id) and (Characters.sessionId eq sessionId) }.singleOrNull()?.let { rowToCharacter(it) }
 }
 
 private suspend fun handleSaveCharacter(char: Character?, sessionId: String, userId: String? = null) = dbQuery {
@@ -473,11 +483,13 @@ private suspend fun handleDeleteEvent(id: String?, sessionId: String) = dbQuery 
     Events.deleteWhere { (Events.id eq id) and (Events.sessionId eq sessionId) }
 }
 
-private fun rowToCharacter(row: ResultRow): Character {
+fun rowToCharacter(row: ResultRow): Character {
     return Character(
         id = row[Characters.id],
         name = row[Characters.name],
         playerName = row[Characters.playerName],
+        ownerUserId = row[Characters.userId],
+        ownerUsername = try { row[Users.username] } catch (_: Exception) { null },
         race = row[Characters.race],
         characterClass = row[Characters.characterClass],
         level = row[Characters.level],

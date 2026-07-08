@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -71,9 +72,24 @@ fun MasterCharacterDetailScreen(
     }
 
     var showDiceDialog by remember { mutableStateOf(false) }
+    var showAssignDialog by remember { mutableStateOf(false) }
+    val assignViewModel: AssignCharacterViewModel = koinViewModel()
 
     if (showDiceDialog) {
         DiceRollDialog(onDismiss = { showDiceDialog = false })
+    }
+
+    if (showAssignDialog) {
+        val storage = org.koin.compose.koinInject<com.dnd.helper.domain.storage.CharacterStorage>()
+        val sessionId = storage.getTableId() ?: ""
+        state.character?.let { character ->
+            AssignCharacterDialog(
+                characterId = character.id,
+                sessionId = sessionId,
+                onDismiss = { showAssignDialog = false },
+                viewModel = assignViewModel
+            )
+        }
     }
 
     Scaffold(
@@ -144,6 +160,12 @@ fun MasterCharacterDetailScreen(
                                 state.character?.let { onEditClick(it) }
                             }) {
                                 Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit")
+                            }
+                            // Assign Character button
+                            IconButton(onClick = {
+                                showAssignDialog = true
+                            }) {
+                                Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "Assign")
                             }
                             IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.Refresh) }) {
                                 Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")

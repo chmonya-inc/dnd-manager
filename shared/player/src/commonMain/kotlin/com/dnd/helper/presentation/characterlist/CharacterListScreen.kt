@@ -367,6 +367,14 @@ private fun SimpleCharacterCard(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                         )
+                        character.ownerUsername?.let { owner ->
+                            Text(
+                                text = " (@$owner)",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                         IconButton(
                             onClick = { 
                                 clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(character.id))
@@ -511,6 +519,15 @@ private fun SummaryCharacterCard(
                                 maxLines = 1,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
+                            character.ownerUsername?.let { owner ->
+                                Text(
+                                    text = " (@$owner)",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                )
+                            }
                             IconButton(
                                 onClick = { 
                                     clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(character.id))

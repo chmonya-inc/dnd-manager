@@ -39,14 +39,21 @@ val coreModule = module {
             install(io.ktor.client.plugins.DefaultRequest) {
                 header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
                 header("ngrok-skip-browser-warning", "true")
+                
+                // Manually add the token here to ensure it's always up-to-date and reactive to logout/login
+                // The Auth plugin's loadTokens can cache tokens internally, but DefaultRequest is called every time.
+                try {
+                    val storage = org.koin.core.context.GlobalContext.get().get<com.dnd.helper.domain.storage.CharacterStorage>()
+                    val token = storage.getAuthToken()
+                    if (token != null) {
+                        header(io.ktor.http.HttpHeaders.Authorization, "Bearer $token")
+                    }
+                } catch (_: Exception) {}
             }
             install(io.ktor.client.plugins.auth.Auth) {
                 bearer {
-                    loadTokens {
-                        val storage = org.koin.core.context.GlobalContext.get().get<com.dnd.helper.domain.storage.CharacterStorage>()
-                        val token = storage.getAuthToken()
-                        if (token != null) io.ktor.client.plugins.auth.providers.BearerTokens(token, token) else null
-                    }
+                    // We don't need loadTokens anymore as we set the header in DefaultRequest
+                    // But we keep refreshTokens to handle 401s automatically
                     refreshTokens {
                         val authRepo = org.koin.core.context.GlobalContext.get().get<com.dnd.helper.domain.repository.AuthRepository>()
                         val result = authRepo.refresh()

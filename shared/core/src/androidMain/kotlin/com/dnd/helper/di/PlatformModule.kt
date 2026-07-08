@@ -15,6 +15,7 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
     private val prefs = context.getSharedPreferences("dnd_helper_prefs", Context.MODE_PRIVATE)
     private val _serverAddressFlow = MutableStateFlow(getServerAddress())
     private val _tableIdFlow = MutableStateFlow(getTableId())
+    private val _userIdFlow = MutableStateFlow(getUserId())
 
     override fun saveCharacterId(id: String) {
         prefs.edit().putString("last_character_id", id).apply()
@@ -121,6 +122,27 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
 
     override fun getRefreshToken(): String? {
         return prefs.getString("refresh_token", null)
+    }
+
+    override fun saveUserId(userId: String?) {
+        prefs.edit().putString("user_id", userId).apply()
+        _userIdFlow.value = userId
+    }
+
+    override fun getUserId(): String? {
+        return prefs.getString("user_id", null)
+    }
+
+    override fun getUserIdFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _userIdFlow.asStateFlow()
+    }
+
+    override fun saveUserRole(role: String?) {
+        prefs.edit().putString("user_role", role).apply()
+    }
+
+    override fun getUserRole(): String? {
+        return prefs.getString("user_role", null)
     }
 }
 
