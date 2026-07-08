@@ -6,98 +6,98 @@ import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
-import com.dnd.helper.data.import.SessionImporter
 import com.dnd.helper.data.remote.KtorRemoteDataSource
+import com.dnd.helper.domain.common.toUserMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class SessionsViewModel(
     private val storage: CharacterStorage,
-    private val repository: CharacterRepository,
     private val remoteDataSource: KtorRemoteDataSource
 ) : ViewModel() {
 
-    private val json = Json { ignoreUnknownKeys = true }
-    
     private val _state = MutableStateFlow(
         SessionsState(
-            sessions = loadSessions(),
             activeTableId = storage.getTableId() ?: ""
         )
     )
     val state = _state.asStateFlow()
 
-    private fun loadSessions(): List<Session> {
-        val raw = storage.getSessions() ?: return emptyList()
-        return try {
-            json.decodeFromString<List<Session>>(raw)
-        } catch (e: Exception) {
-            emptyList()
+    init {
+        loadCampaigns()
+    }
+
+    fun loadCampaigns() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            when (val res = remoteDataSource.getCampaigns()) {
+                is Result.Success -> {
+                    val campaigns = res.data.map { Campaign(id = it.sessionId, name = it.name) }
+                    _state.value = _state.value.copy(
+                        campaigns = campaigns,
+                        isLoading = false
+                    )
+                }
+                is Result.Error -> {
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = res.error.toUserMessage()
+                    )
+                }
+            }
         }
     }
 
-    private fun saveSessions(sessions: List<Session>) {
-        storage.saveSessions(json.encodeToString(sessions))
-    }
-
-    fun selectSession(id: String) {
+    fun selectCampaign(id: String) {
         storage.saveTableId(id)
         _state.value = _state.value.copy(activeTableId = id)
     }
 
-    fun deleteSession(id: String) {
-        val updated = _state.value.sessions.filter { it.id != id }
-        _state.value = _state.value.copy(
-            sessions = updated,
-            activeTableId = if (_state.value.activeTableId == id) "" else _state.value.activeTableId
-        )
-        saveSessions(updated)
-        if (_state.value.activeTableId == id) {
-            storage.saveTableId("")
-        }
-    }
-
-    fun addSession(name: String, joinId: String) {
+    fun addCampaign(name: String, joinId: String) {
         val finalId = if (joinId.isNotBlank()) {
             IdUtils.decode(joinId)
         } else {
             IdUtils.generateSessionId()
         }
         
-        val updated = _state.value.sessions.toMutableList()
-        updated.removeAll { it.id == finalId }
-        updated.add(Session(id = finalId, name = name))
-        
-        _state.value = _state.value.copy(sessions = updated)
-        saveSessions(updated)
-
-        // Also register as a campaign on the server (linked to the logged-in master)
         viewModelScope.launch {
-            remoteDataSource.createCampaign(name, finalId)
-        }
-    }
-
-    fun importData() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isImporting = true, importError = null)
-            when (val res = SessionImporter.import(repository)) {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            val res = remoteDataSource.createCampaign(name, finalId)
+            when (res) {
+                is Result.Success -> {
+                    loadCampaigns() // Refresh list
+                    if (_state.value.activeTableId.isEmpty()) {
+                        selectCampaign(finalId)
+                    }
+                }
                 is Result.Error -> {
                     _state.value = _state.value.copy(
-                        importError = "Import failed: ${res.error}",
-                        isImporting = false
+                        isLoading = false,
+                        error = res.error.toUserMessage()
                     )
-                }
-                is Result.Success -> {
-                    _state.value = _state.value.copy(isImporting = false)
                 }
             }
         }
     }
-    
+
+    fun deleteCampaignLocal(id: String) {
+        // Since we are not deleting on server for now, just remove from view?
+        // Actually, the requirement was to show sessions owned by master.
+        // If master "deletes" it should probably be deleted on server too.
+        // For now, let's just filter it out of the local state if we don't have a server delete yet.
+        val updated = _state.value.campaigns.filter { it.id != id }
+        _state.value = _state.value.copy(
+            campaigns = updated,
+            activeTableId = if (_state.value.activeTableId == id) "" else _state.value.activeTableId
+        )
+        if (_state.value.activeTableId == id) {
+            storage.saveTableId("")
+        }
+    }
+
     fun clearError() {
-        _state.value = _state.value.copy(importError = null)
+        _state.value = _state.value.copy(error = null)
     }
 }

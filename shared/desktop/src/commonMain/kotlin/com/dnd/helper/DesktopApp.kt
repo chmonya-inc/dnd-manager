@@ -41,7 +41,7 @@ val desktopModule = module {
     factory { com.dnd.helper.presentation.itemcreate.ItemCreateViewModel(get(), get(), get()) }
     factory { LogViewModel(get()) }
     factory { MusicViewModel(get(), get()) }
-    factory { SessionsViewModel(get(), get(), get()) }
+    factory { SessionsViewModel(get(), get()) }
     factory { SettingsViewModel(get(), get()) }
     factory { AssignCharacterViewModel(get()) }
     single { PresentationViewModel(get()) }
