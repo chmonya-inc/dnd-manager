@@ -113,7 +113,7 @@ fun MainDesktopScreen(
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
     var initialCreatorType by remember { mutableStateOf<CreatorType?>(null) }
     var showDiceDialog by remember { mutableStateOf(false) }
-    var showSessionsDialog by remember { mutableStateOf(false) }
+    var showCampaignsDialog by remember { mutableStateOf(false) }
     var showMusicPlayer by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var musicPlayerOffset by remember { mutableStateOf(IntOffset(0, 0)) }
@@ -143,14 +143,14 @@ fun MainDesktopScreen(
         DiceRollDialog(onDismiss = { showDiceDialog = false })
     }
 
-    if (showSessionsDialog) {
-        SessionsDialog(
-            onDismiss = { showSessionsDialog = false },
-            onSessionSelected = { newTableId ->
+    if (showCampaignsDialog) {
+        CampaignsDialog(
+            onDismiss = { showCampaignsDialog = false },
+            onCampaignSelected = { newTableId ->
                 activeTableId = newTableId
                 selectedCharacterId = null
                 selectedTab = DesktopTab.Characters
-                showSessionsDialog = false
+                showCampaignsDialog = false
             }
         )
     }
@@ -245,16 +245,16 @@ fun MainDesktopScreen(
 
                     Spacer(Modifier.height(12.dp))
 
-                    // Sessions Button
+                    // Campaigns Button
                     FloatingActionButton(
-                        onClick = { showSessionsDialog = true },
+                        onClick = { showCampaignsDialog = true },
                         modifier = Modifier.size(48.dp),
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
                     ) {
                         Icon(
                             imageVector = DndIcons.Filled.Storage,
-                            contentDescription = "Sessions",
+                            contentDescription = "Campaigns",
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                     }
@@ -443,9 +443,9 @@ fun CharactersSplitPane(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SessionsDialog(
+private fun CampaignsDialog(
     onDismiss: () -> Unit,
-    onSessionSelected: (String) -> Unit,
+    onCampaignSelected: (String) -> Unit,
     viewModel: SessionsViewModel = koinViewModel(),
 ) {
     val clipboardManager = LocalClipboardManager.current
@@ -456,24 +456,24 @@ private fun SessionsDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Sessions") },
+        title = { Text("Campaigns") },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 // Active session info
                 if (state.activeTableId.isNotBlank()) {
-                    val activeSession = state.sessions.find { it.id == state.activeTableId }
+                    val activeCampaign = state.campaigns.find { it.id == state.activeTableId }
                     Text(
-                        text = "Active: ${activeSession?.name ?: "Unknown"}",
+                        text = "Active: ${activeCampaign?.name ?: "Unknown"}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(Modifier.height(12.dp))
                 }
 
-                // Saved sessions list
-                if (state.sessions.isNotEmpty()) {
+                // Saved campaigns list
+                if (state.campaigns.isNotEmpty()) {
                     Text(
-                        text = "Saved Sessions",
+                        text = "Your Campaigns",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -482,28 +482,31 @@ private fun SessionsDialog(
                         modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        items(state.sessions, key = { it.id }) { session ->
-                            SessionRow(
-                                session = session,
-                                isActive = session.id == state.activeTableId,
+                        items(state.campaigns, key = { it.id }) { campaign ->
+                            CampaignRow(
+                                campaign = campaign,
+                                isActive = campaign.id == state.activeTableId,
                                 onSelect = {
-                                    viewModel.selectSession(session.id)
-                                    onSessionSelected(session.id)
+                                    viewModel.selectCampaign(campaign.id)
+                                    onCampaignSelected(campaign.id)
                                 },
                                 onDelete = {
-                                    viewModel.deleteSession(session.id)
+                                    viewModel.deleteCampaignLocal(campaign.id)
                                 },
                                 onCopy = {
-                                    val encoded = IdUtils.encode(session.id)
+                                    val encoded = IdUtils.encode(campaign.id)
                                     clipboardManager.setText(AnnotatedString(encoded))
                                 }
                             )
                         }
                     }
                     Spacer(Modifier.height(16.dp))
+                } else if (state.isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    Spacer(Modifier.height(16.dp))
                 } else {
                     Text(
-                        text = "No saved sessions.",
+                        text = "No campaigns found.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -513,9 +516,9 @@ private fun SessionsDialog(
                 HorizontalDivider()
                 Spacer(Modifier.height(16.dp))
 
-                // Add new session
+                // Add new campaign
                 Text(
-                    text = "Add New Session",
+                    text = "Add New Campaign",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                 )
@@ -523,7 +526,7 @@ private fun SessionsDialog(
                 OutlinedTextField(
                     value = newName,
                     onValueChange = { newName = it },
-                    label = { Text("Session Name") },
+                    label = { Text("Campaign Name") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
@@ -531,7 +534,7 @@ private fun SessionsDialog(
                 OutlinedTextField(
                     value = newId,
                     onValueChange = { newId = it },
-                    label = { Text("Join Existing Session ID (Optional)") },
+                    label = { Text("Join Existing Game ID (Optional)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     trailingIcon = {
@@ -551,47 +554,24 @@ private fun SessionsDialog(
                 Button(
                     onClick = {
                         if (newName.isNotBlank()) {
-                            viewModel.addSession(newName, newId)
+                            viewModel.addCampaign(newName, newId)
                             newName = ""
                             newId = ""
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = newName.isNotBlank(),
+                    enabled = newName.isNotBlank() && !state.isLoading,
                 ) {
-                    Text(if (newId.isNotBlank()) "Join Session" else "Create Session")
+                    if (state.isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text(if (newId.isNotBlank()) "Join Campaign" else "Create Campaign")
+                    }
                 }
 
-                if (state.activeTableId.isNotBlank()) {
-                    Spacer(Modifier.height(16.dp))
-                    HorizontalDivider()
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = "Import Data to Active Session",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
+                state.error?.let {
                     Spacer(Modifier.height(8.dp))
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.importData()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !state.isImporting
-                        ) {
-                            if (state.isImporting) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Importing...")
-                            } else {
-                                Icon(DndIcons.Filled.UploadFile, null)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Import from XLSX")
-                            }
-                        }
-                    state.importError?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                    }
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
             }
         },
@@ -605,8 +585,8 @@ private fun SessionsDialog(
 }
 
 @Composable
-private fun SessionRow(
-    session: Session,
+private fun CampaignRow(
+    campaign: Campaign,
     isActive: Boolean,
     onSelect: () -> Unit,
     onDelete: () -> Unit,
@@ -630,12 +610,12 @@ private fun SessionRow(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = session.name,
+                    text = campaign.name,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "Ready to share",
+                    text = "ID: ${IdUtils.encode(campaign.id)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

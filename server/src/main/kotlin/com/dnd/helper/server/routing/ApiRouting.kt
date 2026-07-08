@@ -21,6 +21,9 @@ fun Route.configureApiRouting() {
         route("/api/{sessionId}") {
         webSocket("/ws") {
             val sessionId = call.parameters["sessionId"] ?: return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session ID"))
+            if (!ensureSessionAccess(call, sessionId, respondOnError = false)) {
+                return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Access denied"))
+            }
             SessionManager.addClient(sessionId, this)
             try {
                 for (frame in incoming) {
@@ -33,22 +36,26 @@ fun Route.configureApiRouting() {
 
         get("/initial-data") {
             val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+            if (!ensureSessionAccess(call, sessionId)) return@get
             call.respond(handleGetInitialData(sessionId))
         }
 
         route("/characters") {
             get {
                 val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@get
                 call.respond(handleGetCharacters(sessionId))
             }
             get("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@get
                 val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
                 val char = handleGetCharacter(id, sessionId)
                 if (char == null) call.respond(HttpStatusCode.NotFound) else call.respond(char)
             }
             post {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@post
                 val principal = call.principal<JWTPrincipal>()
                 val userId = principal?.payload?.getClaim("userId")?.asString()
                 
@@ -65,6 +72,7 @@ fun Route.configureApiRouting() {
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteCharacter(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "characters", id)
@@ -75,10 +83,12 @@ fun Route.configureApiRouting() {
         route("/locations") {
             get {
                 val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@get
                 call.respond(handleGetLocations(sessionId))
             }
             post {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@post
                 val loc = call.receive<Location>()
                 handleSaveLocation(loc, sessionId)
                 SessionManager.notifyUpdate(sessionId, "locations", loc.id)
@@ -86,6 +96,7 @@ fun Route.configureApiRouting() {
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteLocation(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "locations", id)
@@ -96,10 +107,12 @@ fun Route.configureApiRouting() {
         route("/battlefields") {
             get {
                 val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@get
                 call.respond(handleGetBattlefields(sessionId))
             }
             post {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@post
                 val bf = call.receive<Battlefield>()
                 handleSaveBattlefield(bf, sessionId)
                 SessionManager.notifyUpdate(sessionId, "battlefields", bf.id)
@@ -107,6 +120,7 @@ fun Route.configureApiRouting() {
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteBattlefield(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "battlefields", id)
@@ -117,10 +131,12 @@ fun Route.configureApiRouting() {
         route("/monsters") {
             get {
                 val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@get
                 call.respond(handleGetMonsters(sessionId))
             }
             post {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@post
                 val monster = call.receive<Monster>()
                 handleSaveMonster(monster, sessionId)
                 SessionManager.notifyUpdate(sessionId, "monsters", monster.id)
@@ -128,6 +144,7 @@ fun Route.configureApiRouting() {
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteMonster(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "monsters", id)
@@ -138,10 +155,12 @@ fun Route.configureApiRouting() {
         route("/npcs") {
             get {
                 val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@get
                 call.respond(handleGetNpcs(sessionId))
             }
             post {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@post
                 val npc = call.receive<Npc>()
                 handleSaveNpc(npc, sessionId)
                 SessionManager.notifyUpdate(sessionId, "npcs", npc.id)
@@ -149,6 +168,7 @@ fun Route.configureApiRouting() {
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteNpc(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "npcs", id)
@@ -159,10 +179,12 @@ fun Route.configureApiRouting() {
         route("/music") {
             get {
                 val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@get
                 call.respond(handleGetMusic(sessionId))
             }
             post {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@post
                 val track = call.receive<MusicTrack>()
                 handleSaveMusic(track, sessionId)
                 SessionManager.notifyUpdate(sessionId, "music")
@@ -170,6 +192,7 @@ fun Route.configureApiRouting() {
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteMusic(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "music")
@@ -180,10 +203,12 @@ fun Route.configureApiRouting() {
         route("/logs") {
             get {
                 val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@get
                 call.respond(handleGetLogs(sessionId))
             }
             post {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@post
                 val log = call.receive<LogEntry>()
                 handleSaveLog(log, sessionId)
                 SessionManager.notifyUpdate(sessionId, "logs")
@@ -194,10 +219,12 @@ fun Route.configureApiRouting() {
         route("/events") {
             get {
                 val sessionId = call.parameters["sessionId"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@get
                 call.respond(handleGetEvents(sessionId))
             }
             post {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@post
                 val event = call.receive<GameEvent>()
                 handleSaveEvent(event, sessionId)
                 SessionManager.notifyUpdate(sessionId, "events")
@@ -205,6 +232,7 @@ fun Route.configureApiRouting() {
             }
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                if (!ensureSessionAccess(call, sessionId)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteEvent(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "events")
@@ -213,6 +241,35 @@ fun Route.configureApiRouting() {
         }
     }
 }
+}
+
+private suspend fun ensureSessionAccess(call: ApplicationCall, sessionId: String, respondOnError: Boolean = true): Boolean {
+    val principal = call.principal<JWTPrincipal>()
+    val userId = principal?.payload?.getClaim("userId")?.asString() ?: return false
+    
+    val user = dbQuery {
+        Users.selectAll().where { Users.id eq userId }.singleOrNull()
+    } ?: return false
+    
+    val userRole = user[Users.role]
+    
+    if (userRole == "MASTER") {
+        // Masters MUST own the campaign associated with this sessionId
+        val campaign = dbQuery {
+            Campaigns.selectAll().where { (Campaigns.sessionId eq sessionId) and (Campaigns.ownerId eq userId) }.singleOrNull()
+        }
+        if (campaign == null) {
+            if (respondOnError) {
+                call.respond(HttpStatusCode.Forbidden, "You do not own this campaign")
+            }
+            return false
+        }
+    } else {
+        // Players are allowed to access if they have the sessionId
+        // (This matches current app behavior where players join by ID)
+    }
+    
+    return true
 }
 
 private suspend fun handleGetInitialData(sessionId: String): InitialData {
