@@ -26,7 +26,11 @@ object Start
 @Serializable
 data class CharacterDetail(val id: String)
 
+@Serializable
+object AuthRoute
+
 val playerModule = module {
+    factory { com.dnd.helper.presentation.auth.AuthViewModel(get()) }
     factory { StartViewModel(get()) }
     factory { CharacterListViewModel(get(), get(), get()) }
     factory { (characterId: String) ->
@@ -41,11 +45,22 @@ fun PlayerApp(koinConfiguration: KoinAppDeclaration = {}) {
         appModules = listOf(playerModule)
     ) {
         val navController = rememberNavController()
+        val authRepository = org.koin.compose.koinInject<com.dnd.helper.domain.repository.AuthRepository>()
+        val startDest: Any = if (authRepository.getRefreshToken() != null) Start else AuthRoute
 
         NavHost(
             navController = navController,
-            startDestination = Start
+            startDestination = startDest
         ) {
+            composable<AuthRoute> {
+                com.dnd.helper.presentation.auth.AuthScreen(
+                    onAuthSuccess = {
+                        navController.navigate(Start) {
+                            popUpTo(AuthRoute) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable<Start> {
                 StartScreen(
                     onLoadCharacter = { characterId ->

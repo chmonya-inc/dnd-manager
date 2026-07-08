@@ -103,6 +103,30 @@ class WasmCharacterStorage : CharacterStorage {
     override fun clearApiCache() {
         // Wasm implementation placeholder
     }
+
+    override fun saveAuthToken(token: String?) {
+        if (token == null) {
+            localStorage.removeItem("auth_token")
+        } else {
+            localStorage.setItem("auth_token", token)
+        }
+    }
+
+    override fun getAuthToken(): String? {
+        return localStorage.getItem("auth_token")
+    }
+
+    override fun saveRefreshToken(token: String?) {
+        if (token == null) {
+            localStorage.removeItem("refresh_token")
+        } else {
+            localStorage.setItem("refresh_token", token)
+        }
+    }
+
+    override fun getRefreshToken(): String? {
+        return localStorage.getItem("refresh_token")
+    }
 }
 
 actual val platformModule = module {
@@ -127,12 +151,10 @@ actual fun readFileContent(path: String): String? {
 actual suspend fun pasteFromClipboard(): String? {
     return try {
         val clipboard = kotlinx.browser.window.navigator.clipboard
-        val promise = clipboard.readText()
-        val text = promise.toArisPromise<JsString>().await<JsString>()
+        val promise: kotlin.js.Promise<JsString> = clipboard.readText().unsafeCast<kotlin.js.Promise<JsString>>()
+        val text: JsString = promise.await()
         text.toString()
     } catch (e: Exception) {
         null
     }
 }
-
-private fun <T : JsAny> JsAny.toArisPromise(): kotlin.js.Promise<T> = this.unsafeCast()

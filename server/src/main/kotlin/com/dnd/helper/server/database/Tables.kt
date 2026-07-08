@@ -11,9 +11,17 @@ val json = Json {
     encodeDefaults = true
 }
 
+object Users : Table("users") {
+    val id = varchar("id", 50)
+    val username = varchar("username", 100).uniqueIndex()
+    val passwordHash = varchar("password_hash", 255)
+    override val primaryKey = PrimaryKey(id)
+}
+
 object Characters : Table("characters") {
     val id = varchar("id", 50)
     val sessionId = varchar("session_id", 50)
+    val userId = varchar("user_id", 50).nullable()
     val name = varchar("name", 100)
     val playerName = varchar("player_name", 100)
     val race = varchar("race", 50)

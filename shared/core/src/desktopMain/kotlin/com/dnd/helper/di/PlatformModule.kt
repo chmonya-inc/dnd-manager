@@ -271,6 +271,30 @@ class DesktopCharacterStorage : CharacterStorage {
             e.printStackTrace()
         }
     }
+
+    override fun saveAuthToken(token: String?) {
+        if (token == null) {
+            prefs.remove("auth_token")
+        } else {
+            prefs.put("auth_token", token)
+        }
+    }
+
+    override fun getAuthToken(): String? {
+        return prefs.get("auth_token", null)
+    }
+
+    override fun saveRefreshToken(token: String?) {
+        if (token == null) {
+            prefs.remove("refresh_token")
+        } else {
+            prefs.put("refresh_token", token)
+        }
+    }
+
+    override fun getRefreshToken(): String? {
+        return prefs.get("refresh_token", null)
+    }
 }
 
 actual val platformModule = module {

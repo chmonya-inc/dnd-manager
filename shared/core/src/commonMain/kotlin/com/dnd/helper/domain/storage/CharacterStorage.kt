@@ -24,4 +24,8 @@ interface CharacterStorage {
     fun saveApiCache(key: String, json: String)
     fun getApiCache(key: String): String?
     fun clearApiCache()
+    fun saveAuthToken(token: String?)
+    fun getAuthToken(): String?
+    fun saveRefreshToken(token: String?)
+    fun getRefreshToken(): String?
 }

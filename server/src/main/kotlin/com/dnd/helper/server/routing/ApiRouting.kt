@@ -12,9 +12,12 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 
 fun Route.configureApiRouting() {
-    route("/api/{sessionId}") {
+    authenticate("auth-jwt") {
+        route("/api/{sessionId}") {
         webSocket("/ws") {
             val sessionId = call.parameters["sessionId"] ?: return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No session ID"))
             SessionManager.addClient(sessionId, this)
@@ -45,8 +48,10 @@ fun Route.configureApiRouting() {
             }
             post {
                 val sessionId = call.parameters["sessionId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("userId")?.asString()
                 val char = call.receive<Character>()
-                handleSaveCharacter(char, sessionId)
+                handleSaveCharacter(char, sessionId, userId)
                 SessionManager.notifyUpdate(sessionId, "characters", char.id)
                 call.respond(HttpStatusCode.OK)
             }
@@ -200,6 +205,7 @@ fun Route.configureApiRouting() {
         }
     }
 }
+}
 
 private suspend fun handleGetInitialData(sessionId: String): InitialData {
     return InitialData(
@@ -223,11 +229,14 @@ private suspend fun handleGetCharacter(id: String?, sessionId: String): Characte
     Characters.selectAll().where { (Characters.id eq id) and (Characters.sessionId eq sessionId) }.singleOrNull()?.let { rowToCharacter(it) }
 }
 
-private suspend fun handleSaveCharacter(char: Character?, sessionId: String) = dbQuery {
+private suspend fun handleSaveCharacter(char: Character?, sessionId: String, userId: String? = null) = dbQuery {
     if (char == null) return@dbQuery
     Characters.upsert {
         it[id] = char.id
         it[Characters.sessionId] = sessionId
+        if (userId != null) {
+            it[Characters.userId] = userId
+        }
         it[name] = char.name
         it[playerName] = char.playerName
         it[race] = char.race

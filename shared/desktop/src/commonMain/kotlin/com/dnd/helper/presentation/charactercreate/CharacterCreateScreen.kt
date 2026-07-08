@@ -208,6 +208,15 @@ fun CharacterCreateScreen(
 
                         Spacer(Modifier.height(16.dp))
                         
+                        CharacterTextField(
+                            value = state.sessionId,
+                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SessionIdChanged(it)) },
+                            label = "Session ID",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
+                        Spacer(Modifier.height(8.dp))
+                        
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             CharacterTextField(
                                 value = state.name,
