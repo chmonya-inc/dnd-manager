@@ -15,43 +15,28 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,18 +48,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.dnd.helper.di.isWeb
-import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
 import com.dnd.helper.theme.DndIcons
 import com.dnd.helper.theme.ThemeDialog
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.math.roundToInt
@@ -102,30 +81,28 @@ private val secondaryTabs = listOf(
     DesktopTab.Settings,
 )
 
-private val tabs = primaryTabs + secondaryTabs
-
 @Composable
 fun MainDesktopScreen(
     onLogout: () -> Unit = {},
+    onSwitchCampaign: () -> Unit = {},
     presentationViewModel: PresentationViewModel = koinViewModel()
 ) {
     var selectedTab by remember { mutableStateOf<DesktopTab>(DesktopTab.Characters) }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
     var initialCreatorType by remember { mutableStateOf<CreatorType?>(null) }
     var showDiceDialog by remember { mutableStateOf(false) }
-    var showCampaignsDialog by remember { mutableStateOf(false) }
     var showMusicPlayer by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var musicPlayerOffset by remember { mutableStateOf(IntOffset(0, 0)) }
 
-    // Track active session for forcing ViewModel recreation on session switch
-    var activeTableId by remember { mutableStateOf<String?>(null) }
+    val storage = org.koin.compose.koinInject<com.dnd.helper.domain.storage.CharacterStorage>()
+    val activeTableId = storage.getTableId() ?: ""
 
     val isWindowOpen by presentationViewModel.isWindowOpen.collectAsState()
     val showStats by presentationViewModel.showStats.collectAsState()
     val activeItems = presentationViewModel.activeItems
 
-    // Secondary Window for Players - Persists across tab switching
+    // Secondary Window for Players
     ExternalWindow(
         isOpen = isWindowOpen,
         onCloseRequest = { presentationViewModel.setWindowOpen(false) }
@@ -141,18 +118,6 @@ fun MainDesktopScreen(
 
     if (showDiceDialog) {
         DiceRollDialog(onDismiss = { showDiceDialog = false })
-    }
-
-    if (showCampaignsDialog) {
-        CampaignsDialog(
-            onDismiss = { showCampaignsDialog = false },
-            onCampaignSelected = { newTableId ->
-                activeTableId = newTableId
-                selectedCharacterId = null
-                selectedTab = DesktopTab.Characters
-                showCampaignsDialog = false
-            }
-        )
     }
 
     if (showThemeDialog) {
@@ -245,16 +210,16 @@ fun MainDesktopScreen(
 
                     Spacer(Modifier.height(12.dp))
 
-                    // Campaigns Button
+                    // Switch Campaign Button
                     FloatingActionButton(
-                        onClick = { showCampaignsDialog = true },
+                        onClick = onSwitchCampaign,
                         modifier = Modifier.size(48.dp),
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
                     ) {
                         Icon(
                             imageVector = DndIcons.Filled.Storage,
-                            contentDescription = "Campaigns",
+                            contentDescription = "Switch Campaign",
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                     }
@@ -309,7 +274,7 @@ fun MainDesktopScreen(
                                     initialCreatorType = CreatorType.Character(character)
                                     selectedTab = DesktopTab.Creator
                                 },
-                                sessionKey = activeTableId ?: "",
+                                sessionKey = activeTableId,
                             )
                         }
                         DesktopTab.Library -> LibraryScreen(
@@ -440,215 +405,3 @@ fun CharactersSplitPane(
         }
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CampaignsDialog(
-    onDismiss: () -> Unit,
-    onCampaignSelected: (String) -> Unit,
-    viewModel: SessionsViewModel = koinViewModel(),
-) {
-    val clipboardManager = LocalClipboardManager.current
-    val state by viewModel.state.collectAsState()
-    
-    var newName by remember { mutableStateOf("") }
-    var newId by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Campaigns") },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // Active session info
-                if (state.activeTableId.isNotBlank()) {
-                    val activeCampaign = state.campaigns.find { it.id == state.activeTableId }
-                    Text(
-                        text = "Active: ${activeCampaign?.name ?: "Unknown"}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                }
-
-                // Saved campaigns list
-                if (state.campaigns.isNotEmpty()) {
-                    Text(
-                        text = "Your Campaigns",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(state.campaigns, key = { it.id }) { campaign ->
-                            CampaignRow(
-                                campaign = campaign,
-                                isActive = campaign.id == state.activeTableId,
-                                onSelect = {
-                                    viewModel.selectCampaign(campaign.id)
-                                    onCampaignSelected(campaign.id)
-                                },
-                                onDelete = {
-                                    viewModel.deleteCampaignLocal(campaign.id)
-                                },
-                                onCopy = {
-                                    val encoded = IdUtils.encode(campaign.id)
-                                    clipboardManager.setText(AnnotatedString(encoded))
-                                }
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(16.dp))
-                } else if (state.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                    Spacer(Modifier.height(16.dp))
-                } else {
-                    Text(
-                        text = "No campaigns found.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(16.dp))
-                }
-
-                HorizontalDivider()
-                Spacer(Modifier.height(16.dp))
-
-                // Add new campaign
-                Text(
-                    text = "Add New Campaign",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = newName,
-                    onValueChange = { newName = it },
-                    label = { Text("Campaign Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = newId,
-                    onValueChange = { newId = it },
-                    label = { Text("Join Existing Game ID (Optional)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    trailingIcon = {
-                        if (newId.isEmpty() && isWeb) {
-                            val scope = rememberCoroutineScope()
-                            IconButton(onClick = { 
-                                scope.launch {
-                                    com.dnd.helper.di.pasteFromClipboard()?.let { newId = it }
-                                }
-                            }) {
-                                Icon(DndIcons.Filled.ContentPaste, contentDescription = "Paste", modifier = Modifier.size(20.dp))
-                            }
-                        }
-                    }
-                )
-                Spacer(Modifier.height(8.dp))
-                Button(
-                    onClick = {
-                        if (newName.isNotBlank()) {
-                            viewModel.addCampaign(newName, newId)
-                            newName = ""
-                            newId = ""
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = newName.isNotBlank() && !state.isLoading,
-                ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
-                    } else {
-                        Text(if (newId.isNotBlank()) "Join Campaign" else "Create Campaign")
-                    }
-                }
-
-                state.error?.let {
-                    Spacer(Modifier.height(8.dp))
-                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        },
-        dismissButton = null,
-    )
-}
-
-@Composable
-private fun CampaignRow(
-    campaign: Campaign,
-    isActive: Boolean,
-    onSelect: () -> Unit,
-    onDelete: () -> Unit,
-    onCopy: () -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isActive)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        ),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = campaign.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "ID: ${IdUtils.encode(campaign.id)}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = DndIcons.Filled.ContentCopy,
-                        contentDescription = "Copy Game ID",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                TextButton(
-                    onClick = onSelect,
-                    enabled = !isActive,
-                ) {
-                    Text(if (isActive) "Active" else "Select")
-                }
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-        }
-    }
-}
-
-
