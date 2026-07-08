@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
 import com.dnd.helper.data.remote.KtorRemoteDataSource
 import com.dnd.helper.domain.common.toUserMessage
@@ -39,6 +38,14 @@ class SessionsViewModel(
                         campaigns = campaigns,
                         isLoading = false
                     )
+                    
+                    // Auto-select logic
+                    val currentActive = storage.getTableId()
+                    if (!currentActive.isNullOrBlank() && campaigns.any { it.id == currentActive }) {
+                        selectCampaignForPreview(currentActive)
+                    } else if (campaigns.isNotEmpty()) {
+                        selectCampaignForPreview(campaigns.first().id)
+                    }
                 }
                 is Result.Error -> {
                     _state.value = _state.value.copy(
@@ -53,6 +60,41 @@ class SessionsViewModel(
     fun selectCampaign(id: String) {
         storage.saveTableId(id)
         _state.value = _state.value.copy(activeTableId = id)
+    }
+
+    fun selectCampaignForPreview(id: String) {
+        if (_state.value.previewCampaignId == id) return
+        
+        _state.value = _state.value.copy(
+            previewCampaignId = id,
+            isPreviewLoading = true,
+            previewData = null
+        )
+        
+        viewModelScope.launch {
+            // Temporarily set table ID in storage to fetch initial data for preview
+            val oldId = storage.getTableId()
+            storage.saveTableId(id)
+            
+            when (val res = remoteDataSource.getInitialData()) {
+                is Result.Success -> {
+                    if (_state.value.previewCampaignId == id) {
+                        _state.value = _state.value.copy(
+                            previewData = res.data,
+                            isPreviewLoading = false
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    if (_state.value.previewCampaignId == id) {
+                        _state.value = _state.value.copy(isPreviewLoading = false)
+                    }
+                }
+            }
+            
+            // Restore old ID if we didn't officially "switch" yet
+            if (oldId != null) storage.saveTableId(oldId) else storage.saveTableId("")
+        }
     }
 
     fun addCampaign(name: String, joinId: String) {

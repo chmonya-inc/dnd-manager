@@ -11,6 +11,9 @@ data class Campaign(
 data class SessionsState(
     val campaigns: List<Campaign> = emptyList(),
     val activeTableId: String = "",
+    val previewCampaignId: String? = null,
+    val previewData: com.dnd.helper.domain.model.InitialData? = null,
     val isLoading: Boolean = false,
+    val isPreviewLoading: Boolean = false,
     val error: String? = null
 )

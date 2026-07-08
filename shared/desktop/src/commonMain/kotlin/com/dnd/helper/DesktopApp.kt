@@ -25,6 +25,9 @@ object CharacterCreate
 object MainDesktop
 
 @Serializable
+object CampaignPicker
+
+@Serializable
 object Library
 
 @Serializable
@@ -55,7 +58,13 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
     ) {
         val navController = rememberNavController()
         val authRepository = org.koin.compose.koinInject<com.dnd.helper.domain.repository.AuthRepository>()
-        val startDest: Any = if (authRepository.getRefreshToken() != null) MainDesktop else AuthRoute
+        val storage = org.koin.compose.koinInject<com.dnd.helper.domain.storage.CharacterStorage>()
+        
+        val startDest: Any = if (authRepository.getRefreshToken() != null) {
+            if (storage.getTableId().isNullOrBlank()) CampaignPicker else MainDesktop
+        } else {
+            AuthRoute
+        }
 
         NavHost(
             navController = navController,
@@ -65,8 +74,22 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
                 com.dnd.helper.presentation.auth.AuthScreen(
                     forceMasterRole = true,
                     onAuthSuccess = {
-                        navController.navigate(MainDesktop) {
+                        navController.navigate(CampaignPicker) {
                             popUpTo(AuthRoute) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable<CampaignPicker> {
+                CampaignPickerScreen(
+                    onCampaignSelected = {
+                        navController.navigate(MainDesktop) {
+                            popUpTo(CampaignPicker) { inclusive = true }
+                        }
+                    },
+                    onLogout = {
+                        navController.navigate(AuthRoute) {
+                            popUpTo(CampaignPicker) { inclusive = true }
                         }
                     }
                 )
@@ -75,6 +98,11 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
                 MainDesktopScreen(
                     onLogout = {
                         navController.navigate(AuthRoute) {
+                            popUpTo(MainDesktop) { inclusive = true }
+                        }
+                    },
+                    onSwitchCampaign = {
+                        navController.navigate(CampaignPicker) {
                             popUpTo(MainDesktop) { inclusive = true }
                         }
                     }
