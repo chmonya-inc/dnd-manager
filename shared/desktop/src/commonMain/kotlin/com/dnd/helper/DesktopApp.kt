@@ -48,7 +48,7 @@ val desktopModule = module {
     factory { MusicViewModel(get(), get()) }
     factory { SessionsViewModel(get(), get()) }
     factory { SettingsViewModel(get(), get()) }
-    factory { AssignCharacterViewModel(get()) }
+    factory { AssignCharacterViewModel(get(), get()) }
     single { PresentationViewModel(get()) }
 }
 

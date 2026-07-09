@@ -1,5 +1,6 @@
 package com.dnd.helper.presentation.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -10,6 +11,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.dnd.helper.di.isDesktop
 import com.dnd.helper.theme.DndIcons
+import org.jetbrains.compose.resources.painterResource
+import com.dnd.helper.shared.core.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -74,27 +77,19 @@ fun AuthScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        imageVector = DndIcons.Filled.Shield,
+                    Image(
+                        painter = painterResource(Res.drawable.logo),
                         contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        modifier = Modifier.size(120.dp)
                     )
                     
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
                     
                     Text(
-                        text = if (state.isLoginMode) "Welcome Back" else "Create Account",
+                        text = if (state.isLoginMode) "Login" else "Register",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
-                    )
-                    
-                    Text(
-                        text = if (forceMasterRole) "Master Portal" else "Adventurer Portal",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                        fontWeight = FontWeight.Medium
                     )
                     
                     Spacer(modifier = Modifier.height(32.dp))

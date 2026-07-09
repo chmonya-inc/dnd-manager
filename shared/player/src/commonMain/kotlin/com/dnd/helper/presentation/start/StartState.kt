@@ -1,6 +1,7 @@
 package com.dnd.helper.presentation.start
 
 import com.dnd.helper.data.remote.dto.auth.MyCharacterDto
+import com.dnd.helper.data.remote.dto.auth.PendingAssignmentDto
 
 data class StartState(
     val characterId: String = "",
@@ -10,5 +11,8 @@ data class StartState(
     val myCharacters: List<MyCharacterDto> = emptyList(),
     val isLoadingMyCharacters: Boolean = false,
     val username: String? = null,
-    val isMaster: Boolean = false
+    val isMaster: Boolean = false,
+    val pendingAssignments: List<PendingAssignmentDto> = emptyList(),
+    val isLoadingAssignments: Boolean = false,
+    val assignmentError: String? = null,
 )

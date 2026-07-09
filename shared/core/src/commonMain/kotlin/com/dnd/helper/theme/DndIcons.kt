@@ -180,6 +180,7 @@ object DndIcons {
             }
         }
 
+
         val Description: ImageVector = buildIcon("Filled.Description") {
             path(fill = SolidColor(Color.Black)) {
                 moveTo(14f, 2f); horizontalLineTo(6f); curveToRelative(-1.1f, 0f, -1.99f, 0.9f, -1.99f, 2f); lineTo(4f, 20f); curveToRelative(0f, 1.1f, 0.89f, 2f, 1.99f, 2f); horizontalLineTo(18f); curveToRelative(1.1f, 0f, 2f, -0.9f, 2f, -2f); verticalLineTo(8f); lineToRelative(-6f, -6f); close()

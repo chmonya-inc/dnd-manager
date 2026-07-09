@@ -67,7 +67,8 @@ object DatabaseFactory {
                 Npcs,
                 Music,
                 Events,
-                Logs
+                Logs,
+                CharacterAssignments
             )
         }
         println("[DatabaseFactory] Successfully connected to PostgreSQL")

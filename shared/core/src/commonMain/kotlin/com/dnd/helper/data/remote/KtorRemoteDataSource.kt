@@ -3,14 +3,19 @@ package com.dnd.helper.data.remote
 import com.dnd.helper.data.config.GoogleAppsScriptConfig
 import com.dnd.helper.data.remote.dto.auth.AssignByUsernameRequest
 import com.dnd.helper.data.remote.dto.auth.AssignCharacterRequest
+import com.dnd.helper.data.remote.dto.auth.AssignmentStatusDto
 import com.dnd.helper.data.remote.dto.auth.CampaignDto
+import com.dnd.helper.data.remote.dto.auth.CreateAssignmentRequest
 import com.dnd.helper.data.remote.dto.auth.MyCharacterDto
+import com.dnd.helper.data.remote.dto.auth.PendingAssignmentDto
+import com.dnd.helper.data.remote.dto.auth.RespondAssignmentRequest
 import com.dnd.helper.domain.common.AppError
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.model.*
 import com.dnd.helper.domain.storage.CharacterStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.statement.bodyAsText
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -264,6 +269,37 @@ class KtorRemoteDataSource(
             }
         }
 
+    // --- Character Assignment Requests ---
+
+    suspend fun createAssignment(characterId: String, sessionId: String, playerUsername: String): Result<Unit> =
+        safeApiCall {
+            httpClient.post("${baseUrl()}/api/assignments") {
+                contentType(ContentType.Application.Json)
+                setBody(CreateAssignmentRequest(
+                    characterId = characterId,
+                    sessionId = sessionId,
+                    playerUsername = playerUsername
+                ))
+            }
+        }
+
+    suspend fun getPendingAssignments(): Result<List<PendingAssignmentDto>> =
+        safeApiCall { httpClient.get("${baseUrl()}/api/assignments/pending") }
+
+    suspend fun respondToAssignment(assignmentId: String, accept: Boolean): Result<Unit> =
+        safeApiCall {
+            httpClient.post("${baseUrl()}/api/assignments/respond") {
+                contentType(ContentType.Application.Json)
+                setBody(RespondAssignmentRequest(
+                    assignmentId = assignmentId,
+                    accept = accept
+                ))
+            }
+        }
+
+    suspend fun getAssignmentStatuses(sessionId: String): Result<List<AssignmentStatusDto>> =
+        safeApiCall { httpClient.get("${baseUrl()}/api/assignments/status/$sessionId") }
+
     private suspend inline fun <reified T> safeApiCall(
         call: () -> io.ktor.client.statement.HttpResponse
     ): Result<T> {
@@ -276,7 +312,8 @@ class KtorRemoteDataSource(
                     Result.Success(response.body<T>())
                 }
             } else {
-                Result.Error(AppError.Unknown("Server returned ${response.status}"))
+                val errorBody = try { response.bodyAsText() } catch (_: Exception) { "" }
+                Result.Error(AppError.Unknown(errorBody.ifBlank { "Server returned ${response.status}" }))
             }
         } catch (e: Exception) {
             println("[KtorRemoteDataSource] Error: ${e.message}")

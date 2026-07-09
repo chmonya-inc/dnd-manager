@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Soft shadow under the die -->
+    <path
+        android:pathData="M36,78a18,4 0 1,0 36,0a18,4 0 1,0 -36,0"
+        android:fillColor="#40000000" />
+
+    <!-- D20 gem faces -->
+    <!-- Upper-left face (brightest) -->
+    <path
+        android:pathData="M54,26 L32,38 L54,50 Z"
+        android:fillColor="#FFD740" />
+    <!-- Upper-right face -->
+    <path
+        android:pathData="M54,26 L54,50 L76,38 Z"
+        android:fillColor="#FFC107" />
+    <!-- Mid-left face -->
+    <path
+        android:pathData="M32,38 L32,62 L54,50 Z"
+        android:fillColor="#FFA000" />
+    <!-- Mid-right face -->
+    <path
+        android:pathData="M76,38 L76,62 L54,50 Z"
+        android:fillColor="#FF8F00" />
+    <!-- Lower-left face -->
+    <path
+        android:pathData="M32,62 L54,74 L54,50 Z"
+        android:fillColor="#F57F17" />
+    <!-- Lower-right face (darkest) -->
+    <path
+        android:pathData="M76,62 L54,74 L54,50 Z"
+        android:fillColor="#E65100" />
+
+    <!-- Edge outlines for definition -->
+    <path
+        android:pathData="M54,26 L32,38 L32,62 L54,74 L76,62 L76,38 Z"
+        android:strokeWidth="1.2"
+        android:strokeColor="#FFECB3"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M32,38 L54,50 L76,38"
+        android:strokeWidth="0.8"
+        android:strokeColor="#FFECB3"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M32,62 L54,50 L76,62"
+        android:strokeWidth="0.8"
+        android:strokeColor="#FFECB3"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M54,26 L54,50 L54,74"
+        android:strokeWidth="0.8"
+        android:strokeColor="#FFECB3"
+        android:fillColor="#00000000" />
+
+    <!-- Top highlight glint -->
+    <path
+        android:pathData="M54,28 L52,36 L54,34 L56,36 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Sparkle 1 (top left) -->
+    <path
+        android:pathData="M34,24 L35.5,28.5 L40,30 L35.5,31.5 L34,36 L32.5,31.5 L28,30 L32.5,28.5 Z"
+        android:fillColor="#FFFFFF" />
+    <!-- Sparkle 2 (right) -->
+    <path
+        android:pathData="M80,34 L81,37 L84,38 L81,39 L80,42 L79,39 L76,38 L79,37 Z"
+        android:fillColor="#FFD740" />
+</vector>

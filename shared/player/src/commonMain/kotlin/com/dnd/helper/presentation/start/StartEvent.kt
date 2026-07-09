@@ -7,4 +7,6 @@ sealed interface StartEvent {
     data class LoadMyCharacter(val characterId: String) : StartEvent
     data object RefreshMyCharacters : StartEvent
     data object Logout : StartEvent
+    data object LoadPendingAssignments : StartEvent
+    data class RespondToAssignment(val assignmentId: String, val accept: Boolean) : StartEvent
 }

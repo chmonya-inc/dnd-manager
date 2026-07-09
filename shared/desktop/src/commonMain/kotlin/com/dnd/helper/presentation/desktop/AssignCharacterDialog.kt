@@ -6,12 +6,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonOff
 import androidx.compose.material3.*
@@ -33,13 +37,17 @@ fun AssignCharacterDialog(
 ) {
     val state by viewModel.state.collectAsState()
 
+    LaunchedEffect(sessionId) {
+        viewModel.loadAssignmentStatuses(sessionId)
+    }
+
     AlertDialog(
         onDismissRequest = { if (!state.isAssigning) onDismiss() },
         title = { Text("Assign Character") },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Enter the player's username to assign this character:",
+                    text = "Enter the player's username to send an assignment request:",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -66,7 +74,7 @@ fun AssignCharacterDialog(
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
                         Spacer(Modifier.width(12.dp))
-                        Text("Updating assignment...")
+                        Text("Sending request...")
                     }
                 }
 
@@ -78,7 +86,7 @@ fun AssignCharacterDialog(
                     ) {
                         Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(24.dp))
                         Spacer(Modifier.width(12.dp))
-                        Text("Assigned successfully!", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
+                        Text("Request sent! Waiting for player response.", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -94,8 +102,30 @@ fun AssignCharacterDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                
+                // Assignment status history for this session
+                if (state.assignmentStatuses.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Recent Assignments",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(state.assignmentStatuses.take(10)) { status ->
+                            AssignmentStatusRow(status)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 OutlinedButton(
                     onClick = { viewModel.unassignCharacter(characterId, sessionId) },
                     modifier = Modifier.fillMaxWidth(),
@@ -113,7 +143,7 @@ fun AssignCharacterDialog(
                 onClick = { viewModel.assignCharacter(characterId, sessionId) },
                 enabled = !state.isAssigning && state.username.isNotBlank(),
             ) {
-                Text("Assign")
+                Text("Send Request")
             }
         },
         dismissButton = {
@@ -125,4 +155,27 @@ fun AssignCharacterDialog(
             }
         }
     )
+}
+
+@Composable
+private fun AssignmentStatusRow(status: com.dnd.helper.data.remote.dto.auth.AssignmentStatusDto) {
+    val statusInfo = when (status.status) {
+        "PENDING" -> Triple(Icons.Default.HourglassEmpty, "Pending", MaterialTheme.colorScheme.secondary)
+        "ACCEPTED" -> Triple(Icons.Default.CheckCircle, "Accepted", Color(0xFF4CAF50))
+        "REVOKED" -> Triple(Icons.Default.PersonOff, "Revoked", MaterialTheme.colorScheme.error)
+        else -> Triple(Icons.Default.Person, status.status, MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(statusInfo.first, null, modifier = Modifier.size(18.dp), tint = statusInfo.third)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(status.characterName, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+            status.playerUsername?.let { Text("→ $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+        Text(statusInfo.second, style = MaterialTheme.typography.labelSmall, color = statusInfo.third, fontWeight = FontWeight.Bold)
+    }
 }

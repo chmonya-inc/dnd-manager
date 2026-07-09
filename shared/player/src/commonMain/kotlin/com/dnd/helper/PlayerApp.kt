@@ -31,7 +31,7 @@ object AuthRoute
 
 val playerModule = module {
     factory { com.dnd.helper.presentation.auth.AuthViewModel(get()) }
-    factory { StartViewModel(get(), get(), get()) }
+    factory { StartViewModel(get(), get(), get(), get()) }
     factory { CharacterListViewModel(get(), get(), get()) }
     factory { (characterId: String) ->
         CharacterDetailViewModel(get(), get(), characterId)

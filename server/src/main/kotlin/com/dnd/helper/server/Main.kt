@@ -18,6 +18,7 @@ import io.ktor.server.plugins.ratelimit.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import com.dnd.helper.server.routing.configureAuthRouting
+import com.dnd.helper.server.routing.configureAssignmentRouting
 import com.dnd.helper.server.routing.configureCampaignRouting
 import com.dnd.helper.server.routing.configureHealthRouting
 import org.slf4j.event.Level
@@ -99,5 +100,6 @@ fun Application.module() {
         configureAuthRouting()
         configureApiRouting()
         configureCampaignRouting()
+        configureAssignmentRouting()
     }
 }
