@@ -27,3 +27,10 @@ spec:
                 name: {{ .Release.Name }}
                 port:
                   number: {{ .Values.port | int }}
+          - path: "/auth/"
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}
+                port:
+                  number: {{ .Values.port | int }}
