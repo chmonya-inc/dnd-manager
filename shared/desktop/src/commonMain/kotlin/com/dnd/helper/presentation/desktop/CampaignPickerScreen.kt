@@ -1,23 +1,30 @@
 package com.dnd.helper.presentation.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.dnd.helper.domain.model.Character
 import com.dnd.helper.theme.DndIcons
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -30,7 +37,13 @@ fun CampaignPickerScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    var transferDialogData by remember { mutableStateOf<TransferDialogData?>(null) }
 
+    // Drag state: which character is being dragged and which campaign it's hovering over
+    var draggedCharacterId by remember { mutableStateOf<String?>(null) }
+    var dragOverCampaignId by remember { mutableStateOf<String?>(null) }
+
+    // --- Add Campaign Dialog ---
     if (showAddDialog) {
         var name by remember { mutableStateOf("") }
         AlertDialog(
@@ -61,6 +74,44 @@ fun CampaignPickerScreen(
             dismissButton = {
                 TextButton(onClick = { showAddDialog = false }) {
                     Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // --- Transfer / Copy Dialog ---
+    transferDialogData?.let { data ->
+        TransferCopyDialog(
+            character = data.character,
+            sourceCampaignName = state.campaigns.find { it.id == data.sourceSessionId }?.name ?: data.sourceSessionId,
+            targetCampaign = data.targetCampaign,
+            onDismiss = { transferDialogData = null },
+            onConfirm = { isCopy, transferItems ->
+                viewModel.transferOrCopyCharacter(
+                    character = data.character,
+                    sourceSessionId = data.sourceSessionId,
+                    targetCampaign = data.targetCampaign,
+                    isCopy = isCopy,
+                    transferItems = transferItems
+                )
+                transferDialogData = null
+            }
+        )
+    }
+
+    if (state.isTransferring) {
+        // Simple progress overlay
+        AlertDialog(
+            onDismissRequest = {},
+            confirmButton = {},
+            title = { Text("Processing...") },
+            text = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator()
+                    Text("Transferring character...")
                 }
             }
         )
@@ -105,18 +156,60 @@ fun CampaignPickerScreen(
                     ) {
                         items(state.campaigns) { campaign ->
                             val isSelected = state.previewCampaignId == campaign.id
+                            val isDragTarget = dragOverCampaignId == campaign.id && draggedCharacterId != null
                             Card(
                                 onClick = { viewModel.selectCampaignForPreview(campaign.id) },
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .then(
+                                        if (isDragTarget) Modifier.border(
+                                            3.dp,
+                                            MaterialTheme.colorScheme.primary,
+                                            RoundedCornerShape(12.dp)
+                                        ) else Modifier
+                                    ),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = if (isSelected)
+                                    containerColor = if (isDragTarget)
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    else if (isSelected)
                                         MaterialTheme.colorScheme.primaryContainer
                                     else
                                         MaterialTheme.colorScheme.surface
                                 )
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(16.dp),
+                                    modifier = Modifier
+                                        .padding(16.dp)
+                                        .pointerInput(campaign.id) {
+                                            detectDragGesturesAfterLongPress(
+                                                onDrag = { change, _ ->
+                                                    change.consume()
+                                                    // Highlight campaign as drop target
+                                                    dragOverCampaignId = campaign.id
+                                                },
+                                                onDragEnd = {
+                                                    if (draggedCharacterId != null && dragOverCampaignId == campaign.id) {
+                                                        // Find character and trigger transfer dialog
+                                                        val sourceCampaignId = state.previewCampaignId
+                                                        val characters = state.previewData?.characters ?: emptyList()
+                                                        val character = characters.find { it.id == draggedCharacterId }
+                                                        if (character != null && sourceCampaignId != null && sourceCampaignId != campaign.id) {
+                                                            transferDialogData = TransferDialogData(
+                                                                character = character,
+                                                                sourceSessionId = sourceCampaignId,
+                                                                targetCampaign = campaign
+                                                            )
+                                                        }
+                                                    }
+                                                    draggedCharacterId = null
+                                                    dragOverCampaignId = null
+                                                },
+                                                onDragCancel = {
+                                                    draggedCharacterId = null
+                                                    dragOverCampaignId = null
+                                                }
+                                            )
+                                        },
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
@@ -126,8 +219,16 @@ fun CampaignPickerScreen(
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
+                                        if (isDragTarget) {
+                                            Text(
+                                                "Drop here",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
-                                    if (isSelected) {
+                                    if (isSelected && !isDragTarget) {
                                         Icon(Icons.Default.ChevronRight, null)
                                     }
                                 }
@@ -158,7 +259,7 @@ fun CampaignPickerScreen(
             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 val previewId = state.previewCampaignId
                 val campaign = state.campaigns.find { it.id == previewId }
-                
+
                 if (campaign != null) {
                     Column(
                         modifier = Modifier.fillMaxSize().padding(32.dp)
@@ -226,9 +327,55 @@ fun CampaignPickerScreen(
 
                             Spacer(Modifier.height(32.dp))
 
+                            // Character list section
+                            Text(
+                                "Characters in Campaign",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(16.dp))
+
+                            if (data.characters.isEmpty()) {
+                                Text(
+                                    "No characters in this campaign yet.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(data.characters) { character ->
+                                        CharacterRow(
+                                            character = character,
+                                            otherCampaigns = state.campaigns.filter { it.id != campaign.id },
+                                            isDragging = draggedCharacterId == character.id,
+                                            onDragStart = {
+                                                draggedCharacterId = character.id
+                                                dragOverCampaignId = null
+                                            },
+                                            onDragEnd = {
+                                                draggedCharacterId = null
+                                                dragOverCampaignId = null
+                                            },
+                                            onTransferClick = { targetCampaign ->
+                                                transferDialogData = TransferDialogData(
+                                                    character = character,
+                                                    sourceSessionId = campaign.id,
+                                                    targetCampaign = targetCampaign
+                                                )
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(Modifier.height(32.dp))
+
                             Text("Quick Summary", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.height(16.dp))
-                            
+
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
@@ -257,6 +404,204 @@ fun CampaignPickerScreen(
             }
         }
     }
+}
+
+// --- Data class for transfer dialog state ---
+private data class TransferDialogData(
+    val character: Character,
+    val sourceSessionId: String,
+    val targetCampaign: Campaign
+)
+
+// --- Character row with drag support ---
+@Composable
+private fun CharacterRow(
+    character: Character,
+    otherCampaigns: List<Campaign>,
+    isDragging: Boolean,
+    onDragStart: () -> Unit,
+    onDragEnd: () -> Unit,
+    onTransferClick: (Campaign) -> Unit
+) {
+    var showTransferMenu by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (isDragging) Modifier.border(
+                    2.dp,
+                    MaterialTheme.colorScheme.primary,
+                    RoundedCornerShape(12.dp)
+                ) else Modifier
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDragging) MaterialTheme.colorScheme.primaryContainer
+                             else MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .pointerInput(character.id) {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { onDragStart() },
+                        onDragEnd = { onDragEnd() },
+                        onDragCancel = { onDragEnd() },
+                        onDrag = { change, _ -> change.consume() }
+                    )
+                }
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.DragIndicator, "Drag to move/copy", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.width(8.dp))
+            Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(character.name, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "Level ${character.level} ${character.race} ${character.characterClass}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            // Transfer/Copy button with dropdown menu
+            Box {
+                IconButton(onClick = { showTransferMenu = true }) {
+                    Icon(Icons.Default.SwapHoriz, "Transfer or copy character")
+                }
+                DropdownMenu(
+                    expanded = showTransferMenu,
+                    onDismissRequest = { showTransferMenu = false }
+                ) {
+                    Text(
+                        "Transfer/Copy to:",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    if (otherCampaigns.isEmpty()) {
+                        Text(
+                            "No other campaigns",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    } else {
+                        otherCampaigns.forEach { targetCampaign ->
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.SwapHoriz, null, modifier = Modifier.size(20.dp))
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(targetCampaign.name)
+                                    }
+                                },
+                                onClick = {
+                                    showTransferMenu = false
+                                    onTransferClick(targetCampaign)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// --- Transfer / Copy Dialog ---
+@Composable
+private fun TransferCopyDialog(
+    character: Character,
+    sourceCampaignName: String,
+    targetCampaign: Campaign,
+    onDismiss: () -> Unit,
+    onConfirm: (isCopy: Boolean, transferItems: Boolean) -> Unit
+) {
+    var isCopy by remember { mutableStateOf(false) }
+    var transferItems by remember { mutableStateOf(true) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.SwapHoriz, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Transfer Character")
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    "\"${character.name}\" from \"$sourceCampaignName\" to \"${targetCampaign.name}\"",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                HorizontalDivider()
+
+                // Move vs Copy
+                Text("Action:", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = !isCopy,
+                        onClick = { isCopy = false },
+                        label = { Text("Move") },
+                        leadingIcon = { Icon(Icons.Default.SwapHoriz, null, Modifier.size(18.dp)) }
+                    )
+                    FilterChip(
+                        selected = isCopy,
+                        onClick = { isCopy = true },
+                        label = { Text("Copy") },
+                        leadingIcon = { Icon(Icons.Default.ContentCopy, null, Modifier.size(18.dp)) }
+                    )
+                }
+
+                if (isCopy) {
+                    Text(
+                        "A new character copy will be created without player assignment.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                HorizontalDivider()
+
+                // Items transfer
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Transfer items", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            if (transferItems) "${character.items.size} items included" else "No items",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = transferItems,
+                        onCheckedChange = { transferItems = it }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(isCopy, transferItems) }) {
+                Text(if (isCopy) "Copy" else "Move")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

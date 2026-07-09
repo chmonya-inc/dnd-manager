@@ -110,8 +110,19 @@ class KtorRemoteDataSource(
             }
         }
 
+    suspend fun saveCharacterToSession(character: Character, targetSessionId: String): Result<Unit> =
+        safeApiCall {
+            httpClient.post("${baseUrl()}/api/$targetSessionId/characters") {
+                contentType(ContentType.Application.Json)
+                setBody(character)
+            }
+        }
+
     suspend fun deleteCharacter(id: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/characters/$id") }
+
+    suspend fun deleteCharacterFromSession(id: String, sourceSessionId: String): Result<Unit> =
+        safeApiCall { httpClient.delete("${baseUrl()}/api/$sourceSessionId/characters/$id") }
 
     suspend fun getLocations(): Result<List<Location>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/locations") }

@@ -15,5 +15,6 @@ data class SessionsState(
     val previewData: com.dnd.helper.domain.model.InitialData? = null,
     val isLoading: Boolean = false,
     val isPreviewLoading: Boolean = false,
+    val isTransferring: Boolean = false,
     val error: String? = null
 )
