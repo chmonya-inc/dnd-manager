@@ -19,6 +19,7 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import com.dnd.helper.server.routing.configureAuthRouting
 import com.dnd.helper.server.routing.configureCampaignRouting
+import com.dnd.helper.server.routing.configureHealthRouting
 import org.slf4j.event.Level
 import kotlin.time.Duration.Companion.seconds
 
@@ -94,9 +95,7 @@ fun Application.module() {
     }
 
     routing {
-        get("/") {
-            call.respondText("D&D Helper Server is running!")
-        }
+        configureHealthRouting()
         configureAuthRouting()
         configureApiRouting()
         configureCampaignRouting()
