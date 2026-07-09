@@ -77,7 +77,9 @@ class StartViewModel(
             }
             StartEvent.RefreshMyCharacters -> loadMyCharacters()
             StartEvent.Logout -> {
-                authRepository.logout()
+                viewModelScope.launch {
+                    authRepository.logout()
+                }
             }
         }
     }

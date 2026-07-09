@@ -1,6 +1,8 @@
 package com.dnd.helper
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -90,6 +92,7 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
                 )
             }
             composable<CampaignPicker> {
+                val coroutineScope = rememberCoroutineScope()
                 CampaignPickerScreen(
                     onCampaignSelected = {
                         navController.navigate(MainDesktop) {
@@ -97,8 +100,11 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
                         }
                     },
                     onLogout = {
-                        navController.navigate(AuthRoute) {
-                            popUpTo(CampaignPicker) { inclusive = true }
+                        coroutineScope.launch {
+                            authRepository.logout()
+                            navController.navigate(AuthRoute) {
+                                popUpTo(CampaignPicker) { inclusive = true }
+                            }
                         }
                     }
                 )

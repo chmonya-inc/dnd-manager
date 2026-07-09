@@ -14,10 +14,12 @@ import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
+import io.ktor.server.plugins.ratelimit.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import com.dnd.helper.server.routing.configureAuthRouting
 import com.dnd.helper.server.routing.configureCampaignRouting
+import com.dnd.helper.server.routing.configureHealthRouting
 import org.slf4j.event.Level
 import kotlin.time.Duration.Companion.seconds
 
@@ -38,6 +40,15 @@ fun Application.module() {
         timeout = 15.seconds
         maxFrameSize = Long.MAX_VALUE
         masking = false
+    }
+
+    install(RateLimit) {
+        global {
+            rateLimiter(limit = 100, refillPeriod = 60.seconds)
+        }
+        register(RateLimitName("auth")) {
+            rateLimiter(limit = 5, refillPeriod = 60.seconds)
+        }
     }
 
     install(CORS) {
@@ -61,9 +72,9 @@ fun Application.module() {
         jwt("auth-jwt") {
             authHeader { call ->
                 val header = call.request.parseAuthorizationHeader()
-                val token = call.request.queryParameters["token"]
                 if (header != null) return@authHeader header
-                if (token != null) return@authHeader io.ktor.http.auth.HttpAuthHeader.Single("Bearer", token)
+                val wsToken = call.request.headers["Sec-WebSocket-Protocol"]
+                if (wsToken != null) return@authHeader io.ktor.http.auth.HttpAuthHeader.Single("Bearer", wsToken)
                 null
             }
             verifier(
@@ -84,9 +95,7 @@ fun Application.module() {
     }
 
     routing {
-        get("/") {
-            call.respondText("D&D Helper Server is running!")
-        }
+        configureHealthRouting()
         configureAuthRouting()
         configureApiRouting()
         configureCampaignRouting()

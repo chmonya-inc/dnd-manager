@@ -13,5 +13,6 @@ interface AuthRepository {
     fun saveAuthToken(token: String?)
     fun getUserId(): String?
     fun getUserRole(): String?
-    fun logout()
+    /** Calls POST /auth/logout on the server to revoke the refresh token, then clears local storage. */
+    suspend fun logout()
 }

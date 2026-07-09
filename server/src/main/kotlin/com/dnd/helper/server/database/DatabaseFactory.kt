@@ -57,6 +57,7 @@ object DatabaseFactory {
             }
 
             SchemaUtils.createMissingTablesAndColumns(
+                RefreshTokens,
                 Users,
                 Campaigns,
                 Characters,
