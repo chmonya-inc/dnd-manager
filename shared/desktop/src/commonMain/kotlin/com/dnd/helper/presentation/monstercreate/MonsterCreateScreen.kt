@@ -378,6 +378,7 @@ fun MonsterCreateScreen(
     if (showActionDialog) {
         MonsterActionRichDialog(
             type = actionTypeToEdit,
+            damageTypes = state.availableDamageTypes,
             onDismiss = { showActionDialog = false },
             onConfirm = { actionData ->
                 when (actionTypeToEdit) {
@@ -562,6 +563,7 @@ data class ActionDialogData(
 @Composable
 fun MonsterActionRichDialog(
     type: String,
+    damageTypes: List<ApiReferenceDto> = emptyList(),
     onDismiss: () -> Unit,
     onConfirm: (ActionDialogData) -> Unit
 ) {
@@ -599,10 +601,13 @@ fun MonsterActionRichDialog(
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MonsterTextField(
-                        value = data.damageType, 
-                        onValueChange = { data = data.copy(damageType = it) }, 
-                        label = "Dmg Type", 
+                    // Combo-box: suggestions from API but allows any custom damage type
+                    DropdownMenuField(
+                        label = "Dmg Type",
+                        value = data.damageType,
+                        options = damageTypes,
+                        optionLabel = { it.name },
+                        onValueChange = { data = data.copy(damageType = it) },
                         modifier = Modifier.weight(1f)
                     )
                     MonsterTextField(

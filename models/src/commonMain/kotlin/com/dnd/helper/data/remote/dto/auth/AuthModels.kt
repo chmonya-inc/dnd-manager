@@ -62,3 +62,36 @@ data class CampaignDto(
     val ownerId: String,
     val sessionId: String
 )
+
+@Serializable
+data class PendingAssignmentDto(
+    val assignmentId: String,
+    val character: com.dnd.helper.domain.model.Character,
+    val sessionId: String,
+    val campaignName: String?,
+    val status: String,
+    val masterUsername: String? = null
+)
+
+@Serializable
+data class CreateAssignmentRequest(
+    val characterId: String,
+    val sessionId: String,
+    val playerUsername: String
+)
+
+@Serializable
+data class RespondAssignmentRequest(
+    val assignmentId: String,
+    val accept: Boolean
+)
+
+@Serializable
+data class AssignmentStatusDto(
+    val assignmentId: String,
+    val characterId: String,
+    val characterName: String,
+    val sessionId: String,
+    val status: String,
+    val playerUsername: String? = null
+)

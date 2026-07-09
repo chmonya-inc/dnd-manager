@@ -14,6 +14,11 @@ composeCompiler {
     enableIntrinsicRemember = true
 }
 
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.dnd.helper.shared.core.generated.resources"
+}
+
 // ── Read secret from local.properties ──────────────────────────────
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")

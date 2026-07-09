@@ -142,4 +142,60 @@ class SessionsViewModel(
     fun clearError() {
         _state.value = _state.value.copy(error = null)
     }
+
+    fun transferOrCopyCharacter(
+        character: com.dnd.helper.domain.model.Character,
+        sourceSessionId: String,
+        targetCampaign: Campaign,
+        isCopy: Boolean,
+        transferItems: Boolean
+    ) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isTransferring = true, error = null)
+
+            // Build the character for the target session
+            val targetCharacter = if (isCopy) {
+                character.copy(
+                    id = com.dnd.helper.domain.common.IdUtils.generateSessionId(), // new ID for copy
+                    ownerUserId = null,
+                    ownerUsername = null
+                )
+            } else {
+                character.copy()
+            }
+
+            val finalCharacter = if (!transferItems) {
+                targetCharacter.copy(items = emptyList())
+            } else {
+                targetCharacter
+            }
+
+            // 1. Save character to target session
+            val saveResult = remoteDataSource.saveCharacterToSession(finalCharacter, targetCampaign.id)
+            if (saveResult is Result.Error) {
+                _state.value = _state.value.copy(
+                    isTransferring = false,
+                    error = saveResult.error.toUserMessage()
+                )
+                return@launch
+            }
+
+            // 2. If move (not copy), delete from source session
+            if (!isCopy) {
+                val deleteResult = remoteDataSource.deleteCharacterFromSession(character.id, sourceSessionId)
+                if (deleteResult is Result.Error) {
+                    _state.value = _state.value.copy(
+                        isTransferring = false,
+                        error = deleteResult.error.toUserMessage()
+                    )
+                    return@launch
+                }
+            }
+
+            _state.value = _state.value.copy(isTransferring = false)
+
+            // 3. Refresh preview data to reflect the change
+            selectCampaignForPreview(sourceSessionId)
+        }
+    }
 }

@@ -154,3 +154,21 @@ object Logs : Table("logs") {
     val endState = text("end_state")
     val success = bool("success")
 }
+
+/**
+ * Tracks character assignment requests from Master to Player.
+ * - PENDING:   Player hasn't responded yet
+ * - ACCEPTED:  Player accepted; character.userId is set to the player
+ * - REVOKED:   Player rejected; character is removed from player visibility
+ */
+object CharacterAssignments : Table("character_assignments") {
+    val id = varchar("id", 50)
+    val characterId = varchar("character_id", 50)
+    val sessionId = varchar("session_id", 50)
+    val masterId = varchar("master_id", 50)
+    val playerId = varchar("player_id", 50)
+    val status = varchar("status", 20).default("PENDING") // PENDING, ACCEPTED, REVOKED
+    val createdAt = long("created_at")
+    val respondedAt = long("responded_at").nullable()
+    override val primaryKey = PrimaryKey(id)
+}
