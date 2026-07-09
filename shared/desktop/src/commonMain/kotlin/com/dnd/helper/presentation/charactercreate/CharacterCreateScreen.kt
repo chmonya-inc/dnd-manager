@@ -3,12 +3,14 @@ package com.dnd.helper.presentation.charactercreate
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +31,8 @@ import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Shield
@@ -39,10 +43,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
@@ -61,11 +64,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.dnd.helper.theme.DndIcons
@@ -207,16 +212,7 @@ fun CharacterCreateScreen(
                         }
 
                         Spacer(Modifier.height(16.dp))
-                        
-                        CharacterTextField(
-                            value = state.sessionId,
-                            onValueChange = { viewModel.onEvent(CharacterCreateEvent.SessionIdChanged(it)) },
-                            label = "Session ID",
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        
-                        Spacer(Modifier.height(8.dp))
-                        
+
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             CharacterTextField(
                                 value = state.name,
@@ -661,7 +657,6 @@ fun CharacterTextField(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> DropdownMenuField(
     label: String,
@@ -672,16 +667,33 @@ fun <T> DropdownMenuField(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-        modifier = modifier
-    ) {
+
+    val filteredOptions = remember(value, options) {
+        if (value.isBlank()) options.map(optionLabel)
+        else options.map(optionLabel).filter { it.contains(value, ignoreCase = true) }
+    }
+    val isCustomValue = remember(value, options) {
+        value.isNotBlank() && options.map(optionLabel).none { it.equals(value, ignoreCase = true) }
+    }
+
+    Box(modifier = modifier) {
         OutlinedTextField(
             value = value,
-            onValueChange = onValueChange,
+            onValueChange = {
+                onValueChange(it)
+                expanded = true
+            },
             label = { Text(label, color = Color(0xFF4CAF50).copy(alpha = 0.7f)) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            trailingIcon = {
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    tint = Color(0xFF4CAF50),
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable { expanded = !expanded }
+                )
+            },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Color(0xFF4CAF50),
                 unfocusedBorderColor = Color(0xFF2E7D32),
@@ -691,31 +703,49 @@ fun <T> DropdownMenuField(
                 unfocusedTextColor = Color.White,
                 focusedTextColor = Color.White
             ),
-            modifier = Modifier.menuAnchor().fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { if (it.isFocused) expanded = true },
             singleLine = true
         )
-        if (options.isNotEmpty()) {
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.background(Color(0xFF1B241C)).heightIn(max = 400.dp)
-            ) {
-                options.forEach { option ->
-                    val text = optionLabel(option)
-                    DropdownMenuItem(
-                        text = { Text(text, color = Color.White) },
-                        onClick = {
-                            onValueChange(text)
-                            expanded = false
-                        }
-                    )
-                }
+        DropdownMenu(
+            expanded = expanded && (filteredOptions.isNotEmpty() || isCustomValue),
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .background(Color(0xFF1B241C))
+                .heightIn(max = 400.dp)
+                .width(IntrinsicSize.Max),
+            properties = PopupProperties(focusable = false)
+        ) {
+            if (isCustomValue) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            "Использовать: \"$value\"",
+                            color = Color(0xFF81C784),
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
+                    onClick = {
+                        onValueChange(value)
+                        expanded = false
+                    }
+                )
+            }
+            filteredOptions.forEach { optionText ->
+                DropdownMenuItem(
+                    text = { Text(optionText, color = Color.White) },
+                    onClick = {
+                        onValueChange(optionText)
+                        expanded = false
+                    }
+                )
             }
         }
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun <T> MultiSelectDropdownField(
     label: String,
@@ -728,10 +758,15 @@ fun <T> MultiSelectDropdownField(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
-    
-    val filteredOptions = options.map(optionLabel).filter { 
-        it.contains(searchText, ignoreCase = true) && !selectedItems.contains(it) 
+
+    val filteredOptions = remember(searchText, options, selectedItems) {
+        options.map(optionLabel).filter {
+            it.contains(searchText, ignoreCase = true) && !selectedItems.contains(it)
+        }
     }
+    val isCustomValue = searchText.isNotBlank() &&
+        options.map(optionLabel).none { it.equals(searchText, ignoreCase = true) } &&
+        !selectedItems.contains(searchText)
 
     Column(modifier = modifier) {
         if (selectedItems.isNotEmpty()) {
@@ -745,26 +780,38 @@ fun <T> MultiSelectDropdownField(
                         selected = true,
                         onClick = { onRemove(item) },
                         label = { Text(item, color = Color.White) },
-                        trailingIcon = { Icon(androidx.compose.material.icons.Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.size(16.dp), tint = Color.White) },
+                        trailingIcon = {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Remove",
+                                modifier = Modifier.size(16.dp),
+                                tint = Color.White
+                            )
+                        },
                         colors = InputChipDefaults.inputChipColors(selectedContainerColor = Color(0xFF2E7D32))
                     )
                 }
             }
         }
-        
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-            modifier = Modifier.fillMaxWidth()
-        ) {
+
+        Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
                 value = searchText,
-                onValueChange = { 
+                onValueChange = {
                     searchText = it
                     expanded = true
                 },
                 label = { Text("Add $label", color = Color(0xFF4CAF50).copy(alpha = 0.7f)) },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                trailingIcon = {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = Color(0xFF4CAF50),
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clickable { expanded = !expanded }
+                    )
+                },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF4CAF50),
                     unfocusedBorderColor = Color(0xFF2E7D32),
@@ -774,45 +821,39 @@ fun <T> MultiSelectDropdownField(
                     unfocusedTextColor = Color.White,
                     focusedTextColor = Color.White
                 ),
-                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) expanded = true },
                 singleLine = true
             )
-            
-            if (filteredOptions.isNotEmpty()) {
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                    modifier = Modifier.background(Color(0xFF1B241C)).heightIn(max = 400.dp)
-                ) {
-                    filteredOptions.forEach { optionText ->
-                        DropdownMenuItem(
-                            text = { Text(optionText, color = Color.White) },
-                            onClick = {
-                                onAdd(optionText)
-                                searchText = ""
-                                expanded = false
-                            }
-                        )
-                    }
-                    if (searchText.isNotBlank() && !filteredOptions.contains(searchText)) {
-                        DropdownMenuItem(
-                            text = { Text("Add custom: \"$searchText\"", color = Color.White) },
-                            onClick = {
-                                onAdd(searchText)
-                                searchText = ""
-                                expanded = false
-                            }
-                        )
-                    }
-                }
-            } else if (searchText.isNotBlank()) {
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                    modifier = Modifier.background(Color(0xFF1B241C)).heightIn(max = 400.dp)
-                ) {
+            DropdownMenu(
+                expanded = expanded && (filteredOptions.isNotEmpty() || isCustomValue),
+                onDismissRequest = { expanded = false },
+                modifier = Modifier
+                    .background(Color(0xFF1B241C))
+                    .heightIn(max = 400.dp)
+                    .width(IntrinsicSize.Max),
+                properties = PopupProperties(focusable = false)
+            ) {
+                filteredOptions.forEach { optionText ->
                     DropdownMenuItem(
-                        text = { Text("Add custom: \"$searchText\"", color = Color.White) },
+                        text = { Text(optionText, color = Color.White) },
+                        onClick = {
+                            onAdd(optionText)
+                            searchText = ""
+                            expanded = false
+                        }
+                    )
+                }
+                if (isCustomValue) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "Добавить: \"$searchText\"",
+                                color = Color(0xFF81C784),
+                                fontWeight = FontWeight.Medium
+                            )
+                        },
                         onClick = {
                             onAdd(searchText)
                             searchText = ""

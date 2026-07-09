@@ -8,7 +8,6 @@ data class CharacterCreateState(
     // Basic info
     val name: String = "",
     val playerName: String = "",
-    val sessionId: String = "",
     val race: String = "",
     val subrace: String = "",
     val characterClass: String = "",

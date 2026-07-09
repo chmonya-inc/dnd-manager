@@ -6,7 +6,6 @@ import com.dnd.helper.domain.model.ItemRarity
 sealed interface CharacterCreateEvent {
     // Basic info
     data class NameChanged(val value: String) : CharacterCreateEvent
-    data class SessionIdChanged(val value: String) : CharacterCreateEvent
     data class PlayerNameChanged(val value: String) : CharacterCreateEvent
     data class RaceChanged(val value: String) : CharacterCreateEvent
     data class SubraceChanged(val value: String) : CharacterCreateEvent

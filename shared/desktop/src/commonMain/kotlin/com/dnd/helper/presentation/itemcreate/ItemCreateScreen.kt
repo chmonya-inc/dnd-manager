@@ -121,7 +121,10 @@ fun ItemCreateScreen(
                 value = state.rarity.name,
                 options = ItemRarity.entries.map { it.name },
                 optionLabel = { it },
-                onValueChange = { viewModel.onEvent(ItemCreateEvent.RarityChanged(ItemRarity.valueOf(it))) },
+                onValueChange = { text ->
+                    runCatching { ItemRarity.valueOf(text) }.getOrNull()
+                        ?.let { viewModel.onEvent(ItemCreateEvent.RarityChanged(it)) }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -130,9 +133,12 @@ fun ItemCreateScreen(
                 value = state.slot?.name ?: "None",
                 options = EquipmentSlot.entries.map { it.name } + listOf("None"),
                 optionLabel = { it },
-                onValueChange = {
-                    val slot = if (it == "None") null else EquipmentSlot.valueOf(it)
-                    viewModel.onEvent(ItemCreateEvent.SlotChanged(slot))
+                onValueChange = { text ->
+                    val slot = if (text == "None") null
+                               else runCatching { EquipmentSlot.valueOf(text) }.getOrNull()
+                    if (text == "None" || slot != null) {
+                        viewModel.onEvent(ItemCreateEvent.SlotChanged(slot))
+                    }
                 },
                 modifier = Modifier.fillMaxWidth()
             )
