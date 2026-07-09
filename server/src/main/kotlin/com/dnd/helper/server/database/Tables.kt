@@ -11,6 +11,13 @@ val json = Json {
     encodeDefaults = true
 }
 
+object RefreshTokens : Table("refresh_tokens") {
+    val tokenHash = varchar("token_hash", 64) // SHA-256 hex of the raw JWT
+    val userId    = varchar("user_id", 50)
+    val expiresAt = long("expires_at")        // unix millis
+    override val primaryKey = PrimaryKey(tokenHash)
+}
+
 object Users : Table("users") {
     val id = varchar("id", 50)
     val username = varchar("username", 100).uniqueIndex()

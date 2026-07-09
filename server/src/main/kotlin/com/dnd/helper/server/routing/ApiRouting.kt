@@ -74,6 +74,7 @@ fun Route.configureApiRouting() {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 if (!ensureSessionAccess(call, sessionId)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                if (!ensureCharacterOwnership(call, id)) return@delete
                 handleDeleteCharacter(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "characters", id)
                 call.respond(HttpStatusCode.OK)
@@ -97,6 +98,7 @@ fun Route.configureApiRouting() {
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 if (!ensureSessionAccess(call, sessionId)) return@delete
+                if (!ensureMasterRole(call)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteLocation(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "locations", id)
@@ -121,6 +123,7 @@ fun Route.configureApiRouting() {
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 if (!ensureSessionAccess(call, sessionId)) return@delete
+                if (!ensureMasterRole(call)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteBattlefield(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "battlefields", id)
@@ -145,6 +148,7 @@ fun Route.configureApiRouting() {
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 if (!ensureSessionAccess(call, sessionId)) return@delete
+                if (!ensureMasterRole(call)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteMonster(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "monsters", id)
@@ -169,6 +173,7 @@ fun Route.configureApiRouting() {
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 if (!ensureSessionAccess(call, sessionId)) return@delete
+                if (!ensureMasterRole(call)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteNpc(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "npcs", id)
@@ -193,6 +198,7 @@ fun Route.configureApiRouting() {
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 if (!ensureSessionAccess(call, sessionId)) return@delete
+                if (!ensureMasterRole(call)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteMusic(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "music")
@@ -233,6 +239,7 @@ fun Route.configureApiRouting() {
             delete("/{id}") {
                 val sessionId = call.parameters["sessionId"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 if (!ensureSessionAccess(call, sessionId)) return@delete
+                if (!ensureMasterRole(call)) return@delete
                 val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
                 handleDeleteEvent(id, sessionId)
                 SessionManager.notifyUpdate(sessionId, "events")
@@ -269,6 +276,40 @@ private suspend fun ensureSessionAccess(call: ApplicationCall, sessionId: String
         // (This matches current app behavior where players join by ID)
     }
     
+    return true
+}
+
+private suspend fun ensureMasterRole(call: ApplicationCall): Boolean {
+    val principal = call.principal<JWTPrincipal>()
+    val userId = principal?.payload?.getClaim("userId")?.asString() ?: return false
+    
+    val userRole = dbQuery {
+        Users.selectAll().where { Users.id eq userId }.singleOrNull()?.get(Users.role)
+    }
+    
+    if (userRole != "MASTER") {
+        call.respond(HttpStatusCode.Forbidden, "Only a Master can perform this action")
+        return false
+    }
+    return true
+}
+
+private suspend fun ensureCharacterOwnership(call: ApplicationCall, characterId: String): Boolean {
+    val principal = call.principal<JWTPrincipal>()
+    val userId = principal?.payload?.getClaim("userId")?.asString() ?: return false
+    
+    val userRole = dbQuery {
+        Users.selectAll().where { Users.id eq userId }.singleOrNull()?.get(Users.role)
+    }
+    if (userRole == "MASTER") return true // Masters can delete any character in their session
+    
+    val charOwnerId = dbQuery {
+        Characters.selectAll().where { Characters.id eq characterId }.singleOrNull()?.get(Characters.userId)
+    }
+    if (charOwnerId != null && charOwnerId != userId) {
+        call.respond(HttpStatusCode.Forbidden, "You do not own this character")
+        return false
+    }
     return true
 }
 

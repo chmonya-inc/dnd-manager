@@ -14,6 +14,7 @@ import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
+import io.ktor.server.plugins.ratelimit.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import com.dnd.helper.server.routing.configureAuthRouting
@@ -40,6 +41,15 @@ fun Application.module() {
         masking = false
     }
 
+    install(RateLimit) {
+        global {
+            rateLimiter(limit = 100, refillPeriod = 60.seconds)
+        }
+        register(RateLimitName("auth")) {
+            rateLimiter(limit = 5, refillPeriod = 60.seconds)
+        }
+    }
+
     install(CORS) {
         anyHost()
         allowHeader(HttpHeaders.ContentType)
@@ -61,9 +71,9 @@ fun Application.module() {
         jwt("auth-jwt") {
             authHeader { call ->
                 val header = call.request.parseAuthorizationHeader()
-                val token = call.request.queryParameters["token"]
                 if (header != null) return@authHeader header
-                if (token != null) return@authHeader io.ktor.http.auth.HttpAuthHeader.Single("Bearer", token)
+                val wsToken = call.request.headers["Sec-WebSocket-Protocol"]
+                if (wsToken != null) return@authHeader io.ktor.http.auth.HttpAuthHeader.Single("Bearer", wsToken)
                 null
             }
             verifier(

@@ -18,10 +18,12 @@ dependencies {
     implementation(libs.ktor.server.calllogging)
     implementation(libs.ktor.server.websockets)
     implementation(libs.ktor.server.statuspages)
+    implementation(libs.ktor.server.rate.limit)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.server.auth)
     implementation(libs.ktor.server.auth.jwt)
     implementation(libs.jbcrypt)
+    implementation(libs.argon2)
     
     implementation(libs.exposed.core)
     implementation(libs.exposed.dao)

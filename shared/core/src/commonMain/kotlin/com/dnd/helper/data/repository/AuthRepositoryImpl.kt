@@ -57,7 +57,21 @@ class AuthRepositoryImpl(
 
     override fun getUserRole(): String? = storage.getUserRole()
 
-    override fun logout() {
+    override suspend fun logout() {
+        val refreshToken = storage.getRefreshToken()
+        // Best-effort: tell the server to revoke the refresh token.
+        // We clear local storage regardless of network outcome.
+        if (!refreshToken.isNullOrBlank()) {
+            try {
+                client.post("${baseUrl()}/auth/logout") {
+                    contentType(ContentType.Application.Json)
+                    setBody(RefreshRequest(refreshToken))
+                }
+            } catch (_: Exception) {
+                // Network failure — token will naturally expire server-side;
+                // local tokens are still cleared below.
+            }
+        }
         storage.saveAuthToken(null)
         storage.saveRefreshToken(null)
         storage.saveUserId(null)
