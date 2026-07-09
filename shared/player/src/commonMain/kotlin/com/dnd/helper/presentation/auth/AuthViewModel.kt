@@ -27,6 +27,24 @@ class AuthViewModel(
             is AuthEvent.SetRequiredRole -> _state.update { it.copy(requiredRole = event.role) }
             AuthEvent.Submit -> submit()
             AuthEvent.ClearError -> _state.update { it.copy(error = null, errorRoleMismatch = null) }
+            AuthEvent.PasteUsername -> pasteUsername()
+            AuthEvent.PastePassword -> pastePassword()
+        }
+    }
+
+    private fun pasteUsername() {
+        viewModelScope.launch {
+            com.dnd.helper.di.pasteFromClipboard()?.let { text ->
+                _state.update { it.copy(username = text) }
+            }
+        }
+    }
+
+    private fun pastePassword() {
+        viewModelScope.launch {
+            com.dnd.helper.di.pasteFromClipboard()?.let { text ->
+                _state.update { it.copy(password = text) }
+            }
         }
     }
 

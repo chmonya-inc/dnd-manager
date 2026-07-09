@@ -16,6 +16,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AuthScreen(
     onAuthSuccess: () -> Unit,
     forceMasterRole: Boolean = false,
+    onSettingsClick: (() -> Unit)? = null,
     viewModel: AuthViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -42,6 +43,21 @@ fun AuthScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
+            if (isDesktop && onSettingsClick != null) {
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = DndIcons.Filled.Build,
+                        contentDescription = "Settings",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth(if (isDesktop) 0.4f else 0.9f)
@@ -89,7 +105,15 @@ fun AuthScreen(
                         label = { Text("Username") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium
+                        shape = MaterialTheme.shapes.medium,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.onEvent(AuthEvent.PasteUsername) }) {
+                                Icon(
+                                    imageVector = DndIcons.Filled.ContentPaste,
+                                    contentDescription = "Paste"
+                                )
+                            }
+                        }
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -101,7 +125,15 @@ fun AuthScreen(
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium
+                        shape = MaterialTheme.shapes.medium,
+                        trailingIcon = {
+                            IconButton(onClick = { viewModel.onEvent(AuthEvent.PastePassword) }) {
+                                Icon(
+                                    imageVector = DndIcons.Filled.ContentPaste,
+                                    contentDescription = "Paste"
+                                )
+                            }
+                        }
                     )
 
                     if (!state.isLoginMode && forceMasterRole) {

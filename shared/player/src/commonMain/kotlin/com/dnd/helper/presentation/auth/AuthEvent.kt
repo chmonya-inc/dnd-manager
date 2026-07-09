@@ -9,4 +9,6 @@ sealed class AuthEvent {
     data class SetRequiredRole(val role: String) : AuthEvent()
     object Submit : AuthEvent()
     object ClearError : AuthEvent()
+    object PasteUsername : AuthEvent()
+    object PastePassword : AuthEvent()
 }

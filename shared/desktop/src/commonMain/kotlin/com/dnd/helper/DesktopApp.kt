@@ -1,6 +1,6 @@
 package com.dnd.helper
 
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -66,6 +66,14 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
             AuthRoute
         }
 
+        var showSettings by remember { mutableStateOf(false) }
+
+        if (showSettings) {
+            com.dnd.helper.presentation.desktop.SettingsDialog(
+                onDismiss = { showSettings = false }
+            )
+        }
+
         NavHost(
             navController = navController,
             startDestination = startDest
@@ -77,7 +85,8 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
                         navController.navigate(CampaignPicker) {
                             popUpTo(AuthRoute) { inclusive = true }
                         }
-                    }
+                    },
+                    onSettingsClick = { showSettings = true }
                 )
             }
             composable<CampaignPicker> {
