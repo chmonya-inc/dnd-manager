@@ -167,5 +167,16 @@ actual fun readFileContent(path: String): String? {
 }
 
 actual suspend fun pasteFromClipboard(): String? {
-    return null
+    return try {
+        val context = org.koin.core.context.GlobalContext.get().get<Context>()
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        if (clipboard.hasPrimaryClip()) {
+            val item = clipboard.primaryClip?.getItemAt(0)
+            item?.text?.toString()
+        } else {
+            null
+        }
+    } catch (e: Exception) {
+        null
+    }
 }
