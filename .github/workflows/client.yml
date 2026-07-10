@@ -23,11 +23,17 @@ on:
         required: true
         type: string
       backend-url-android:
-        required: true
+        required: false
         type: string
+        default: ""
       backend-url-desktop:
-        required: true
+        required: false
         type: string
+        default: ""
+      artifact-name:
+        required: false
+        type: string
+        default: "artifact"
     outputs:
       artifact-id:
         description: "ID of the uploaded MSI artifact"
@@ -67,6 +73,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         id: upload-artifact
         with:
+          name: ${{ inputs.artifact-name }}
           path: ${{ inputs.build-path }}
           archive: false
           if-no-files-found: error
