@@ -48,7 +48,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -62,7 +62,7 @@ fun SettingsScreen(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
-        
+
         HorizontalDivider()
 
         // Connection Settings Section
@@ -89,7 +89,7 @@ fun SettingsScreen(
         }
 
         HorizontalDivider()
-        
+
         // AI Settings Section
         SettingsSection(
             title = "Neural Network & AI",
@@ -106,15 +106,15 @@ fun SettingsScreen(
                     shape = MaterialTheme.shapes.medium,
                     leadingIcon = { Icon(Icons.Default.Dns, null) }
                 )
-                
+
                 Text(
                     "This address is used for all image generation requests.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 Spacer(Modifier.height(8.dp))
-                
+
                 // ComfyUI Workflow Picker
                 Column {
                     Text(
@@ -150,7 +150,7 @@ fun SettingsScreen(
                                 )
                             }
                         }
-                        
+
                         Button(
                             onClick = {
                                 val path = pickFile("Select ComfyUI Workflow JSON", listOf(".json"))
@@ -188,7 +188,7 @@ fun SettingsScreen(
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = state.generationSteps.toString(),
-                        onValueChange = { 
+                        onValueChange = {
                             val steps = it.toIntOrNull() ?: 1
                             viewModel.updateGenerationSteps(steps.coerceIn(1, 100))
                         },
@@ -208,7 +208,7 @@ fun SettingsScreen(
                 }
             }
         }
-        
+
         HorizontalDivider()
 
         // Account Section
@@ -221,9 +221,9 @@ fun SettingsScreen(
                     "Manage your master account session.",
                     style = MaterialTheme.typography.bodyMedium
                 )
-                
+
                 Button(
-                    onClick = { 
+                    onClick = {
                         viewModel.logout()
                         onLogout()
                     },
@@ -238,9 +238,9 @@ fun SettingsScreen(
                 }
             }
         }
-        
+
         HorizontalDivider()
-        
+
         // App Info
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -279,7 +279,7 @@ private fun SettingsSection(
                 fontWeight = FontWeight.Bold
             )
         }
-        
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.large,

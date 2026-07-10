@@ -1,7 +1,7 @@
 package com.dnd.helper.domain.repository
 
-import kotlinx.coroutines.flow.StateFlow
 import com.dnd.helper.data.remote.GenerationType
+import kotlinx.coroutines.flow.StateFlow
 
 data class GenerationTask(
     val id: String,

@@ -3,11 +3,29 @@ package com.dnd.helper.presentation.desktop
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dnd.helper.data.remote.DndApiDataSource
-import com.dnd.helper.data.remote.dto.character.*
-import com.dnd.helper.data.remote.dto.spell.*
-import com.dnd.helper.data.remote.dto.equipment.*
-import com.dnd.helper.data.remote.dto.monster.*
-import com.dnd.helper.data.remote.dto.game.*
+import com.dnd.helper.data.remote.dto.character.AbilityScoreDto
+import com.dnd.helper.data.remote.dto.character.AlignmentDto
+import com.dnd.helper.data.remote.dto.character.BackgroundDto
+import com.dnd.helper.data.remote.dto.character.ClassDto
+import com.dnd.helper.data.remote.dto.character.DndSkillDto
+import com.dnd.helper.data.remote.dto.character.FeatDto
+import com.dnd.helper.data.remote.dto.character.FeatureDto
+import com.dnd.helper.data.remote.dto.character.LanguageDto
+import com.dnd.helper.data.remote.dto.character.ProficiencyDto
+import com.dnd.helper.data.remote.dto.character.RaceDto
+import com.dnd.helper.data.remote.dto.character.SubclassDto
+import com.dnd.helper.data.remote.dto.character.SubraceDto
+import com.dnd.helper.data.remote.dto.character.TraitDto
+import com.dnd.helper.data.remote.dto.equipment.EquipmentCategoryDto
+import com.dnd.helper.data.remote.dto.equipment.MagicItemDto
+import com.dnd.helper.data.remote.dto.equipment.WeaponPropertyDto
+import com.dnd.helper.data.remote.dto.game.ConditionDto
+import com.dnd.helper.data.remote.dto.game.DamageTypeDto
+import com.dnd.helper.data.remote.dto.game.RuleDto
+import com.dnd.helper.data.remote.dto.game.RuleSectionDto
+import com.dnd.helper.data.remote.dto.monster.MonsterDto
+import com.dnd.helper.data.remote.dto.spell.MagicSchoolDto
+import com.dnd.helper.data.remote.dto.spell.SpellDto
 import com.dnd.helper.domain.common.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -25,7 +43,7 @@ data class RulesLibraryState(
     val selectedCategory: RuleCategory = RuleCategory.CharacterData,
     val searchQuery: String = "",
     val isLoading: Boolean = false,
-    
+
     // Character Data
     val abilityScores: List<AbilityScoreDto> = emptyList(),
     val alignments: List<AlignmentDto> = emptyList(),
@@ -88,7 +106,7 @@ class RulesLibraryViewModel(
     private fun loadData() {
         viewModelScope.launch(Dispatchers.Default) {
             _state.update { it.copy(isLoading = true) }
-            
+
             // Character Data
             val abilityScoresAsync = async { fetchAll({ api.getAbilityScores() }, { api.getAbilityScore(it) }) }
             val alignmentsAsync = async { fetchAll({ api.getAlignments() }, { api.getAlignment(it) }) }
@@ -109,7 +127,12 @@ class RulesLibraryViewModel(
             val magicSchoolsAsync = async { fetchAll({ api.getMagicSchools() }, { api.getMagicSchool(it) }) }
 
             // Equipment
-            val equipmentCategoriesAsync = async { fetchAll({ api.getEquipmentCategories() }, { api.getEquipmentCategory(it) }) }
+            val equipmentCategoriesAsync = async {
+                fetchAll(
+                    { api.getEquipmentCategories() },
+                    { api.getEquipmentCategory(it) }
+                )
+            }
             val magicItemsAsync = async { fetchAll({ api.getMagicItems() }, { api.getMagicItem(it) }) }
             val weaponPropertiesAsync = async { fetchAll({ api.getWeaponProperties() }, { api.getWeaponProperty(it) }) }
 
@@ -124,32 +147,34 @@ class RulesLibraryViewModel(
             val rulesAsync = async { fetchAll({ api.getRules() }, { api.getRule(it) }) }
             val ruleSectionsAsync = async { fetchAll({ api.getRuleSections() }, { api.getRuleSection(it) }) }
 
-            _state.update { it.copy(
-                abilityScores = abilityScoresAsync.await(),
-                alignments = alignmentsAsync.await(),
-                backgrounds = backgroundsAsync.await(),
-                classes = classesAsync.await(),
-                races = racesAsync.await(),
-                subraces = subracesAsync.await(),
-                subclasses = subclassesAsync.await(),
-                traits = traitsAsync.await(),
-                features = featuresAsync.await(),
-                feats = featsAsync.await(),
-                skills = skillsAsync.await(),
-                proficiencies = proficienciesAsync.await(),
-                languages = languagesAsync.await(),
-                spells = spellsAsync.await(),
-                magicSchools = magicSchoolsAsync.await(),
-                equipmentCategories = equipmentCategoriesAsync.await(),
-                magicItems = magicItemsAsync.await(),
-                weaponProperties = weaponPropertiesAsync.await(),
-                monsters = monstersAsync.await(),
-                conditions = conditionsAsync.await(),
-                damageTypes = damageTypesAsync.await(),
-                rules = rulesAsync.await(),
-                ruleSections = ruleSectionsAsync.await(),
-                isLoading = false
-            ) }
+            _state.update {
+                it.copy(
+                    abilityScores = abilityScoresAsync.await(),
+                    alignments = alignmentsAsync.await(),
+                    backgrounds = backgroundsAsync.await(),
+                    classes = classesAsync.await(),
+                    races = racesAsync.await(),
+                    subraces = subracesAsync.await(),
+                    subclasses = subclassesAsync.await(),
+                    traits = traitsAsync.await(),
+                    features = featuresAsync.await(),
+                    feats = featsAsync.await(),
+                    skills = skillsAsync.await(),
+                    proficiencies = proficienciesAsync.await(),
+                    languages = languagesAsync.await(),
+                    spells = spellsAsync.await(),
+                    magicSchools = magicSchoolsAsync.await(),
+                    equipmentCategories = equipmentCategoriesAsync.await(),
+                    magicItems = magicItemsAsync.await(),
+                    weaponProperties = weaponPropertiesAsync.await(),
+                    monsters = monstersAsync.await(),
+                    conditions = conditionsAsync.await(),
+                    damageTypes = damageTypesAsync.await(),
+                    rules = rulesAsync.await(),
+                    ruleSections = ruleSectionsAsync.await(),
+                    isLoading = false
+                )
+            }
         }
     }
 

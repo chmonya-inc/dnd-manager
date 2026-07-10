@@ -22,7 +22,18 @@ allprojects {
         buildUponDefaultConfig = true
         autoCorrect = true
         config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
-        baseline = file("$projectDir/detekt-baseline.xml")
+        source.setFrom(
+            "src/commonMain/kotlin",
+            "src/androidMain/kotlin",
+            "src/jvmMain/kotlin",
+            "src/desktopMain/kotlin",
+            "src/wasmJsMain/kotlin",
+            "src/main/kotlin"
+        )
+    }
+
+    dependencies {
+        "detektPlugins"("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.7")
     }
 }
 

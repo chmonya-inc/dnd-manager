@@ -1,16 +1,34 @@
 package com.dnd.helper.data.remote
 
-import io.ktor.client.*
-import io.ktor.client.plugins.websocket.*
-import io.ktor.client.request.*
-import io.ktor.client.request.forms.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.websocket.*
 import com.dnd.helper.data.config.GeneratedConfig
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.readRawBytes
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
+import io.ktor.websocket.Frame
+import io.ktor.websocket.readText
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import kotlin.random.Random
 
 @Serializable
@@ -171,7 +189,7 @@ class AiImageService(
     """.trimIndent()
 
     suspend fun generateImage(
-        promptText: String, 
+        promptText: String,
         type: GenerationType = GenerationType.CHARACTER,
         customWidth: Int? = null,
         customHeight: Int? = null,
@@ -186,14 +204,14 @@ class AiImageService(
                 GenerationType.BATTLEFIELD -> Pair(2048, 2048)
                 GenerationType.SKILL, GenerationType.ITEM -> Pair(256, 256)
             }
-            
+
             val width = customWidth ?: defaultWidth
             val height = customHeight ?: defaultHeight
 
-            println("Generating image with prompt: $promptText and size: ${width}x${height}")
-            
+            println("Generating image with prompt: $promptText and size: ${width}x$height")
+
             val workflow = (storage.getComfyUiWorkflow() ?: json.parseToJsonElement(workflowJson).jsonObject).toMutableMap()
-            
+
             // Dynamically find and update nodes
             for (nodeId in workflow.keys) {
                 val node = workflow[nodeId]?.jsonObject?.toMutableMap() ?: continue
@@ -250,20 +268,22 @@ class AiImageService(
             }
 
             // 1. Queue prompt
-            val queueResponse: HttpResponse = httpClient.post("http://${serverAddress}/prompt") {
+            val queueResponse: HttpResponse = httpClient.post("http://$serverAddress/prompt") {
                 contentType(ContentType.Application.Json)
-                setBody(buildJsonObject {
-                    put("prompt", JsonObject(workflow))
-                    put("client_id", requestClientId)
-                })
+                setBody(
+                    buildJsonObject {
+                        put("prompt", JsonObject(workflow))
+                        put("client_id", requestClientId)
+                    }
+                )
             }
-            
+
             val promptId = json.parseToJsonElement(queueResponse.bodyAsText()).jsonObject["prompt_id"]?.jsonPrimitive?.content ?: return null
             onRemoteIdGenerated?.invoke(promptId)
-            
+
             // 2. Wait for completion via WebSocket
             var completed = false
-            httpClient.webSocket("ws://${serverAddress}/ws?clientId=${requestClientId}") {
+            httpClient.webSocket("ws://$serverAddress/ws?clientId=$requestClientId") {
                 while (!completed) {
                     val frame = incoming.receive()
                     if (frame is Frame.Text) {
@@ -277,16 +297,16 @@ class AiImageService(
                     }
                 }
             }
-            
+
             // 3. Get history
-            val historyResponse: HttpResponse = httpClient.get("http://${serverAddress}/history/${promptId}")
+            val historyResponse: HttpResponse = httpClient.get("http://$serverAddress/history/$promptId")
             val history = json.parseToJsonElement(historyResponse.bodyAsText()).jsonObject[promptId]?.jsonObject ?: return null
             val outputs = history["outputs"]?.jsonObject ?: return null
-            
+
             var filename = ""
             var subfolder = ""
             var folderType = ""
-            
+
             for (nodeId in outputs.keys) {
                 val nodeOutput = outputs[nodeId]?.jsonObject
                 if (nodeOutput?.containsKey("images") == true) {
@@ -297,20 +317,19 @@ class AiImageService(
                     break
                 }
             }
-            
+
             if (filename.isEmpty()) return null
-            
+
             // 4. Download image
-            val imageResponse: HttpResponse = httpClient.get("http://${serverAddress}/view") {
+            val imageResponse: HttpResponse = httpClient.get("http://$serverAddress/view") {
                 parameter("filename", filename)
                 parameter("subfolder", subfolder)
                 parameter("type", folderType)
             }
             val imageBytes = imageResponse.readRawBytes()
-            
+
             // 5. Upload to ImgBB
             return uploadToImgbb(imageBytes)
-            
         } catch (e: Exception) {
             println("Error generating image: ${e.message}")
             return null
@@ -323,13 +342,17 @@ class AiImageService(
                 url = "https://api.imgbb.com/1/upload",
                 formData = formData {
                     append("key", imgbbApiKey)
-                    append("image", imageBytes, Headers.build {
-                        append(HttpHeaders.ContentType, "image/png")
-                        append(HttpHeaders.ContentDisposition, "filename=\"image.png\"")
-                    })
+                    append(
+                        "image",
+                        imageBytes,
+                        Headers.build {
+                            append(HttpHeaders.ContentType, "image/png")
+                            append(HttpHeaders.ContentDisposition, "filename=\"image.png\"")
+                        }
+                    )
                 }
             )
-            
+
             val result = json.decodeFromString<ImgbbResponse>(response.bodyAsText())
             // Try to get the most direct image URL available in the response
             val directUrl = result.data?.image?.url ?: result.data?.displayUrl ?: result.data?.url

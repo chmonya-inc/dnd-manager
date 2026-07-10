@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,8 +32,6 @@ import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -109,7 +109,7 @@ fun MainDesktopScreen(
     ) {
         com.dnd.helper.theme.DndHelperTheme {
             PlayerViewContent(
-                activeItems = activeItems, 
+                activeItems = activeItems,
                 showStats = showStats,
                 onCloseRequest = { presentationViewModel.setWindowOpen(false) }
             )
@@ -130,14 +130,38 @@ fun MainDesktopScreen(
             .onPreviewKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown && keyEvent.isCtrlPressed) {
                     when (keyEvent.key) {
-                        Key.One -> { selectedTab = DesktopTab.Characters; true }
-                        Key.Two -> { selectedTab = DesktopTab.Library; true }
-                        Key.Three -> { selectedTab = DesktopTab.Creator; true }
-                        Key.Four -> { selectedTab = DesktopTab.Presenter; true }
-                        Key.Five -> { selectedTab = DesktopTab.Logs; true }
-                        Key.Six -> { selectedTab = DesktopTab.Settings; true }
-                        Key.M -> { showMusicPlayer = !showMusicPlayer; true }
-                        Key.D -> { showDiceDialog = !showDiceDialog; true }
+                        Key.One -> {
+                            selectedTab = DesktopTab.Characters
+                            true
+                        }
+                        Key.Two -> {
+                            selectedTab = DesktopTab.Library
+                            true
+                        }
+                        Key.Three -> {
+                            selectedTab = DesktopTab.Creator
+                            true
+                        }
+                        Key.Four -> {
+                            selectedTab = DesktopTab.Presenter
+                            true
+                        }
+                        Key.Five -> {
+                            selectedTab = DesktopTab.Logs
+                            true
+                        }
+                        Key.Six -> {
+                            selectedTab = DesktopTab.Settings
+                            true
+                        }
+                        Key.M -> {
+                            showMusicPlayer = !showMusicPlayer
+                            true
+                        }
+                        Key.D -> {
+                            showDiceDialog = !showDiceDialog
+                            true
+                        }
                         else -> false
                     }
                 } else {
@@ -157,14 +181,14 @@ fun MainDesktopScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Spacer(Modifier.weight(1f))
-                    
+
                     // Primary tabs
                     primaryTabs.forEach { tab ->
                         NavigationRailItem(
                             selected = selectedTab == tab,
-                            onClick = { 
+                            onClick = {
                                 selectedTab = tab
-                                if (tab != DesktopTab.Creator) initialCreatorType = null 
+                                if (tab != DesktopTab.Creator) initialCreatorType = null
                             },
                             icon = { Icon(tab.icon, contentDescription = tab.title) },
                             label = { Text(tab.title) }
@@ -183,15 +207,15 @@ fun MainDesktopScreen(
                     secondaryTabs.forEach { tab ->
                         NavigationRailItem(
                             selected = selectedTab == tab,
-                            onClick = { 
+                            onClick = {
                                 selectedTab = tab
-                                if (tab != DesktopTab.Creator) initialCreatorType = null 
+                                if (tab != DesktopTab.Creator) initialCreatorType = null
                             },
                             icon = { Icon(tab.icon, contentDescription = tab.title) },
                             label = { Text(tab.title) }
                         )
                     }
-                    
+
                     Spacer(Modifier.weight(1f))
 
                     // Music Player Button
@@ -266,9 +290,9 @@ fun MainDesktopScreen(
                             CharactersSplitPane(
                                 selectedCharacterId = selectedCharacterId,
                                 onCharacterSelected = { selectedCharacterId = it },
-                                onCreateCharacter = { 
+                                onCreateCharacter = {
                                     initialCreatorType = CreatorType.Character()
-                                    selectedTab = DesktopTab.Creator 
+                                    selectedTab = DesktopTab.Creator
                                 },
                                 onEditCharacter = { character ->
                                     initialCreatorType = CreatorType.Character(character)
@@ -369,9 +393,10 @@ fun CharactersSplitPane(
         // Right Panel: Character Detail (70%)
         Box(modifier = Modifier.fillMaxSize()) {
             if (selectedCharacterId != null) {
-                val viewModel: com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel = koinViewModel(key = selectedCharacterId) {
-                    parametersOf(selectedCharacterId)
-                }
+                val viewModel: com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel =
+                    koinViewModel(key = selectedCharacterId) {
+                        parametersOf(selectedCharacterId)
+                    }
                 MasterCharacterDetailScreen(
                     viewModel = viewModel,
                     onEditClick = onEditCharacter

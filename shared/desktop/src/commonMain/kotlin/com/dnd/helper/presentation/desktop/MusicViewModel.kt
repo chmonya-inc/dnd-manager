@@ -58,13 +58,13 @@ class MusicViewModel(
                     if (_state.value.isPlaying) {
                         val currentPos = audioPlayer.getCurrentPosition()
                         val duration = audioPlayer.getDuration()
-                        
-                        // Improved end detection: 
+
+                        // Improved end detection:
                         // Only stop if we have a duration and we've reached it.
                         // Desktop streaming doesn't give a reliable "finished" signal,
                         // so we rely on position vs duration.
                         val isAtEnd = duration > 0 && currentPos >= duration - 500
-                        
+
                         if (isAtEnd) {
                             // Song naturally finished
                             if (_state.value.isRepeating) {

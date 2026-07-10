@@ -61,7 +61,7 @@ fun SpellDetailDialog(
     onEvent: (com.dnd.helper.presentation.characterdetail.CharacterDetailEvent) -> Unit = {}
 ) {
     var editedSpell by remember { mutableStateOf(spell) }
-    
+
     // Sync editedSpell when spell from state changes (e.g. after generation completes)
     LaunchedEffect(spell) {
         editedSpell = spell
@@ -69,13 +69,20 @@ fun SpellDetailDialog(
 
     // Check if generating
     val isGenerating = editedSpell.iconUrl?.startsWith("generating:") == true
-    
-    var customPrompt by remember { mutableStateOf(PromptGenerator.getFullPrompt("${editedSpell.name}, ${editedSpell.school} spell. ${editedSpell.description}", GenerationType.SKILL)) }
+
+    var customPrompt by remember {
+        mutableStateOf(
+            PromptGenerator.getFullPrompt(
+                "${editedSpell.name}, ${editedSpell.school} spell. ${editedSpell.description}",
+                GenerationType.SKILL
+            )
+        )
+    }
 
     LaunchedEffect(editedSpell.name, editedSpell.school, editedSpell.description) {
         customPrompt = PromptGenerator.getFullPrompt("${editedSpell.name}, ${editedSpell.school} spell. ${editedSpell.description}".trim(), GenerationType.SKILL)
     }
-    
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
@@ -100,7 +107,6 @@ fun SpellDetailDialog(
                         SpellIconBox(
                             iconUrl = editedSpell.displayIconUrl,
                             tint = getSpellDamageColor(editedSpell.damageType),
-                            bgTint = getSpellDamageColor(editedSpell.damageType).copy(alpha = 0.15f),
                             size = 78.dp,
                             isGenerating = isGenerating
                         )
@@ -109,7 +115,7 @@ fun SpellDetailDialog(
                             if (isMasterMode) {
                                 OutlinedTextField(
                                     value = editedSpell.name,
-                                    onValueChange = { 
+                                    onValueChange = {
                                         editedSpell = editedSpell.copy(name = it)
                                         onUpdate(editedSpell)
                                     },
@@ -140,17 +146,37 @@ fun SpellDetailDialog(
 
                 if (isMasterMode) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(value = editedSpell.iconUrl ?: "", onValueChange = { editedSpell = editedSpell.copy(iconUrl = it.ifBlank { null }); onUpdate(editedSpell) }, label = { Text("Icon URL") }, modifier = Modifier.fillMaxWidth())
-                        
+                        OutlinedTextField(value = editedSpell.iconUrl ?: "", onValueChange = {
+                            editedSpell = editedSpell.copy(
+                                iconUrl = it.ifBlank {
+                                    null
+                                }
+                            )
+                            onUpdate(editedSpell)
+                        }, label = { Text("Icon URL") }, modifier = Modifier.fillMaxWidth())
+
                         // AI Generation Section
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                            ),
                             shape = MaterialTheme.shapes.medium,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("AI Icon Generation", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    "AI Icon Generation",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
                                     OutlinedTextField(
                                         value = customPrompt,
                                         onValueChange = { customPrompt = it },
@@ -160,18 +186,29 @@ fun SpellDetailDialog(
                                         shape = MaterialTheme.shapes.medium,
                                         textStyle = MaterialTheme.typography.bodySmall
                                     )
-                                    
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                         IconButton(
-                                            onClick = { 
-                                                onEvent(com.dnd.helper.presentation.characterdetail.CharacterDetailEvent.GenerateSpellImage(editedSpell.id))
+                                            onClick = {
+                                                onEvent(
+                                                    com.dnd.helper.presentation.characterdetail.CharacterDetailEvent.GenerateSpellImage(
+                                                        editedSpell.id
+                                                    )
+                                                )
                                             },
                                             enabled = !isGenerating
                                         ) {
                                             if (isGenerating) {
-                                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(24.dp),
+                                                    strokeWidth = 2.dp
+                                                )
                                             } else {
-                                                Icon(DndIcons.Filled.AutoAwesome, "Generate Icon", tint = MaterialTheme.colorScheme.primary)
+                                                Icon(
+                                                    DndIcons.Filled.AutoAwesome,
+                                                    "Generate Icon",
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
                                             }
                                         }
                                     }
@@ -179,14 +216,48 @@ fun SpellDetailDialog(
                             }
                         }
 
-                        OutlinedTextField(value = editedSpell.level.toString(), onValueChange = { editedSpell = editedSpell.copy(level = it.toIntOrNull() ?: 0); onUpdate(editedSpell) }, label = { Text("Level") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                        OutlinedTextField(value = editedSpell.damageType, onValueChange = { editedSpell = editedSpell.copy(damageType = it); onUpdate(editedSpell) }, label = { Text("Damage Type") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = editedSpell.damage, onValueChange = { editedSpell = editedSpell.copy(damage = it); onUpdate(editedSpell) }, label = { Text("Damage") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = editedSpell.resourceCost, onValueChange = { editedSpell = editedSpell.copy(resourceCost = it); onUpdate(editedSpell) }, label = { Text("Cost") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = editedSpell.castingTime, onValueChange = { editedSpell = editedSpell.copy(castingTime = it); onUpdate(editedSpell) }, label = { Text("Casting") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = editedSpell.range, onValueChange = { editedSpell = editedSpell.copy(range = it); onUpdate(editedSpell) }, label = { Text("Range") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = editedSpell.duration, onValueChange = { editedSpell = editedSpell.copy(duration = it); onUpdate(editedSpell) }, label = { Text("Duration") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = editedSpell.description, onValueChange = { editedSpell = editedSpell.copy(description = it); onUpdate(editedSpell) }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+                        OutlinedTextField(
+                            value = editedSpell.level.toString(),
+                            onValueChange = {
+                                editedSpell = editedSpell.copy(level = it.toIntOrNull() ?: 0)
+                                onUpdate(editedSpell)
+                            },
+                            label = {
+                                Text("Level")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            )
+                        )
+                        OutlinedTextField(value = editedSpell.damageType, onValueChange = {
+                            editedSpell = editedSpell.copy(damageType = it)
+                            onUpdate(editedSpell)
+                        }, label = { Text("Damage Type") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSpell.damage, onValueChange = {
+                            editedSpell = editedSpell.copy(damage = it)
+                            onUpdate(editedSpell)
+                        }, label = { Text("Damage") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSpell.resourceCost, onValueChange = {
+                            editedSpell = editedSpell.copy(resourceCost = it)
+                            onUpdate(editedSpell)
+                        }, label = { Text("Cost") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSpell.castingTime, onValueChange = {
+                            editedSpell = editedSpell.copy(castingTime = it)
+                            onUpdate(editedSpell)
+                        }, label = { Text("Casting") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSpell.range, onValueChange = {
+                            editedSpell = editedSpell.copy(range = it)
+                            onUpdate(editedSpell)
+                        }, label = { Text("Range") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSpell.duration, onValueChange = {
+                            editedSpell = editedSpell.copy(duration = it)
+                            onUpdate(editedSpell)
+                        }, label = { Text("Duration") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedSpell.description, onValueChange = {
+                            editedSpell = editedSpell.copy(description = it)
+                            onUpdate(editedSpell)
+                        }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
                     }
                 } else {
                     // Simplified View for Players
@@ -297,7 +368,6 @@ fun getSpellDamageColor(type: String): Color = when (type.lowercase()) {
 fun SpellIconBox(
     iconUrl: String?,
     tint: Color,
-    bgTint: Color,
     size: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
     isGenerating: Boolean = false,

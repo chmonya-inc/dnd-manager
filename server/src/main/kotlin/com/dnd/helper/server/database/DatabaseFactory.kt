@@ -15,21 +15,22 @@ object DatabaseFactory {
         val password = System.getenv("DB_PASSWORD") ?: "postgres"
 
         val url = "jdbc:postgresql://$host:$port/$dbName"
-        
+
         println("[DatabaseFactory] Connecting to PostgreSQL at $url...")
-        
+
         Database.connect(
             url = url,
             driver = "org.postgresql.Driver",
             user = user,
             password = password
         )
-        
+
         transaction {
             // Manual migration: skills -> spells
             // Must run before createMissingTablesAndColumns if we want to RENAME instead of DROP/ADD
             try {
-                exec("""
+                exec(
+                    """
                     DO ${'$'}${'$'}
                     BEGIN
                       -- If skills exists but spells does not, rename it
@@ -50,7 +51,8 @@ object DatabaseFactory {
                         UPDATE characters SET spells = '[]' WHERE spells IS NULL;
                       END IF;
                     END ${'$'}${'$'};
-                """.trimIndent())
+                    """.trimIndent()
+                )
                 println("[DatabaseFactory] Checked and applied 'skills' to 'spells' migration if needed")
             } catch (e: Exception) {
                 println("[DatabaseFactory] Migration logic skipped or failed: ${e.message}")

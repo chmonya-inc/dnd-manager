@@ -110,7 +110,6 @@ fun StatsTab(character: Character) {
                         label = label,
                         modifier = total,
                         proficient = proficient,
-                        profBonus = profBonus
                     )
                 }
             }
@@ -138,16 +137,15 @@ fun StatsTab(character: Character) {
                             val abilityMod = stats.modifier(skill.ability)
                             val proficient = proficiencies.skills.any {
                                 it.equals(skill.name, ignoreCase = true) ||
-                                it.equals(skill.displayName, ignoreCase = true)
+                                    it.equals(skill.displayName, ignoreCase = true)
                             }
                             val total = abilityMod + (if (proficient) profBonus else 0)
-                            
+
                             Box(modifier = Modifier.weight(1f)) {
                                 SaveOrSkillRow(
                                     label = skill.displayName,
                                     modifier = total,
                                     proficient = proficient,
-                                    profBonus = profBonus
                                 )
                             }
                         }
@@ -225,7 +223,6 @@ private fun SaveOrSkillRow(
     label: String,
     modifier: Int,
     proficient: Boolean,
-    profBonus: Int
 ) {
     val modText = if (modifier >= 0) "+$modifier" else "$modifier"
 
@@ -243,8 +240,11 @@ private fun SaveOrSkillRow(
                     .size(8.dp)
                     .clip(CircleShape)
                     .background(
-                        if (proficient) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                        if (proficient) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                        }
                     )
             )
             Spacer(modifier = Modifier.width(8.dp))

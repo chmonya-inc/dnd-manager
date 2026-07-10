@@ -1,46 +1,47 @@
 package com.dnd.helper.data.remote.dto.character
 
 import com.dnd.helper.data.remote.dto.common.ApiReferenceDto
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class RaceDto(
-    val index: String = "",
-    val name: String = "",
-    val speed: Int = 30,
-    val ability_bonuses: List<AbilityBonusDto> = emptyList(),
-    val alignment: String = "",
-    val age: String = "",
-    val size: String = "",
-    val size_description: String = "",
-    val languages: List<ApiReferenceDto> = emptyList(),
-    val language_desc: String = "",
-    val language_options: AbilityBonusChoiceDto? = null,
-    val traits: List<ApiReferenceDto> = emptyList(),
-    val subraces: List<ApiReferenceDto> = emptyList(),
-    val url: String = "",
+    @SerialName("index") val index: String = "",
+    @SerialName("name") val name: String = "",
+    @SerialName("speed") val speed: Int = 30,
+    @SerialName("ability_bonuses") val abilityBonuses: List<AbilityBonusDto> = emptyList(),
+    @SerialName("alignment") val alignment: String = "",
+    @SerialName("age") val age: String = "",
+    @SerialName("size") val size: String = "",
+    @SerialName("size_description") val sizeDescription: String = "",
+    @SerialName("languages") val languages: List<ApiReferenceDto> = emptyList(),
+    @SerialName("language_desc") val languageDesc: String = "",
+    @SerialName("language_options") val languageOptions: AbilityBonusChoiceDto? = null,
+    @SerialName("traits") val traits: List<ApiReferenceDto> = emptyList(),
+    @SerialName("subraces") val subraces: List<ApiReferenceDto> = emptyList(),
+    @SerialName("url") val url: String = "",
 )
 
 @Serializable
 data class SubraceDto(
-    val index: String = "",
-    val name: String = "",
-    val desc: String = "",
-    val race: ApiReferenceDto = ApiReferenceDto(),
-    val ability_bonuses: List<AbilityBonusDto> = emptyList(),
-    val racial_traits: List<ApiReferenceDto> = emptyList(),
-    val url: String = "",
+    @SerialName("index") val index: String = "",
+    @SerialName("name") val name: String = "",
+    @SerialName("desc") val desc: String = "",
+    @SerialName("race") val race: ApiReferenceDto = ApiReferenceDto(),
+    @SerialName("ability_bonuses") val abilityBonuses: List<AbilityBonusDto> = emptyList(),
+    @SerialName("racial_traits") val racialTraits: List<ApiReferenceDto> = emptyList(),
+    @SerialName("url") val url: String = "",
 )
 
 @Serializable
 data class AbilityBonusDto(
-    val ability_score: ApiReferenceDto = ApiReferenceDto(),
-    val bonus: Int = 0,
+    @SerialName("ability_score") val abilityScore: ApiReferenceDto = ApiReferenceDto(),
+    @SerialName("bonus") val bonus: Int = 0,
 )
 
 /** Placeholder for language choice in some races. */
 @Serializable
 data class AbilityBonusChoiceDto(
-    val choose: Int = 1,
-    val type: String = "",
+    @SerialName("choose") val choose: Int = 1,
+    @SerialName("type") val type: String = "",
 )

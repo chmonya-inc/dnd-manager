@@ -34,7 +34,7 @@ class CharacterListViewModel(
                 loadInitialData()
             }
         }
-        
+
         // Listen for background image generation completion
         viewModelScope.launch {
             editingRepository.activeTasks.collect { tasks ->
@@ -42,10 +42,18 @@ class CharacterListViewModel(
                     .forEach { task ->
                         val currentState = _state.value
                         val resultUrl = task.resultUrl ?: return@forEach
-                        
+
                         if (task.entityType == "character") {
                             if (currentState.characters.any { it.id == task.entityId && it.imageUrl == "generating:${task.id}" }) {
-                                val newChars = currentState.characters.map { if (it.id == task.entityId) it.copy(imageUrl = resultUrl) else it }
+                                val newChars = currentState.characters.map {
+                                    if (it.id == task.entityId) {
+                                        it.copy(
+                                            imageUrl = resultUrl
+                                        )
+                                    } else {
+                                        it
+                                    }
+                                }
                                 _state.value = currentState.copy(characters = newChars)
                             }
                         } else if (task.entityType == "item") {
@@ -55,8 +63,24 @@ class CharacterListViewModel(
                                 val itemId = parts[1]
                                 val char = currentState.characters.find { it.id == charId }
                                 if (char != null && char.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
-                                    val newItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
-                                    val newChars = currentState.characters.map { if (it.id == charId) it.copy(items = newItems) else it }
+                                    val newItems = char.items.map {
+                                        if (it.id == itemId) {
+                                            it.copy(
+                                                imageUrl = resultUrl
+                                            )
+                                        } else {
+                                            it
+                                        }
+                                    }
+                                    val newChars = currentState.characters.map {
+                                        if (it.id == charId) {
+                                            it.copy(
+                                                items = newItems
+                                            )
+                                        } else {
+                                            it
+                                        }
+                                    }
                                     _state.value = currentState.copy(characters = newChars)
                                 }
                             }
@@ -67,8 +91,24 @@ class CharacterListViewModel(
                                 val spellId = parts[1]
                                 val char = currentState.characters.find { it.id == charId }
                                 if (char != null && char.spells.any { it.id == spellId && it.iconUrl == "generating:${task.id}" }) {
-                                    val newSpells = char.spells.map { if (it.id == spellId) it.copy(iconUrl = resultUrl) else it }
-                                    val newChars = currentState.characters.map { if (it.id == charId) it.copy(spells = newSpells) else it }
+                                    val newSpells = char.spells.map {
+                                        if (it.id == spellId) {
+                                            it.copy(
+                                                iconUrl = resultUrl
+                                            )
+                                        } else {
+                                            it
+                                        }
+                                    }
+                                    val newChars = currentState.characters.map {
+                                        if (it.id == charId) {
+                                            it.copy(
+                                                spells = newSpells
+                                            )
+                                        } else {
+                                            it
+                                        }
+                                    }
                                     _state.value = currentState.copy(characters = newChars)
                                 }
                             }
@@ -81,7 +121,9 @@ class CharacterListViewModel(
         viewModelScope.launch {
             repository.characterUpdates.collect { updatedId ->
                 if (pendingSaveCount > 0) {
-                    println("[CharacterList] Update received for $updatedId but we have $pendingSaveCount pending saves — skipping reload.")
+                    println(
+                        "[CharacterList] Update received for $updatedId but we have $pendingSaveCount pending saves — skipping reload."
+                    )
                 } else {
                     println("[CharacterList] Received update for $updatedId — reloading list")
                     loadCharacters(forceRefresh = true)
@@ -158,11 +200,13 @@ class CharacterListViewModel(
                 delay(300)
                 val latestChar = _state.value.characters.find { it.id == character.id } ?: character
                 repository.saveCharacter(latestChar)
-                repository.saveLog(com.dnd.helper.domain.model.LogEntry(
-                    action = logAction,
-                    details = "Character ${latestChar.name} updated (Optimistic List Save)",
-                    success = true
-                ))
+                repository.saveLog(
+                    com.dnd.helper.domain.model.LogEntry(
+                        action = logAction,
+                        details = "Character ${latestChar.name} updated (Optimistic List Save)",
+                        success = true
+                    )
+                )
             } catch (e: Exception) {
                 println("[CharacterList] Save failed for ${character.name}: $e")
             } finally {
@@ -170,16 +214,6 @@ class CharacterListViewModel(
                 saveJobs.remove(character.id)
             }
         }
-    }
-
-    /** No-op for WebSocket version (kept for source compatibility if screens still call it) */
-    fun startAutoRefresh(intervalMs: Long = 1_000L) {
-        // WebSocket logic handles this in init
-    }
-
-    /** No-op for WebSocket version */
-    fun stopAutoRefresh() {
-        // WebSocket logic handles this via viewModelScope
     }
 
     private fun loadCharacters(forceRefresh: Boolean = false) {

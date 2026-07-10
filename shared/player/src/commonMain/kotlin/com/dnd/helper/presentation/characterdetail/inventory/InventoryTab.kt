@@ -247,10 +247,11 @@ private fun EquipmentSlotBox(
             .size(size)
             .clickable(enabled = item != null) { onClick(slot) },
         colors = CardDefaults.cardColors(
-            containerColor = if (item != null)
+            containerColor = if (item != null) {
                 rarityColor.copy(alpha = 0.12f)
-            else
+            } else {
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
+            }
         ),
         border = BorderStroke(
             width = if (item != null) 2.dp else 1.5.dp,
@@ -521,7 +522,7 @@ private fun ItemDetailDialog(
                             if (isMasterMode) {
                                 OutlinedTextField(
                                     value = editedItem.name,
-                                    onValueChange = { 
+                                    onValueChange = {
                                         editedItem = editedItem.copy(name = it)
                                         onUpdate(editedItem)
                                     },
@@ -554,7 +555,9 @@ private fun ItemDetailDialog(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         // AI Generation Section
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+                            ),
                             shape = MaterialTheme.shapes.medium,
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -574,22 +577,54 @@ private fun ItemDetailDialog(
                                     modifier = Modifier.background(MaterialTheme.colorScheme.primary, CircleShape)
                                 ) {
                                     if (isGenerating) {
-                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            strokeWidth = 2.dp,
+                                            color = Color.White
+                                        )
                                     } else {
-                                        Icon(DndIcons.Filled.AutoFixHigh, null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                        Icon(
+                                            DndIcons.Filled.AutoFixHigh,
+                                            null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                     }
                                 }
                             }
                         }
 
-                        OutlinedTextField(value = editedItem.type, onValueChange = { editedItem = editedItem.copy(type = it); onUpdate(editedItem) }, label = { Text("Type") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = editedItem.cost, onValueChange = { editedItem = editedItem.copy(cost = it); onUpdate(editedItem) }, label = { Text("Cost") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = editedItem.weight.toString(), onValueChange = { val w = it.toDoubleOrNull() ?: 0.0; editedItem = editedItem.copy(weight = w); onUpdate(editedItem) }, label = { Text("Weight") }, modifier = Modifier.fillMaxWidth())
-                        
-                        Text("Current Slot: ${editedItem.slot?.name ?: "None"}", style = MaterialTheme.typography.labelSmall)
-                        
-                        OutlinedTextField(value = editedItem.description, onValueChange = { editedItem = editedItem.copy(description = it); onUpdate(editedItem) }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
-                        OutlinedTextField(value = editedItem.imageUrl ?: "", onValueChange = { editedItem = editedItem.copy(imageUrl = it.ifBlank { null }); onUpdate(editedItem) }, label = { Text("Image URL") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedItem.type, onValueChange = {
+                            editedItem = editedItem.copy(type = it)
+                            onUpdate(editedItem)
+                        }, label = { Text("Type") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedItem.cost, onValueChange = {
+                            editedItem = editedItem.copy(cost = it)
+                            onUpdate(editedItem)
+                        }, label = { Text("Cost") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = editedItem.weight.toString(), onValueChange = {
+                            val w = it.toDoubleOrNull() ?: 0.0
+                            editedItem = editedItem.copy(weight = w)
+                            onUpdate(editedItem)
+                        }, label = { Text("Weight") }, modifier = Modifier.fillMaxWidth())
+
+                        Text(
+                            "Current Slot: ${editedItem.slot?.name ?: "None"}",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+
+                        OutlinedTextField(value = editedItem.description, onValueChange = {
+                            editedItem = editedItem.copy(description = it)
+                            onUpdate(editedItem)
+                        }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+                        OutlinedTextField(value = editedItem.imageUrl ?: "", onValueChange = {
+                            editedItem = editedItem.copy(
+                                imageUrl = it.ifBlank {
+                                    null
+                                }
+                            )
+                            onUpdate(editedItem)
+                        }, label = { Text("Image URL") }, modifier = Modifier.fillMaxWidth())
                     }
                 } else {
                     if (editedItem.slot != null) {
@@ -623,7 +658,7 @@ private fun ItemDetailDialog(
                     ) {
                         Text(if (editedItem.equipped) "Unequip" else "Equip")
                     }
-                    
+
                     if (isMasterMode) {
                         Button(
                             onClick = onDelete,

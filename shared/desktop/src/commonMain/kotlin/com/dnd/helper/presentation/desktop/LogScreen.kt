@@ -1,9 +1,24 @@
 package com.dnd.helper.presentation.desktop
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -12,21 +27,35 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Undo
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dnd.helper.domain.model.LogEntry
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
 import com.dnd.helper.theme.LocalDndColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -42,7 +71,12 @@ fun LogScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.History, null, modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.primary)
+                Icon(
+                    Icons.Default.History,
+                    null,
+                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
                 Spacer(Modifier.width(12.dp))
                 Text("Activity Logs", style = MaterialTheme.typography.headlineMedium)
             }
@@ -123,7 +157,7 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
 
                     if (hasJsonState && isCharacterAction) {
                         Button(
-                            onClick = { 
+                            onClick = {
                                 onUndo()
                             },
                             colors = ButtonDefaults.buttonColors(
@@ -152,16 +186,23 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
                 exit = fadeOut() + shrinkVertically(),
             ) {
                 Column(modifier = Modifier.padding(top = 16.dp)) {
-                    HorizontalDivider(modifier = Modifier.padding(bottom = 12.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                    
+                    HorizontalDivider(
+                        modifier = Modifier.padding(bottom = 12.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+
                     if (log.initialState != null && log.endState != null) {
-                        Text("State Comparison:", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            "State Comparison:",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                         Spacer(Modifier.height(8.dp))
-                        
+
                         // Calculate diff only when expanded and off the main thread
                         var diffLines by remember { mutableStateOf<List<String>>(emptyList()) }
                         var isCalculating by remember { mutableStateOf(true) }
-                        
+
                         LaunchedEffect(log, expanded) {
                             if (expanded) {
                                 isCalculating = true
@@ -171,7 +212,7 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
                                 isCalculating = false
                             }
                         }
-                        
+
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -190,7 +231,19 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
                                             fontFamily = FontFamily.Monospace,
                                             lineHeight = 16.sp
                                         ),
-                                        color = if (line.startsWith("-")) LocalDndColors.current.diffRemoved else if (line.startsWith("+")) LocalDndColors.current.diffAdded else MaterialTheme.colorScheme.onSurface
+                                        color = if (line.startsWith(
+                                                "-"
+                                            )
+                                        ) {
+                                            LocalDndColors.current.diffRemoved
+                                        } else if (line.startsWith(
+                                                "+"
+                                            )
+                                        ) {
+                                            LocalDndColors.current.diffAdded
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurface
+                                        }
                                     )
                                 }
                             }
@@ -207,12 +260,15 @@ fun LogCard(log: LogEntry, onUndo: () -> Unit) {
 private fun calculateVisualDiff(initial: String?, end: String?): List<String> {
     if (initial.isNullOrBlank() || end.isNullOrBlank()) return emptyList()
     if (initial == end) return emptyList()
-    
+
     val lines = mutableListOf<String>()
-    
+
     try {
-        val json = Json { prettyPrint = true; isLenient = true }
-        
+        val json = Json {
+            prettyPrint = true
+            isLenient = true
+        }
+
         val isInitialJson = initial.trim().let { it.startsWith("{") || it.startsWith("[") }
         val isEndJson = end.trim().let { it.startsWith("{") || it.startsWith("[") }
 
@@ -225,33 +281,37 @@ private fun calculateVisualDiff(initial: String?, end: String?): List<String> {
             if (isInitialJson) {
                 val initialObj = Json.parseToJsonElement(initial)
                 json.encodeToString(initialObj).lines()
-            } else initial.lines()
+            } else {
+                initial.lines()
+            }
         } catch (e: Exception) {
             initial.lines()
         }
-        
+
         val endPretty = try {
             if (isEndJson) {
                 val endObj = Json.parseToJsonElement(end)
                 json.encodeToString(endObj).lines()
-            } else end.lines()
+            } else {
+                end.lines()
+            }
         } catch (e: Exception) {
             end.lines()
         }
-        
+
         // Use Sets for O(1) lookups to avoid O(N^2) complexity which hangs the UI
         val initialSet = initialPretty.map { it.trim() }.toSet()
         val endSet = endPretty.map { it.trim() }.toSet()
-        
+
         // Find lines removed (in initial but not in end)
         initialPretty.forEach { line ->
             val trimmed = line.trim()
             if (trimmed.isNotBlank() && trimmed != "{" && trimmed != "}" && trimmed != "[" && trimmed != "]" && trimmed !in endSet) {
                 lines.add("- $line")
             }
-            if (lines.size > 25) return@forEach 
+            if (lines.size > 25) return@forEach
         }
-        
+
         // Find lines added (in end but not in initial)
         endPretty.forEach { line ->
             val trimmed = line.trim()
@@ -260,14 +320,13 @@ private fun calculateVisualDiff(initial: String?, end: String?): List<String> {
             }
             if (lines.size > 50) return@forEach
         }
-        
+
         if (lines.isEmpty() && initialPretty != endPretty) {
             lines.add("Data changed (non-structural or whitespace)")
         }
-        
     } catch (e: Exception) {
         lines.add("Error comparing: ${e.message}")
     }
-    
+
     return lines
 }

@@ -1,16 +1,27 @@
 package com.dnd.helper.data.repository
 
-import com.dnd.helper.data.remote.AiImageService
-import com.dnd.helper.data.remote.GenerationType
 import com.dnd.helper.data.remote.KtorRemoteDataSource
 import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.model.*
+import com.dnd.helper.domain.model.Battlefield
+import com.dnd.helper.domain.model.Character
+import com.dnd.helper.domain.model.GameEvent
+import com.dnd.helper.domain.model.InitialData
+import com.dnd.helper.domain.model.Location
+import com.dnd.helper.domain.model.LogEntry
+import com.dnd.helper.domain.model.Monster
+import com.dnd.helper.domain.model.MusicTrack
+import com.dnd.helper.domain.model.Npc
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 
 class CharacterRepositoryImpl(
@@ -32,7 +43,7 @@ class CharacterRepositoryImpl(
             ) { _, _, _ -> }.collect {
                 println("[CharacterRepository] Server, Table, or User changed, clearing caches")
                 clearCaches()
-                
+
                 // Trigger refresh in all observing ViewModels
                 _characterUpdates.tryEmit("all")
                 _npcUpdates.tryEmit("all")
@@ -49,7 +60,7 @@ class CharacterRepositoryImpl(
                 val entityId = if (parts.size > 1) parts[1] else null
 
                 println("[CharacterRepository] Remote update received: $updateMessage")
-                
+
                 when (updateType) {
                     "characters" -> {
                         charactersCache = null
@@ -138,7 +149,7 @@ class CharacterRepositoryImpl(
         val result = dataSource.getInitialData()
         if (result is Result.Success) {
             val data = result.data
-            
+
             // Populate all caches
             val filteredChars = data.characters.filter { it.id != "ID" }
             charactersCache = filteredChars
@@ -148,7 +159,7 @@ class CharacterRepositoryImpl(
             npcsCache = data.npcs
             musicCache = data.music
             eventsCache = data.events
-            
+
             // Update heavy character cache for any characters that have items or notes
             filteredChars.forEach { char ->
                 if (char.items.isNotEmpty() || char.notes.isNotEmpty()) {
@@ -164,12 +175,12 @@ class CharacterRepositoryImpl(
         if (!forceRefresh && !tableChanged) {
             charactersCache?.let { return Result.Success(it) }
         }
-        
+
         val result = dataSource.getCharacters()
         if (result is Result.Success) {
             val filtered = result.data.filter { it.id != "ID" }
-            
-            // Merge logic: preserve items/skills/weapons from heavy cache 
+
+            // Merge logic: preserve items/skills/weapons from heavy cache
             // if the new data is 'light' (e.g. empty items list)
             val merged = filtered.map { newChar ->
                 val heavy = heavyCharacterCache[newChar.id]
@@ -190,7 +201,7 @@ class CharacterRepositoryImpl(
                     newChar
                 }
             }
-            
+
             charactersCache = merged
             return Result.Success(merged)
         }
@@ -215,7 +226,7 @@ class CharacterRepositoryImpl(
         if (result is Result.Success) {
             // Update heavy cache
             heavyCharacterCache[character.id] = character
-            
+
             // Update list cache: replace if exists, or append if new
             val currentList = charactersCache ?: emptyList()
             if (currentList.any { it.id == character.id }) {
@@ -223,7 +234,7 @@ class CharacterRepositoryImpl(
             } else {
                 charactersCache = currentList + character
             }
-            
+
             // Notify observers so other screens can refresh immediately
             _characterUpdates.tryEmit(character.id)
         }
@@ -232,7 +243,7 @@ class CharacterRepositoryImpl(
 
     override fun optimisticUpdate(character: Character) {
         heavyCharacterCache[character.id] = character
-        
+
         val currentList = charactersCache ?: emptyList()
         if (currentList.any { it.id == character.id }) {
             charactersCache = currentList.map { if (it.id == character.id) character else it }

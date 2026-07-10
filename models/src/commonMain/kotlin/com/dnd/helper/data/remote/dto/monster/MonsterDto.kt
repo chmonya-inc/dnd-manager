@@ -4,148 +4,149 @@ import com.dnd.helper.data.remote.dto.common.ApiReferenceDto
 import com.dnd.helper.data.remote.dto.common.ChoiceDto
 import com.dnd.helper.data.remote.dto.common.DamageDto
 import com.dnd.helper.data.remote.dto.common.DcDto
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class MonsterDto(
-    val index: String = "",
-    val name: String = "",
-    val desc: String = "",
-    val image: String? = null,
+    @SerialName("index") val index: String = "",
+    @SerialName("name") val name: String = "",
+    @SerialName("desc") val desc: String = "",
+    @SerialName("image") val image: String? = null,
     // Ability scores (flat int fields)
-    val strength: Int = 10,
-    val dexterity: Int = 10,
-    val constitution: Int = 10,
-    val intelligence: Int = 10,
-    val wisdom: Int = 10,
-    val charisma: Int = 10,
+    @SerialName("strength") val strength: Int = 10,
+    @SerialName("dexterity") val dexterity: Int = 10,
+    @SerialName("constitution") val constitution: Int = 10,
+    @SerialName("intelligence") val intelligence: Int = 10,
+    @SerialName("wisdom") val wisdom: Int = 10,
+    @SerialName("charisma") val charisma: Int = 10,
     // Core stats
-    val size: String = "Medium", // "Tiny"|"Small"|"Medium"|"Large"|"Huge"|"Gargantuan"
-    val type: String = "",
-    val subtype: String? = null,
-    val alignment: String = "",
-    val armor_class: List<MonsterArmorClassDto> = emptyList(),
-    val hit_points: Int = 0,
-    val hit_dice: String = "",
-    val hit_points_roll: String = "",
-    val speed: MonsterSpeedDto = MonsterSpeedDto(),
-    val proficiencies: List<MonsterProficiencyDto> = emptyList(),
-    val damage_vulnerabilities: List<String> = emptyList(),
-    val damage_resistances: List<String> = emptyList(),
-    val damage_immunities: List<String> = emptyList(),
-    val condition_immunities: List<ApiReferenceDto> = emptyList(),
-    val senses: MonsterSenseDto = MonsterSenseDto(),
-    val languages: String = "",
-    val challenge_rating: Double = 0.0,
-    val proficiency_bonus: Int = 2,
-    val xp: Int = 0,
-    val actions: List<MonsterActionDto> = emptyList(),
-    val legendary_actions: List<MonsterActionDto> = emptyList(),
-    val reactions: List<MonsterActionDto> = emptyList(),
-    val special_abilities: List<MonsterSpecialAbilityDto> = emptyList(),
-    val forms: List<ApiReferenceDto> = emptyList(),
-    val url: String = "",
+    @SerialName("size") val size: String = "Medium", // "Tiny"|"Small"|"Medium"|"Large"|"Huge"|"Gargantuan"
+    @SerialName("type") val type: String = "",
+    @SerialName("subtype") val subtype: String? = null,
+    @SerialName("alignment") val alignment: String = "",
+    @SerialName("armor_class") val armorClass: List<MonsterArmorClassDto> = emptyList(),
+    @SerialName("hit_points") val hitPoints: Int = 0,
+    @SerialName("hit_dice") val hitDice: String = "",
+    @SerialName("hit_points_roll") val hitPointsRoll: String = "",
+    @SerialName("speed") val speed: MonsterSpeedDto = MonsterSpeedDto(),
+    @SerialName("proficiencies") val proficiencies: List<MonsterProficiencyDto> = emptyList(),
+    @SerialName("damage_vulnerabilities") val damageVulnerabilities: List<String> = emptyList(),
+    @SerialName("damage_resistances") val damageResistances: List<String> = emptyList(),
+    @SerialName("damage_immunities") val damageImmunities: List<String> = emptyList(),
+    @SerialName("condition_immunities") val conditionImmunities: List<ApiReferenceDto> = emptyList(),
+    @SerialName("senses") val senses: MonsterSenseDto = MonsterSenseDto(),
+    @SerialName("languages") val languages: String = "",
+    @SerialName("challenge_rating") val challengeRating: Double = 0.0,
+    @SerialName("proficiency_bonus") val proficiencyBonus: Int = 2,
+    @SerialName("xp") val xp: Int = 0,
+    @SerialName("actions") val actions: List<MonsterActionDto> = emptyList(),
+    @SerialName("legendary_actions") val legendaryActions: List<MonsterActionDto> = emptyList(),
+    @SerialName("reactions") val reactions: List<MonsterActionDto> = emptyList(),
+    @SerialName("special_abilities") val specialAbilities: List<MonsterSpecialAbilityDto> = emptyList(),
+    @SerialName("forms") val forms: List<ApiReferenceDto> = emptyList(),
+    @SerialName("url") val url: String = "",
 )
 
 @Serializable
 data class MonsterArmorClassDto(
-    val type: String = "",  // "dex" | "natural" | "armor" | "spell" | "condition"
-    val value: Int = 10,
-    val desc: String? = null,
-    val armor: List<ApiReferenceDto>? = null,
-    val spell: ApiReferenceDto? = null,
-    val condition: ApiReferenceDto? = null,
+    @SerialName("type") val type: String = "", // "dex" | "natural" | "armor" | "spell" | "condition"
+    @SerialName("value") val value: Int = 10,
+    @SerialName("desc") val desc: String? = null,
+    @SerialName("armor") val armor: List<ApiReferenceDto>? = null,
+    @SerialName("spell") val spell: ApiReferenceDto? = null,
+    @SerialName("condition") val condition: ApiReferenceDto? = null,
 )
 
 @Serializable
 data class MonsterSpeedDto(
-    val walk: String? = null,
-    val burrow: String? = null,
-    val climb: String? = null,
-    val fly: String? = null,
-    val swim: String? = null,
-    val hover: Boolean? = null,
+    @SerialName("walk") val walk: String? = null,
+    @SerialName("burrow") val burrow: String? = null,
+    @SerialName("climb") val climb: String? = null,
+    @SerialName("fly") val fly: String? = null,
+    @SerialName("swim") val swim: String? = null,
+    @SerialName("hover") val hover: Boolean? = null,
 )
 
 @Serializable
 data class MonsterSenseDto(
-    val passive_perception: Int = 10,
-    val blindsight: String? = null,
-    val darkvision: String? = null,
-    val tremorsense: String? = null,
-    val truesight: String? = null,
+    @SerialName("passive_perception") val passivePerception: Int = 10,
+    @SerialName("blindsight") val blindsight: String? = null,
+    @SerialName("darkvision") val darkvision: String? = null,
+    @SerialName("tremorsense") val tremorsense: String? = null,
+    @SerialName("truesight") val truesight: String? = null,
 )
 
 @Serializable
 data class MonsterProficiencyDto(
-    val value: Int = 0,
-    val proficiency: ApiReferenceDto = ApiReferenceDto(),
+    @SerialName("value") val value: Int = 0,
+    @SerialName("proficiency") val proficiency: ApiReferenceDto = ApiReferenceDto(),
 )
 
 @Serializable
 data class MonsterActionDto(
-    val name: String = "",
-    val desc: String = "",
-    val attack_bonus: Int? = null,
-    val dc: DcDto? = null,
-    val damage: List<DamageDto> = emptyList(),
-    val attacks: List<MonsterAttackDto> = emptyList(),
-    val actions: List<MonsterMultiAttackActionDto> = emptyList(),
-    val options: ChoiceDto? = null,
-    val action_options: ChoiceDto? = null,
-    val multiattack_type: String? = null,
-    val usage: MonsterUsageDto? = null,
+    @SerialName("name") val name: String = "",
+    @SerialName("desc") val desc: String = "",
+    @SerialName("attack_bonus") val attackBonus: Int? = null,
+    @SerialName("dc") val dc: DcDto? = null,
+    @SerialName("damage") val damage: List<DamageDto> = emptyList(),
+    @SerialName("attacks") val attacks: List<MonsterAttackDto> = emptyList(),
+    @SerialName("actions") val actions: List<MonsterMultiAttackActionDto> = emptyList(),
+    @SerialName("options") val options: ChoiceDto? = null,
+    @SerialName("action_options") val actionOptions: ChoiceDto? = null,
+    @SerialName("multiattack_type") val multiattackType: String? = null,
+    @SerialName("usage") val usage: MonsterUsageDto? = null,
 )
 
 @Serializable
 data class MonsterAttackDto(
-    val name: String = "",
-    val dc: DcDto? = null,
-    val damage: List<DamageDto> = emptyList(),
+    @SerialName("name") val name: String = "",
+    @SerialName("dc") val dc: DcDto? = null,
+    @SerialName("damage") val damage: List<DamageDto> = emptyList(),
 )
 
 @Serializable
 data class MonsterMultiAttackActionDto(
-    val action_name: String = "",
-    val count: kotlinx.serialization.json.JsonElement? = null,
-    val type: String = "", // "melee" | "ranged" | "ability" | "magic"
+    @SerialName("action_name") val actionName: String = "",
+    @SerialName("count") val count: kotlinx.serialization.json.JsonElement? = null,
+    @SerialName("type") val type: String = "", // "melee" | "ranged" | "ability" | "magic"
 )
 
 @Serializable
 data class MonsterSpecialAbilityDto(
-    val name: String = "",
-    val desc: String = "",
-    val attack_bonus: Int? = null,
-    val damage: List<DamageDto> = emptyList(),
-    val dc: DcDto? = null,
-    val spellcasting: MonsterSpellcastingDto? = null,
-    val usage: MonsterUsageDto? = null,
+    @SerialName("name") val name: String = "",
+    @SerialName("desc") val desc: String = "",
+    @SerialName("attack_bonus") val attackBonus: Int? = null,
+    @SerialName("damage") val damage: List<DamageDto> = emptyList(),
+    @SerialName("dc") val dc: DcDto? = null,
+    @SerialName("spellcasting") val spellcasting: MonsterSpellcastingDto? = null,
+    @SerialName("usage") val usage: MonsterUsageDto? = null,
 )
 
 @Serializable
 data class MonsterUsageDto(
-    val type: String = "",  // "at will" | "per day" | "recharge after rest" | "recharge on roll"
-    val times: Int? = null,
-    val rest_types: List<String> = emptyList(),
-    val dice: String? = null,
-    val min_value: Int? = null,
+    @SerialName("type") val type: String = "", // "at will" | "per day" | "recharge after rest" | "recharge on roll"
+    @SerialName("times") val times: Int? = null,
+    @SerialName("rest_types") val restTypes: List<String> = emptyList(),
+    @SerialName("dice") val dice: String? = null,
+    @SerialName("min_value") val minValue: Int? = null,
 )
 
 @Serializable
 data class MonsterSpellcastingDto(
-    val ability: ApiReferenceDto = ApiReferenceDto(),
-    val dc: Int? = null,
-    val modifier: Int? = null,
-    val components_required: List<String> = emptyList(),
-    val school: String? = null,
-    val slots: Map<String, Int> = emptyMap(),
-    val spells: List<MonsterSpellDto> = emptyList(),
+    @SerialName("ability") val ability: ApiReferenceDto = ApiReferenceDto(),
+    @SerialName("dc") val dc: Int? = null,
+    @SerialName("modifier") val modifier: Int? = null,
+    @SerialName("components_required") val componentsRequired: List<String> = emptyList(),
+    @SerialName("school") val school: String? = null,
+    @SerialName("slots") val slots: Map<String, Int> = emptyMap(),
+    @SerialName("spells") val spells: List<MonsterSpellDto> = emptyList(),
 )
 
 @Serializable
 data class MonsterSpellDto(
-    val name: String = "",
-    val level: Int = 0,
-    val url: String = "",
-    val usage: MonsterUsageDto? = null,
+    @SerialName("name") val name: String = "",
+    @SerialName("level") val level: Int = 0,
+    @SerialName("url") val url: String = "",
+    @SerialName("usage") val usage: MonsterUsageDto? = null,
 )

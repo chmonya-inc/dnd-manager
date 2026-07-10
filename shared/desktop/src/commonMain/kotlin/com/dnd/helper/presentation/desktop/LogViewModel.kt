@@ -6,8 +6,6 @@ import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.LogEntry
 import com.dnd.helper.domain.repository.CharacterRepository
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,14 +51,6 @@ class LogViewModel(
         }
     }
 
-    /** No-op for WebSocket version */
-    fun startPolling(intervalMs: Long = 1_000L) {
-    }
-
-    /** No-op for WebSocket version */
-    fun stopPolling() {
-    }
-
     fun undoLog(log: LogEntry) {
         viewModelScope.launch {
             val initialState = log.initialState
@@ -69,11 +59,13 @@ class LogViewModel(
                     val oldCharacter = Json.decodeFromString<Character>(initialState)
                     val result = repository.saveCharacter(oldCharacter)
                     if (result is Result.Success) {
-                        repository.saveLog(LogEntry(
-                            action = "Undo: ${log.action}",
-                            details = "Reverted to state from ${log.timestamp}",
-                            success = true
-                        ))
+                        repository.saveLog(
+                            LogEntry(
+                                action = "Undo: ${log.action}",
+                                details = "Reverted to state from ${log.timestamp}",
+                                success = true
+                            )
+                        )
                         refreshLogs(force = true)
                     }
                 } catch (e: Exception) {

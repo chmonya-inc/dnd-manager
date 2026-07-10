@@ -2,15 +2,14 @@ package com.dnd.helper.presentation.desktop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dnd.helper.data.remote.KtorRemoteDataSource
 import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.storage.CharacterStorage
-import com.dnd.helper.data.remote.KtorRemoteDataSource
 import com.dnd.helper.domain.common.toUserMessage
+import com.dnd.helper.domain.storage.CharacterStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 
 class SessionsViewModel(
     private val storage: CharacterStorage,
@@ -38,7 +37,7 @@ class SessionsViewModel(
                         campaigns = campaigns,
                         isLoading = false
                     )
-                    
+
                     // Auto-select logic
                     val currentActive = storage.getTableId()
                     if (!currentActive.isNullOrBlank() && campaigns.any { it.id == currentActive }) {
@@ -64,18 +63,18 @@ class SessionsViewModel(
 
     fun selectCampaignForPreview(id: String) {
         if (_state.value.previewCampaignId == id) return
-        
+
         _state.value = _state.value.copy(
             previewCampaignId = id,
             isPreviewLoading = true,
             previewData = null
         )
-        
+
         viewModelScope.launch {
             // Temporarily set table ID in storage to fetch initial data for preview
             val oldId = storage.getTableId()
             storage.saveTableId(id)
-            
+
             when (val res = remoteDataSource.getInitialData()) {
                 is Result.Success -> {
                     if (_state.value.previewCampaignId == id) {
@@ -91,7 +90,7 @@ class SessionsViewModel(
                     }
                 }
             }
-            
+
             // Restore old ID if we didn't officially "switch" yet
             if (oldId != null) storage.saveTableId(oldId) else storage.saveTableId("")
         }
@@ -103,7 +102,7 @@ class SessionsViewModel(
         } else {
             IdUtils.generateSessionId()
         }
-        
+
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
             val res = remoteDataSource.createCampaign(name, finalId)

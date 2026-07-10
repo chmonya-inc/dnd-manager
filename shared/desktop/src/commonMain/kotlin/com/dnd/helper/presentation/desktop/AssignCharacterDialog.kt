@@ -18,8 +18,22 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonOff
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -86,7 +100,11 @@ fun AssignCharacterDialog(
                     ) {
                         Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF4CAF50), modifier = Modifier.size(24.dp))
                         Spacer(Modifier.width(12.dp))
-                        Text("Request sent! Waiting for player response.", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold)
+                        Text(
+                            "Request sent! Waiting for player response.",
+                            color = Color(0xFF4CAF50),
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
 
@@ -96,7 +114,12 @@ fun AssignCharacterDialog(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Error, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(24.dp))
+                        Icon(
+                            Icons.Default.Error,
+                            null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(24.dp)
+                        )
                         Spacer(Modifier.width(12.dp))
                         Text(text = error, color = MaterialTheme.colorScheme.error)
                     }
@@ -174,8 +197,19 @@ private fun AssignmentStatusRow(status: com.dnd.helper.data.remote.dto.auth.Assi
         Icon(statusInfo.first, null, modifier = Modifier.size(18.dp), tint = statusInfo.third)
         Column(modifier = Modifier.weight(1f)) {
             Text(status.characterName, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
-            status.playerUsername?.let { Text("→ $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            status.playerUsername?.let {
+                Text(
+                    "→ $it",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
-        Text(statusInfo.second, style = MaterialTheme.typography.labelSmall, color = statusInfo.third, fontWeight = FontWeight.Bold)
+        Text(
+            statusInfo.second,
+            style = MaterialTheme.typography.labelSmall,
+            color = statusInfo.third,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

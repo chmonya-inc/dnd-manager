@@ -122,7 +122,6 @@ private val ItemColor: Color @Composable get() = LocalDndColors.current.item
 private val CharacterColor: Color @Composable get() = LocalDndColors.current.character
 
 private const val LOGICAL_CANVAS_SIZE = 1000f
-private const val PROXIMITY_THRESHOLD = 250f // Distance to trigger "fighting" state (increased for visible gap)
 
 @Composable
 fun PresentationScreen(
@@ -171,11 +170,17 @@ fun PresentationScreen(
                         Surface(
                             modifier = Modifier.size(48.dp),
                             shape = CircleShape,
-                            color = if (isWindowOpen) Color(0xFF4CAF50).copy(alpha = 0.1f) else MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+                            color = if (isWindowOpen) {
+                                Color(
+                                    0xFF4CAF50
+                                ).copy(alpha = 0.1f)
+                            } else {
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+                            }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = if (isWindowOpen) DndIcons.Filled.Tv else DndIcons.Filled.TvOff, 
+                                    imageVector = if (isWindowOpen) DndIcons.Filled.Tv else DndIcons.Filled.TvOff,
                                     contentDescription = null,
                                     tint = if (isWindowOpen) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
                                 )
@@ -183,15 +188,25 @@ fun PresentationScreen(
                         }
                         Spacer(Modifier.width(16.dp))
                         Column {
-                            Text("Presentation Hub", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                            Text(
+                                "Presentation Hub",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold
+                            )
                             Text(
                                 text = if (isWindowOpen) "Live Feed Active" else "Display Offline",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = if (isWindowOpen) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isWindowOpen) {
+                                    Color(
+                                        0xFF4CAF50
+                                    )
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
                             )
                         }
                     }
-                    
+
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Button(
                             onClick = { viewModel.toggleStats() },
@@ -205,9 +220,9 @@ fun PresentationScreen(
                             Spacer(Modifier.width(8.dp))
                             Text(if (showStats) "Projection Stats: ON" else "Projection Stats: OFF")
                         }
-                        
+
                         Spacer(Modifier.width(12.dp))
-                        
+
                         Button(
                             onClick = { viewModel.toggleWindow() },
                             colors = ButtonDefaults.buttonColors(
@@ -222,9 +237,9 @@ fun PresentationScreen(
                     }
                 }
             }
-            
+
             Spacer(Modifier.height(24.dp))
-            
+
             Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 // Workspace
                 Column(modifier = Modifier.weight(1f)) {
@@ -240,22 +255,31 @@ fun PresentationScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = if (activeEvent != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
-                            
+
                             if (activeEvent != null) {
                                 // 1. Quick Save (Update Content)
                                 IconButton(
                                     onClick = { viewModel.saveCurrentEvent(activeEvent!!.name) },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(DndIcons.Filled.Save, "Update Scene", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Icon(
+                                        DndIcons.Filled.Save,
+                                        "Update Scene",
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
                                 }
-                                
+
                                 // 2. Save As (New Copy)
                                 IconButton(
                                     onClick = { showSaveAsDialog = true },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(DndIcons.Filled.ContentCopy, "Save as New Scene", modifier = Modifier.size(18.dp))
+                                    Icon(
+                                        DndIcons.Filled.ContentCopy,
+                                        "Save as New Scene",
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
                             } else {
                                 // Save New Scene
@@ -263,10 +287,15 @@ fun PresentationScreen(
                                     onClick = { showSaveAsDialog = true },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(DndIcons.Filled.AddCircle, "Save New Scene", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Icon(
+                                        DndIcons.Filled.AddCircle,
+                                        "Save New Scene",
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
-                            
+
                             if (showSaveAsDialog) {
                                 SaveEventDialog(
                                     initialName = if (activeEvent != null) "${activeEvent!!.name} (Copy)" else "",
@@ -283,11 +312,15 @@ fun PresentationScreen(
                             }
                         }
                         Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.small) {
-                            Text("1000x1000", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "1000x1000",
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall
+                            )
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    
+
                     WorkspaceContainer(
                         modifier = Modifier
                             .fillMaxSize()
@@ -305,7 +338,7 @@ fun PresentationScreen(
                         isDM = true
                     )
                 }
-                
+
                 // Sidebar
                 Column(modifier = Modifier.width(320.dp)) {
                     Surface(
@@ -319,16 +352,27 @@ fun PresentationScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Assets", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "Assets",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
                                 Row {
-                                    IconButton(onClick = { viewModel.refreshAll(force = true) }, modifier = Modifier.size(32.dp)) {
-                                        Icon(Icons.Default.Refresh, contentDescription = "Refresh Libraries", modifier = Modifier.size(18.dp))
+                                    IconButton(
+                                        onClick = { viewModel.refreshAll(force = true) },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Refresh,
+                                            contentDescription = "Refresh Libraries",
+                                            modifier = Modifier.size(18.dp)
+                                        )
                                     }
                                 }
                             }
-                            
+
                             Spacer(Modifier.height(8.dp))
-                            
+
                             OutlinedTextField(
                                 value = searchQuery,
                                 onValueChange = { searchQuery = it },
@@ -349,10 +393,13 @@ fun PresentationScreen(
                                 ),
                                 singleLine = true
                             )
-                            
+
                             Spacer(Modifier.height(12.dp))
-                            
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                 OutlinedButton(
                                     onClick = { viewModel.createNewScene() },
                                     modifier = Modifier.weight(1f),
@@ -363,7 +410,7 @@ fun PresentationScreen(
                                     Spacer(Modifier.width(4.dp))
                                     Text("New Scene", style = MaterialTheme.typography.labelLarge)
                                 }
-                                
+
                                 OutlinedButton(
                                     onClick = { viewModel.clearItems() },
                                     modifier = Modifier.weight(1f),
@@ -378,24 +425,29 @@ fun PresentationScreen(
                             }
                         }
                     }
-                    
+
                     Spacer(Modifier.height(16.dp))
 
                     val distinctChars = characterListState.characters.distinctBy { it.id }
                         .filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    
+
                     // 1. Characters Section
-                    FoldableSection(title = "Characters", count = distinctChars.size, icon = DndIcons.Filled.Groups, color = CharacterColor) {
+                    FoldableSection(
+                        title = "Characters",
+                        count = distinctChars.size,
+                        icon = DndIcons.Filled.Groups,
+                        color = CharacterColor
+                    ) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(distinctChars) { character ->
                                 PresenterSidebarRow(
-                                    title = character.name, 
-                                    accentColor = CharacterColor, 
-                                    icon = Icons.Default.Person, 
+                                    title = character.name,
+                                    accentColor = CharacterColor,
+                                    icon = Icons.Default.Person,
                                     onClick = {
                                         viewModel.addItem(
-                                            title = character.name, 
-                                            type = "Character", 
+                                            title = character.name,
+                                            type = "Character",
                                             imageUrl = character.displayImageUrl,
                                             currentHp = character.currentHp,
                                             maxHp = character.maxHp,
@@ -418,13 +470,18 @@ fun PresentationScreen(
 
                     // 2. Monsters Section
                     val filteredMonsters = monsters.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "Monsters", count = filteredMonsters.size, icon = DndIcons.Filled.BugReport, color = MonsterColor) {
+                    FoldableSection(
+                        title = "Monsters",
+                        count = filteredMonsters.size,
+                        icon = DndIcons.Filled.BugReport,
+                        color = MonsterColor
+                    ) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(filteredMonsters) { monster ->
                                 PresenterSidebarRow(monster.name, MonsterColor, icon = DndIcons.Filled.BugReport, onClick = {
                                     viewModel.addItem(
-                                        title = monster.name, 
-                                        type = "Monster", 
+                                        title = monster.name,
+                                        type = "Monster",
                                         imageUrl = monster.displayImageUrl,
                                         currentHp = monster.currentHp,
                                         maxHp = monster.maxHp,
@@ -443,13 +500,18 @@ fun PresentationScreen(
 
                     // 3. NPCs Section
                     val filteredNpcs = npcs.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "NPCs", count = filteredNpcs.size, icon = DndIcons.Filled.EmojiPeople, color = NpcColor) {
+                    FoldableSection(
+                        title = "NPCs",
+                        count = filteredNpcs.size,
+                        icon = DndIcons.Filled.EmojiPeople,
+                        color = NpcColor
+                    ) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(filteredNpcs) { npc ->
                                 PresenterSidebarRow(npc.name, NpcColor, icon = DndIcons.Filled.EmojiPeople, onClick = {
                                     viewModel.addItem(
-                                        title = npc.name, 
-                                        type = "NPC", 
+                                        title = npc.name,
+                                        type = "NPC",
                                         imageUrl = npc.displayImageUrl,
                                         subInfo = npc.background,
                                         sourceId = npc.id,
@@ -464,11 +526,21 @@ fun PresentationScreen(
 
                     // 4. Locations Section
                     val filteredLocations = locations.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "Locations", count = filteredLocations.size, icon = DndIcons.Filled.Explore, color = LocationColor) {
+                    FoldableSection(
+                        title = "Locations",
+                        count = filteredLocations.size,
+                        icon = DndIcons.Filled.Explore,
+                        color = LocationColor
+                    ) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(filteredLocations) { location ->
                                 PresenterSidebarRow(location.name, LocationColor, icon = DndIcons.Filled.Explore, onClick = {
-                                    viewModel.addItem(location.name, "Location", imageUrl = location.displayImageUrl, isBackground = true)
+                                    viewModel.addItem(
+                                        location.name,
+                                        "Location",
+                                        imageUrl = location.displayImageUrl,
+                                        isBackground = true
+                                    )
                                 })
                             }
                         }
@@ -478,11 +550,21 @@ fun PresentationScreen(
 
                     // 5. Battlefields Section
                     val filteredBattlefields = battlefields.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "Battlefields", count = filteredBattlefields.size, icon = DndIcons.Filled.Map, color = BattlefieldColor) {
+                    FoldableSection(
+                        title = "Battlefields",
+                        count = filteredBattlefields.size,
+                        icon = DndIcons.Filled.Map,
+                        color = BattlefieldColor
+                    ) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(filteredBattlefields) { battlefield ->
                                 PresenterSidebarRow(battlefield.name, BattlefieldColor, icon = DndIcons.Filled.Map, onClick = {
-                                    viewModel.addItem(battlefield.name, "Battlefield", imageUrl = battlefield.displayImageUrl, isBackground = true)
+                                    viewModel.addItem(
+                                        battlefield.name,
+                                        "Battlefield",
+                                        imageUrl = battlefield.displayImageUrl,
+                                        isBackground = true
+                                    )
                                 })
                             }
                         }
@@ -492,7 +574,12 @@ fun PresentationScreen(
 
                     // 6. Events Section
                     val filteredEvents = events.filter { it.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "Saved Events", count = filteredEvents.size, icon = DndIcons.Filled.AutoFixHigh, color = MaterialTheme.colorScheme.secondary) {
+                    FoldableSection(
+                        title = "Saved Events",
+                        count = filteredEvents.size,
+                        icon = DndIcons.Filled.AutoFixHigh,
+                        color = MaterialTheme.colorScheme.secondary
+                    ) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(filteredEvents) { event ->
                                 var showSaveDialog by remember { mutableStateOf(false) }
@@ -521,18 +608,27 @@ fun PresentationScreen(
                     // 7. Items Section
                     val allItems = distinctChars.flatMap { c -> c.items.map { Triple(it, c.id, c.name) } }
                         .filter { it.first.name.contains(searchQuery, ignoreCase = true) }
-                    FoldableSection(title = "Inventory", count = allItems.size, icon = DndIcons.Filled.ShoppingBag, color = ItemColor) {
+                    FoldableSection(
+                        title = "Inventory",
+                        count = allItems.size,
+                        icon = DndIcons.Filled.ShoppingBag,
+                        color = ItemColor
+                    ) {
                         LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
                             items(allItems) { (item, ownerId, ownerName) ->
-                                var itemCoords: androidx.compose.ui.layout.LayoutCoordinates? by remember { mutableStateOf(null) }
+                                var itemCoords: androidx.compose.ui.layout.LayoutCoordinates? by remember {
+                                    mutableStateOf(
+                                        null
+                                    )
+                                }
                                 PresenterSidebarRow(
-                                    title = "${item.name} ($ownerName)", 
-                                    accentColor = ItemColor, 
-                                    icon = itemToIcon(item), 
+                                    title = "${item.name} ($ownerName)",
+                                    accentColor = ItemColor,
+                                    icon = itemToIcon(item),
                                     onClick = {
                                         viewModel.addItem(
-                                            title = item.name, 
-                                            type = "Item", 
+                                            title = item.name,
+                                            type = "Item",
                                             imageUrl = item.imageUrl,
                                             subInfo = "${item.rarity.name} · Owned by $ownerName",
                                             description = item.description
@@ -547,18 +643,24 @@ fun PresentationScreen(
                                                 onDrag = { change, _ ->
                                                     val base = itemCoords?.boundsInWindow()?.topLeft ?: androidx.compose.ui.geometry.Offset.Zero
                                                     mousePosition = base + change.position
-                                                    
+
                                                     // Check for drop target
                                                     dropTargetId = characterBounds.entries.find { (_, coords) ->
                                                         if (coords.isAttached) {
                                                             coords.boundsInWindow().contains(mousePosition)
-                                                        } else false
+                                                        } else {
+                                                            false
+                                                        }
                                                     }?.key
                                                 },
                                                 onDragEnd = {
                                                     val targetId = dropTargetId
                                                     if (draggedItemInfo != null && targetId != null && targetId != ownerId) {
-                                                        characterListViewModel.moveItemBetweenCharacters(item, ownerId, targetId)
+                                                        characterListViewModel.moveItemBetweenCharacters(
+                                                            item,
+                                                            ownerId,
+                                                            targetId
+                                                        )
                                                     }
                                                     draggedItemInfo = null
                                                     dropTargetId = null
@@ -592,7 +694,12 @@ fun PresentationScreen(
                     .border(1.dp, Color.White, MaterialTheme.shapes.small),
                 contentAlignment = Alignment.Center
             ) {
-                Text(item.name, color = Color.White, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                Text(
+                    item.name,
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -657,13 +764,28 @@ private fun EventSidebarRow(
             }
             Row {
                 IconButton(onClick = onSave, modifier = Modifier.size(32.dp)) {
-                    Icon(DndIcons.Filled.Save, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(
+                        DndIcons.Filled.Save,
+                        null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 IconButton(onClick = onLoad, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.Default.Download,
+                        null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+                    Icon(
+                        Icons.Default.Delete,
+                        null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
@@ -672,9 +794,9 @@ private fun EventSidebarRow(
 
 @Composable
 private fun PresenterSidebarRow(
-    title: String, 
-    accentColor: Color, 
-    icon: ImageVector? = null, 
+    title: String,
+    accentColor: Color,
+    icon: ImageVector? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isHighlighted: Boolean = false
@@ -697,8 +819,8 @@ private fun PresenterSidebarRow(
                     Spacer(Modifier.width(8.dp))
                 }
                 Text(
-                    text = title, 
-                    style = MaterialTheme.typography.bodyMedium, 
+                    text = title,
+                    style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
@@ -721,7 +843,13 @@ private fun FoldableSection(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = if (expanded) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+            containerColor = if (expanded) {
+                MaterialTheme.colorScheme.surface
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(
+                    alpha = 0.2f
+                )
+            }
         )
     ) {
         Column {
@@ -739,7 +867,7 @@ private fun FoldableSection(
                     Spacer(Modifier.width(8.dp))
                     Surface(color = color.copy(alpha = 0.1f), shape = CircleShape) {
                         Text(
-                            count.toString(), 
+                            count.toString(),
                             modifier = Modifier.padding(horizontal = 6.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = color,
@@ -764,7 +892,7 @@ private fun FoldableSection(
 
 @Composable
 fun PlayerViewContent(
-    activeItems: List<PresentedItem>, 
+    activeItems: List<PresentedItem>,
     showStats: Boolean = true,
     onCloseRequest: () -> Unit = {}
 ) {
@@ -775,7 +903,9 @@ fun PlayerViewContent(
                 if (it.key == Key.Escape && it.type == KeyEventType.KeyDown) {
                     onCloseRequest()
                     true
-                } else false
+                } else {
+                    false
+                }
             },
         color = Color.Black
     ) {
@@ -804,7 +934,7 @@ fun WorkspaceContainer(
     BoxWithConstraints(modifier = modifier, contentAlignment = Alignment.Center) {
         val containerWidth = constraints.maxWidth.toFloat()
         val containerHeight = constraints.maxHeight.toFloat()
-        
+
         val scale = minOf(containerWidth / LOGICAL_CANVAS_SIZE, containerHeight / LOGICAL_CANVAS_SIZE)
         val canvasWidthPx = LOGICAL_CANVAS_SIZE * scale
         val canvasHeightPx = LOGICAL_CANVAS_SIZE * scale
@@ -816,9 +946,9 @@ fun WorkspaceContainer(
         // Use a Box that fills the whole available space so interactions aren't clipped
         Box(modifier = Modifier.fillMaxSize()) {
             val sortedItems = activeItems.sortedByDescending { it.isBackground }
-            
+
             sortedItems.forEach { item ->
-                val categoryColor = when(item.type.lowercase()) {
+                val categoryColor = when (item.type.lowercase()) {
                     "monster" -> MonsterColor
                     "npc" -> NpcColor
                     "location" -> LocationColor
@@ -831,23 +961,27 @@ fun WorkspaceContainer(
                 // Detect if this item is "fighting" (near an enemy)
                 val isFighting = remember(item, activeItems.size) {
                     derivedStateOf {
-                        if (item.isBackground || item.type.lowercase() == "item") false
-                        else {
+                        if (item.isBackground || item.type.lowercase() == "item") {
+                            false
+                        } else {
                             activeItems.any { other ->
-                                if (other.id == item.id || other.isBackground || other.type.lowercase() == "item") false
-                                else {
+                                if (other.id == item.id || other.isBackground || other.type.lowercase() == "item") {
+                                    false
+                                } else {
                                     // Combat logic: Monsters fight Characters/NPCs, and vice versa
                                     val isEnemy = (item.type.lowercase() == "monster" && (other.type.lowercase() == "character" || other.type.lowercase() == "npc")) ||
-                                                 (other.type.lowercase() == "monster" && (item.type.lowercase() == "character" || item.type.lowercase() == "npc"))
-                                    
+                                        (other.type.lowercase() == "monster" && (item.type.lowercase() == "character" || item.type.lowercase() == "npc"))
+
                                     if (isEnemy) {
                                         val dx = (item.x + item.width / 2) - (other.x + other.width / 2)
                                         val dy = (item.y + item.height / 2) - (other.y + other.height / 2)
                                         val distance = sqrt(dx * dx + dy * dy)
                                         // Animation threshold is relative to the size of cards
                                         val avgSize = (item.width + item.height + other.width + other.height) / 4
-                                        distance < avgSize * 1.2f 
-                                    } else false
+                                        distance < avgSize * 1.2f
+                                    } else {
+                                        false
+                                    }
                                 }
                             }
                         }
@@ -856,7 +990,7 @@ fun WorkspaceContainer(
 
                 key(item.id) {
                     var showDetails by remember { mutableStateOf(false) }
-                    
+
                     Box {
                         PresentationItem(
                             item = item,
@@ -895,7 +1029,10 @@ fun WorkspaceContainer(
                                     modifier = Modifier.fillMaxSize(),
                                     colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.9f)),
                                     shape = MaterialTheme.shapes.medium,
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, categoryColor.copy(alpha = 0.5f))
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        categoryColor.copy(alpha = 0.5f)
+                                    )
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp).verticalScroll(rememberScrollState())) {
                                         Row(
@@ -903,9 +1040,22 @@ fun WorkspaceContainer(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text("DM Notes", style = MaterialTheme.typography.labelMedium, color = categoryColor, fontWeight = FontWeight.Bold)
-                                            IconButton(onClick = { showDetails = false }, modifier = Modifier.size(20.dp)) {
-                                                Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                            Text(
+                                                "DM Notes",
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = categoryColor,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            IconButton(
+                                                onClick = { showDetails = false },
+                                                modifier = Modifier.size(20.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Close,
+                                                    null,
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
                                             }
                                         }
                                         Spacer(Modifier.height(4.dp))
@@ -916,10 +1066,17 @@ fun WorkspaceContainer(
                                             fontWeight = FontWeight.ExtraBold
                                         )
                                         if (!item.subInfo.isNullOrBlank()) {
-                                            Text(item.subInfo ?: "", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                            Text(
+                                                item.subInfo ?: "",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color.Gray
+                                            )
                                         }
-                                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.White.copy(alpha = 0.2f))
-                                        
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(vertical = 8.dp),
+                                            color = Color.White.copy(alpha = 0.2f)
+                                        )
+
                                         // Dynamic content based on type could be added here
                                         Text(
                                             text = item.description ?: "No description provided.",
@@ -959,18 +1116,24 @@ fun PresentationItem(
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val pixelScale = if (canvasSizePx > 0) canvasSizePx / LOGICAL_CANVAS_SIZE else 1f
-    
+
     var localX by remember { mutableStateOf(item.x) }
     var localY by remember { mutableStateOf(item.y) }
     var localW by remember { mutableStateOf(item.width) }
     var localH by remember { mutableStateOf(item.height) }
 
-    LaunchedEffect(item.x, item.y) { localX = item.x; localY = item.y }
-    LaunchedEffect(item.width, item.height) { localW = item.width; localH = item.height }
+    LaunchedEffect(item.x, item.y) {
+        localX = item.x
+        localY = item.y
+    }
+    LaunchedEffect(item.width, item.height) {
+        localW = item.width
+        localH = item.height
+    }
 
     val currentOnPositionChange by rememberUpdatedState(onPositionChange)
     val currentOnSizeChange by rememberUpdatedState(onSizeChange)
-    
+
     val focusRequester = remember { FocusRequester() }
 
     // Shake animation for "fighting" state
@@ -1012,15 +1175,35 @@ fun PresentationItem(
                         .onKeyEvent { keyEvent ->
                             if ((item.type.lowercase() == "location" || item.type.lowercase() == "battlefield") && keyEvent.type == KeyEventType.KeyDown) {
                                 when (keyEvent.key) {
-                                    Key.Equals, Key.NumPadAdd -> { onZoomChange(0.1f); true }
-                                    Key.Minus, Key.NumPadSubtract -> { onZoomChange(-0.1f); true }
-                                    Key.W -> { onOffsetChange(0f, 0.05f); true }
-                                    Key.S -> { onOffsetChange(0f, -0.05f); true }
-                                    Key.A -> { onOffsetChange(0.05f, 0f); true }
-                                    Key.D -> { onOffsetChange(-0.05f, 0f); true }
+                                    Key.Equals, Key.NumPadAdd -> {
+                                        onZoomChange(0.1f)
+                                        true
+                                    }
+                                    Key.Minus, Key.NumPadSubtract -> {
+                                        onZoomChange(-0.1f)
+                                        true
+                                    }
+                                    Key.W -> {
+                                        onOffsetChange(0f, 0.05f)
+                                        true
+                                    }
+                                    Key.S -> {
+                                        onOffsetChange(0f, -0.05f)
+                                        true
+                                    }
+                                    Key.A -> {
+                                        onOffsetChange(0.05f, 0f)
+                                        true
+                                    }
+                                    Key.D -> {
+                                        onOffsetChange(-0.05f, 0f)
+                                        true
+                                    }
                                     else -> false
                                 }
-                            } else false
+                            } else {
+                                false
+                            }
                         }
                         .focusRequester(focusRequester)
                         .focusable()
@@ -1028,7 +1211,7 @@ fun PresentationItem(
                             awaitPointerEventScope {
                                 while (true) {
                                     val event = awaitPointerEvent()
-                                    
+
                                     // 1. Scroll Zoom
                                     if ((item.type.lowercase() == "location" || item.type.lowercase() == "battlefield") && event.type == PointerEventType.Scroll) {
                                         val delta = event.changes.first().scrollDelta.y
@@ -1044,7 +1227,7 @@ fun PresentationItem(
                                         if (change != null && change.pressed) {
                                             val isRightClick = event.buttons.isSecondaryPressed
                                             val dragAmount = change.positionChange()
-                                            
+
                                             if (dragAmount != androidx.compose.ui.geometry.Offset.Zero) {
                                                 change.consume()
                                                 if ((item.type.lowercase() == "location" || item.type.lowercase() == "battlefield") && isRightClick) {
@@ -1052,12 +1235,12 @@ fun PresentationItem(
                                                 } else if (!isRightClick) {
                                                     val logicalDeltaX = dragAmount.x / pixelScale
                                                     val logicalDeltaY = dragAmount.y / pixelScale
-                                                    
+
                                                     // Allow all items to be moved into "overscan" areas
                                                     // This is needed for wide screens where the map covers the black bars.
                                                     val minBound = -2000f
                                                     val maxBound = 2000f
-                                                    
+
                                                     localX = (localX + logicalDeltaX).coerceIn(minBound, maxBound)
                                                     localY = (localY + logicalDeltaY).coerceIn(minBound, maxBound)
                                                     currentOnPositionChange(localX, localY)
@@ -1065,7 +1248,7 @@ fun PresentationItem(
                                             }
                                         }
                                     }
-                                    
+
                                     // 3. Focus on press
                                     if (event.type == PointerEventType.Press) {
                                         focusRequester.requestFocus()
@@ -1073,7 +1256,9 @@ fun PresentationItem(
                                 }
                             }
                         }
-                } else Modifier
+                } else {
+                    Modifier
+                }
             )
     ) {
         // Halo / Aura Effect
@@ -1091,7 +1276,7 @@ fun PresentationItem(
             LocationCard(item, isDM, onRemove)
         } else {
             PlayerCard(item, categoryColor, isDM, onRemove, onHpChange, showStats, onToggleDetails)
-            
+
             // Crossing Swords Effect
             if (isFighting) {
                 Box(
@@ -1111,12 +1296,12 @@ fun PresentationItem(
                             change.consume()
                             val logicalDeltaW = dragAmount.x / pixelScale
                             val logicalDeltaH = dragAmount.y / pixelScale
-                            
+
                             // Allow items to be resized freely within a large range
                             // Using a fixed large limit (2000f) for non-backgrounds so they don't accidentally cover the whole screen
                             val maxWidth = if (item.isBackground) 5000f else 2000f
                             val maxHeight = if (item.isBackground) 5000f else 2000f
-                            
+
                             localW = (localW + logicalDeltaW).coerceIn(50f, maxWidth)
                             localH = (localH + logicalDeltaH).coerceIn(50f, maxHeight)
                             currentOnSizeChange(localW, localH)
@@ -1184,7 +1369,7 @@ fun PlayerCard(
 ) {
     val title = item.title
     val imageUrl = item.imageUrl
-    
+
     val shape = MaterialTheme.shapes.large
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -1230,7 +1415,7 @@ fun PlayerCard(
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
-                
+
                 if (!item.subInfo.isNullOrBlank()) {
                     Text(
                         text = item.subInfo ?: "",
@@ -1263,8 +1448,10 @@ fun PlayerCard(
                             ),
                             label = "alpha"
                         ).value
-                    } else 1f
-                    
+                    } else {
+                        1f
+                    }
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
@@ -1277,7 +1464,12 @@ fun PlayerCard(
                                 color = Color.Black.copy(alpha = 0.3f)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Icon(DndIcons.Filled.Remove, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                    Icon(
+                                        DndIcons.Filled.Remove,
+                                        null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
                                 }
                             }
                             Spacer(Modifier.width(8.dp))
@@ -1302,8 +1494,8 @@ fun PlayerCard(
                                 trackColor = Color.White.copy(alpha = 0.1f)
                             )
                             Text(
-                                "$currentHp", 
-                                style = MaterialTheme.typography.labelSmall, 
+                                "$currentHp",
+                                style = MaterialTheme.typography.labelSmall,
                                 color = Color.White,
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 11.sp,
@@ -1338,8 +1530,18 @@ fun PlayerCard(
                 ) {
                     Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("AC", fontSize = 7.sp, color = Color.White.copy(alpha = 0.7f), fontWeight = FontWeight.Bold)
-                            Text(item.armorClass.toString(), fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.ExtraBold)
+                            Text(
+                                "AC",
+                                fontSize = 7.sp,
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                item.armorClass.toString(),
+                                fontSize = 12.sp,
+                                color = Color.White,
+                                fontWeight = FontWeight.ExtraBold
+                            )
                         }
                     }
                 }
@@ -1396,7 +1598,10 @@ private fun StatPill(label: String, value: Int) {
         shape = MaterialTheme.shapes.extraSmall,
         border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f))
     ) {
-        Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(label, fontSize = 8.sp, color = Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(2.dp))
             Text(value.toString(), fontSize = 9.sp, color = Color.White, fontWeight = FontWeight.Bold)
@@ -1406,13 +1611,13 @@ private fun StatPill(label: String, value: Int) {
 
 @Composable
 fun LocationCard(
-    item: PresentedItem, 
-    isDM: Boolean = false, 
+    item: PresentedItem,
+    isDM: Boolean = false,
     onRemove: () -> Unit = {}
 ) {
     val title = item.title
     val imageUrl = item.imageUrl
-    
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Color(0xFF121212),
@@ -1434,7 +1639,7 @@ fun LocationCard(
                         },
                     contentScale = ContentScale.Fit
                 )
-                
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1460,13 +1665,18 @@ fun LocationCard(
                     Text(title, style = MaterialTheme.typography.titleMedium, color = Color.Gray)
                 }
             }
-            
+
             if (isDM) {
                 IconButton(
                     onClick = onRemove,
                     modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(24.dp)
                 ) {
-                    Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp), tint = if (!imageUrl.isNullOrBlank()) Color.White else Color.Gray)
+                    Icon(
+                        Icons.Default.Close,
+                        null,
+                        modifier = Modifier.size(16.dp),
+                        tint = if (!imageUrl.isNullOrBlank()) Color.White else Color.Gray
+                    )
                 }
             }
         }

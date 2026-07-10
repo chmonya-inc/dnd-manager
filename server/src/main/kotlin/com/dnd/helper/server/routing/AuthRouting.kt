@@ -1,39 +1,43 @@
 package com.dnd.helper.server.routing
 
-import io.ktor.server.plugins.ratelimit.*
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.dnd.helper.data.remote.dto.auth.AuthResponse
 import com.dnd.helper.data.remote.dto.auth.LoginRequest
+import com.dnd.helper.data.remote.dto.auth.PasswordRecoveryRequest
 import com.dnd.helper.data.remote.dto.auth.RefreshRequest
 import com.dnd.helper.data.remote.dto.auth.RegisterRequest
 import com.dnd.helper.data.remote.dto.auth.UserDto
 import com.dnd.helper.server.database.RefreshTokens
 import com.dnd.helper.server.database.Users
+import com.password4j.Password
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.server.application.Application
+import io.ktor.server.plugins.ratelimit.RateLimitName
+import io.ktor.server.plugins.ratelimit.rateLimit
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.post
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.update
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.mindrot.jbcrypt.BCrypt
-import com.password4j.Password
-import com.dnd.helper.data.remote.dto.auth.PasswordRecoveryRequest
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
-import org.jetbrains.exposed.sql.and
 import java.security.MessageDigest
-import java.util.*
+import java.util.Date
+import java.util.UUID
 
 const val JWT_ISSUER = "dnd-helper-server"
 val jwtSecret: String = System.getenv("JWT_SECRET")
     ?: error("JWT_SECRET environment variable must be set")
 
-private const val ACCESS_TOKEN_EXPIRY_MS = 900_000L      // 15 minutes
+private const val ACCESS_TOKEN_EXPIRY_MS = 900_000L // 15 minutes
 private const val REFRESH_TOKEN_EXPIRY_MS = 7 * 86_400_000L // 7 days
 
 private val hmac = Algorithm.HMAC256(jwtSecret)
@@ -141,7 +145,6 @@ private fun validateStoredRefreshToken(token: String): String? {
     return row?.get(RefreshTokens.userId)
 }
 
-
 fun Application.configureAuthRouting() {
     routing {
         rateLimit(RateLimitName("auth")) {
@@ -150,7 +153,10 @@ fun Application.configureAuthRouting() {
                     val request = call.receive<RegisterRequest>()
 
                     if (request.username.isBlank() || request.password.length < 6) {
-                        call.respond(HttpStatusCode.BadRequest, "Username cannot be empty and password must be at least 6 characters")
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Username cannot be empty and password must be at least 6 characters"
+                        )
                         return@post
                     }
 
@@ -164,7 +170,7 @@ fun Application.configureAuthRouting() {
 
                     val userId = UUID.randomUUID().toString()
                     val hash = hashPassword(request.password)
-                    
+
                     val recoverCode = UUID.randomUUID().toString().take(12)
                     val recoverHash = hashPassword(recoverCode)
 
@@ -231,7 +237,12 @@ fun Application.configureAuthRouting() {
 
                     call.respond(
                         HttpStatusCode.OK,
-                        AuthResponse(accessToken, refreshToken, UserDto(userId, request.username, userRow[Users.role]), newRecoverCode)
+                        AuthResponse(
+                            accessToken,
+                            refreshToken,
+                            UserDto(userId, request.username, userRow[Users.role]),
+                            newRecoverCode
+                        )
                     )
                 }
 

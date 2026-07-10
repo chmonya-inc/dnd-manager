@@ -3,11 +3,21 @@ package com.dnd.helper.data.repository
 import com.dnd.helper.data.remote.AiImageService
 import com.dnd.helper.data.remote.GenerationType
 import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.repository.*
-import kotlinx.coroutines.*
+import com.dnd.helper.domain.repository.CharacterRepository
+import com.dnd.helper.domain.repository.EditingRepository
+import com.dnd.helper.domain.repository.GenerationStatus
+import com.dnd.helper.domain.repository.GenerationTask
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class EditingRepositoryImpl(
@@ -16,9 +26,11 @@ class EditingRepositoryImpl(
 ) : EditingRepository {
 
     private val scope =
-        CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { context, throwable ->
-            println(throwable)
-        })
+        CoroutineScope(
+            SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { context, throwable ->
+                println(throwable)
+            }
+        )
 
     private val _activeTasks = MutableStateFlow<List<GenerationTask>>(emptyList())
     override val activeTasks: StateFlow<List<GenerationTask>> = _activeTasks.asStateFlow()
@@ -78,7 +90,9 @@ class EditingRepositoryImpl(
                 var success = false
                 repeat(5) { attempt ->
                     if (!success) {
-                        println("[EditingRepo] Attempting to save URL to $entityType $entityId (attempt ${attempt + 1})")
+                        println(
+                            "[EditingRepo] Attempting to save URL to $entityType $entityId (attempt ${attempt + 1})"
+                        )
                         success = try {
                             saveGeneratedUrl(entityId, entityType, url)
                         } catch (e: Exception) {
@@ -145,7 +159,9 @@ class EditingRepositoryImpl(
                     val saveResult =
                         characterRepository.saveCharacter(result.data.copy(imageUrl = url))
                     saveResult is Result.Success
-                } else false
+                } else {
+                    false
+                }
             }
 
             "npc" -> {
@@ -155,8 +171,12 @@ class EditingRepositoryImpl(
                     if (entity != null) {
                         val saveResult = characterRepository.saveNpc(entity.copy(imageUrl = url))
                         saveResult is Result.Success
-                    } else false
-                } else false
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
             }
 
             "monster" -> {
@@ -167,8 +187,12 @@ class EditingRepositoryImpl(
                         val saveResult =
                             characterRepository.saveMonster(entity.copy(imageUrl = url))
                         saveResult is Result.Success
-                    } else false
-                } else false
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
             }
 
             "location" -> {
@@ -179,8 +203,12 @@ class EditingRepositoryImpl(
                         val saveResult =
                             characterRepository.saveLocation(entity.copy(imageUrl = url))
                         saveResult is Result.Success
-                    } else false
-                } else false
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
             }
 
             "battlefield" -> {
@@ -191,8 +219,12 @@ class EditingRepositoryImpl(
                         val saveResult =
                             characterRepository.saveBattlefield(entity.copy(imageUrl = url))
                         saveResult is Result.Success
-                    } else false
-                } else false
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
             }
 
             "item" -> {
@@ -211,9 +243,15 @@ class EditingRepositoryImpl(
                             val saveResult =
                                 characterRepository.saveCharacter(char.copy(items = updatedItems))
                             saveResult is Result.Success
-                        } else false
-                    } else false
-                } else false
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
             }
 
             "spell" -> {
@@ -232,9 +270,15 @@ class EditingRepositoryImpl(
                             val saveResult =
                                 characterRepository.saveCharacter(char.copy(spells = updatedSpells))
                             saveResult is Result.Success
-                        } else false
-                    } else false
-                } else false
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
             }
 
             else -> false
