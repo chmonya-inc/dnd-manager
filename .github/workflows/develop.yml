@@ -86,6 +86,7 @@ jobs:
       runs-on: ubuntu-latest
       build-number: ${{ github.run_number }}
       build-script: "detekt"
+      build-path: "**/build/reports/detekt/*"
       backend-url-android: ""
       backend-url-desktop: ""
       archive: true
