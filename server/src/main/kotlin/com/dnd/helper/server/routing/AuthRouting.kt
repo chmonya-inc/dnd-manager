@@ -21,8 +21,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import org.jetbrains.exposed.sql.transactions.transaction
-import de.mkammerer.argon2.Argon2Factory
-import de.mkammerer.argon2.Argon2
+import org.mindrot.jbcrypt.BCrypt
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
 import java.security.MessageDigest
@@ -37,23 +36,12 @@ private const val REFRESH_TOKEN_EXPIRY_MS = 7 * 86_400_000L // 7 days
 
 private val hmac = Algorithm.HMAC256(jwtSecret)
 
-private val argon2: Argon2 = Argon2Factory.create()
-
 private fun hashPassword(password: String): String =
-    argon2.hash(10, 65536, 1, password.toCharArray())
+    BCrypt.hashpw(password, BCrypt.gensalt(10))
 
 private fun verifyPassword(password: String, hash: String): Boolean =
     try {
-        argon2.verify(hash, password.toCharArray())
-    } catch (_: Exception) {
-        false
-    }
-
-private fun isLegacyBcryptHash(hash: String): Boolean = hash.startsWith("\$2a\$") || hash.startsWith("\$2b\$")
-
-private fun verifyLegacyBcrypt(password: String, hash: String): Boolean =
-    try {
-        org.mindrot.jbcrypt.BCrypt.checkpw(password, hash)
+        BCrypt.checkpw(password, hash)
     } catch (_: Exception) {
         false
     }
@@ -203,27 +191,13 @@ fun Application.configureAuthRouting() {
                     }
 
                     val hash = userRow[Users.passwordHash]
-                    val passwordValid = if (isLegacyBcryptHash(hash)) {
-                        verifyLegacyBcrypt(request.password, hash)
-                    } else {
-                        verifyPassword(request.password, hash)
-                    }
-                    if (!passwordValid) {
+                    if (!verifyPassword(request.password, hash)) {
                         call.respond(HttpStatusCode.Unauthorized, "Invalid credentials")
                         return@post
                     }
 
                     val userId = userRow[Users.id]
                     val userRole = userRow[Users.role]
-
-                    // Upgrade legacy bcrypt hash to Argon2 on successful login
-                    if (isLegacyBcryptHash(hash)) {
-                        transaction {
-                            Users.update({ Users.id eq userId }) {
-                                it[passwordHash] = hashPassword(request.password)
-                            }
-                        }
-                    }
 
                     val accessToken = generateAccessToken(userId)
                     val refreshToken = generateRefreshToken(userId)
