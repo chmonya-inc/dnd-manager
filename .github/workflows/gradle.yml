@@ -21,6 +21,10 @@ on:
         required: false
         type: string
         default: "{}"
+      archive:
+        required: false
+        type: string
+        default: false
     outputs:
       artifact-id:
         description: "ID of the uploaded MSI artifact"
