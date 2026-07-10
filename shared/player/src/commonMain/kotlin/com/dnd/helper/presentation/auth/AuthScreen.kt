@@ -32,10 +32,41 @@ fun AuthScreen(
         }
     }
 
+    var showRecoverCodeDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.registeredRecoverCode) {
+        if (state.registeredRecoverCode != null) {
+            showRecoverCodeDialog = true
+        }
+    }
+
     LaunchedEffect(state.isSuccess) {
-        if (state.isSuccess) {
+        if (state.isSuccess && state.registeredRecoverCode == null) {
             onAuthSuccess()
         }
+    }
+
+    if (showRecoverCodeDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                showRecoverCodeDialog = false
+                onAuthSuccess()
+            },
+            title = { Text("Save your Recovery Code") },
+            text = { 
+                androidx.compose.foundation.text.selection.SelectionContainer {
+                    Text("Your password recovery code is:\n\n${state.registeredRecoverCode}\n\nPlease save this code somewhere safe. You can use it to reset your password later.") 
+                }
+            },
+            confirmButton = {
+                Button(onClick = { 
+                    showRecoverCodeDialog = false
+                    onAuthSuccess()
+                }) {
+                    Text("I've saved it")
+                }
+            }
+        )
     }
 
     Surface(
@@ -86,7 +117,7 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     Text(
-                        text = if (state.isLoginMode) "Login" else "Register",
+                        text = if (state.isRecoverMode) "Recover Password" else if (state.isLoginMode) "Login" else "Register",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -116,7 +147,7 @@ fun AuthScreen(
                     OutlinedTextField(
                         value = state.password,
                         onValueChange = { viewModel.onEvent(AuthEvent.OnPasswordChanged(it)) },
-                        label = { Text("Password") },
+                        label = { Text(if (state.isRecoverMode) "Old Password or Recovery Code" else "Password") },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
@@ -131,7 +162,28 @@ fun AuthScreen(
                         }
                     )
 
-                    if (!state.isLoginMode && forceMasterRole) {
+                    if (state.isRecoverMode) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = state.newPassword,
+                            onValueChange = { viewModel.onEvent(AuthEvent.OnNewPasswordChanged(it)) },
+                            label = { Text("New Password") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaterialTheme.shapes.medium,
+                            trailingIcon = {
+                                IconButton(onClick = { viewModel.onEvent(AuthEvent.PasteNewPassword) }) {
+                                    Icon(
+                                        imageVector = DndIcons.Filled.ContentPaste,
+                                        contentDescription = "Paste"
+                                    )
+                                }
+                            }
+                        )
+                    }
+
+                    if (!state.isLoginMode && !state.isRecoverMode && forceMasterRole) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Master Account — creates campaigns, characters, monsters, and assigns characters to players.",
@@ -139,7 +191,7 @@ fun AuthScreen(
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
-                    } else if (!state.isLoginMode) {
+                    } else if (!state.isLoginMode && !state.isRecoverMode) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Registering as a Player — you will be able to view and play your assigned characters.",
@@ -185,7 +237,7 @@ fun AuthScreen(
                             )
                         } else {
                             Text(
-                                if (state.isLoginMode) "Login" else "Register",
+                                if (state.isRecoverMode) "Recover" else if (state.isLoginMode) "Login" else "Register",
                                 style = MaterialTheme.typography.titleMedium
                             )
                         }
@@ -202,6 +254,18 @@ fun AuthScreen(
                             else "Already have an account? Login",
                             color = MaterialTheme.colorScheme.primary
                         )
+                    }
+
+                    if (state.isLoginMode || state.isRecoverMode) {
+                        TextButton(
+                            onClick = { viewModel.onEvent(AuthEvent.ToggleRecoverMode) },
+                            enabled = !state.isLoading
+                        ) {
+                            Text(
+                                if (state.isRecoverMode) "Back to Login" else "Forgot password? Recover",
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
                     }
                 }
             }

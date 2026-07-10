@@ -22,6 +22,8 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.mindrot.jbcrypt.BCrypt
+import com.password4j.Password
+import com.dnd.helper.data.remote.dto.auth.PasswordRecoveryRequest
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
 import java.security.MessageDigest
@@ -37,11 +39,17 @@ private const val REFRESH_TOKEN_EXPIRY_MS = 7 * 86_400_000L // 7 days
 private val hmac = Algorithm.HMAC256(jwtSecret)
 
 private fun hashPassword(password: String): String =
-    BCrypt.hashpw(password, BCrypt.gensalt(10))
+    Password.hash(password).addRandomSalt(16).withArgon2().result
+
+private fun isLegacyBcryptHash(hash: String): Boolean = hash.startsWith("\$2a\$") || hash.startsWith("\$2b\$")
 
 private fun verifyPassword(password: String, hash: String): Boolean =
     try {
-        BCrypt.checkpw(password, hash)
+        if (isLegacyBcryptHash(hash)) {
+            BCrypt.checkpw(password, hash)
+        } else {
+            Password.check(password, hash).withArgon2()
+        }
     } catch (_: Exception) {
         false
     }
@@ -156,6 +164,9 @@ fun Application.configureAuthRouting() {
 
                     val userId = UUID.randomUUID().toString()
                     val hash = hashPassword(request.password)
+                    
+                    val recoverCode = UUID.randomUUID().toString().take(12)
+                    val recoverHash = hashPassword(recoverCode)
 
                     val role = if (request.role == "MASTER") "MASTER" else "PLAYER"
 
@@ -164,6 +175,7 @@ fun Application.configureAuthRouting() {
                             it[id] = userId
                             it[username] = request.username
                             it[passwordHash] = hash
+                            it[recoverCodeHash] = recoverHash
                             it[Users.role] = role
                         }
                     }
@@ -174,7 +186,52 @@ fun Application.configureAuthRouting() {
 
                     call.respond(
                         HttpStatusCode.OK,
-                        AuthResponse(accessToken, refreshToken, UserDto(userId, request.username, role))
+                        AuthResponse(accessToken, refreshToken, UserDto(userId, request.username, role), recoverCode)
+                    )
+                }
+
+                post("/recover") {
+                    val request = call.receive<PasswordRecoveryRequest>()
+
+                    val userRow = transaction {
+                        Users.selectAll().where { Users.username eq request.username }.singleOrNull()
+                    }
+
+                    if (userRow == null) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid credentials")
+                        return@post
+                    }
+
+                    val passHash = userRow[Users.passwordHash]
+                    val codeHash = userRow[Users.recoverCodeHash]
+
+                    val matchedPassword = verifyPassword(request.oldPasswordOrCode, passHash)
+                    val matchedCode = codeHash != null && verifyPassword(request.oldPasswordOrCode, codeHash)
+
+                    if (!matchedPassword && !matchedCode) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid credentials")
+                        return@post
+                    }
+
+                    val newHash = hashPassword(request.newPassword)
+                    val newRecoverCode = UUID.randomUUID().toString().take(12)
+                    val newRecoverHash = hashPassword(newRecoverCode)
+
+                    transaction {
+                        Users.update({ Users.id eq userRow[Users.id] }) {
+                            it[passwordHash] = newHash
+                            it[recoverCodeHash] = newRecoverHash
+                        }
+                    }
+
+                    val userId = userRow[Users.id]
+                    val accessToken = generateAccessToken(userId)
+                    val refreshToken = generateRefreshToken(userId)
+                    storeRefreshToken(refreshToken, userId)
+
+                    call.respond(
+                        HttpStatusCode.OK,
+                        AuthResponse(accessToken, refreshToken, UserDto(userId, request.username, userRow[Users.role]), newRecoverCode)
                     )
                 }
 
@@ -198,6 +255,15 @@ fun Application.configureAuthRouting() {
 
                     val userId = userRow[Users.id]
                     val userRole = userRow[Users.role]
+
+                    // Upgrade legacy bcrypt hash to Argon2 on successful login
+                    if (isLegacyBcryptHash(hash)) {
+                        transaction {
+                            Users.update({ Users.id eq userId }) {
+                                it[passwordHash] = hashPassword(request.password)
+                            }
+                        }
+                    }
 
                     val accessToken = generateAccessToken(userId)
                     val refreshToken = generateRefreshToken(userId)

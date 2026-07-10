@@ -16,6 +16,13 @@ data class RegisterRequest(
 )
 
 @Serializable
+data class PasswordRecoveryRequest(
+    val username: String,
+    val oldPasswordOrCode: String,
+    val newPassword: String
+)
+
+@Serializable
 data class RefreshRequest(
     val refreshToken: String
 )
@@ -24,7 +31,8 @@ data class RefreshRequest(
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String,
-    val user: UserDto
+    val user: UserDto,
+    val recoverCode: String? = null
 )
 
 @Serializable

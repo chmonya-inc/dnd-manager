@@ -22,6 +22,7 @@ object Users : Table("users") {
     val id = varchar("id", 50)
     val username = varchar("username", 100).uniqueIndex()
     val passwordHash = varchar("password_hash", 255)
+    val recoverCodeHash = varchar("recover_code_hash", 255).nullable()
     val role = varchar("role", 20).default("PLAYER") // MASTER or PLAYER
     override val primaryKey = PrimaryKey(id)
 }

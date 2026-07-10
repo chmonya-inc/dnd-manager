@@ -69,6 +69,7 @@ ktor-server-auth-jwt = { group = "io.ktor", name = "ktor-server-auth-jwt", versi
 ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref = "ktor" }
 jbcrypt = { group = "org.mindrot", name = "jbcrypt", version = "0.4" }
 argon2 = { group = "de.mkammerer", name = "argon2-jvm", version = "2.12" }
+password4j = { group = "com.password4j", name = "password4j", version = "1.8.4" }
 
 exposed-core = { group = "org.jetbrains.exposed", name = "exposed-core", version.ref = "exposed" }
 exposed-dao = { group = "org.jetbrains.exposed", name = "exposed-dao", version.ref = "exposed" }

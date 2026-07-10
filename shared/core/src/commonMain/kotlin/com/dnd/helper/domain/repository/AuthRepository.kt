@@ -7,6 +7,7 @@ import com.dnd.helper.data.remote.dto.auth.RegisterRequest
 interface AuthRepository {
     suspend fun login(request: LoginRequest): Result<AuthResponse>
     suspend fun register(request: RegisterRequest): Result<AuthResponse>
+    suspend fun recover(request: com.dnd.helper.data.remote.dto.auth.PasswordRecoveryRequest): Result<AuthResponse>
     suspend fun refresh(): Result<AuthResponse>
     fun getAuthToken(): String?
     fun getRefreshToken(): String?
