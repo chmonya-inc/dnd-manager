@@ -74,22 +74,6 @@ jobs:
       backend-url-desktop: ${{ vars.APPS_SCRIPT_URL_DESKTOP_TEST }}
     secrets: inherit
 
-  detekt:
-    name: Run detekt
-    needs: version
-    permissions:
-      contents: write
-    uses: chmonya-inc/dnd-manager/.github/workflows/client.yml@v2
-    with:
-      version: ${{ needs.version.outputs.version }}
-      platform: detekt
-      runs-on: ubuntu-latest
-      build-number: ${{ github.run_number }}
-      build-script: "detekt"
-      backend-url-android: ""
-      backend-url-desktop: ""
-    secrets: inherit
-
   deploy-api:
     needs: [build-api, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
