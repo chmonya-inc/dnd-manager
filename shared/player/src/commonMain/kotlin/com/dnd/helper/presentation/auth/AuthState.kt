@@ -6,6 +6,9 @@ data class AuthState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isLoginMode: Boolean = true,
+    val isRecoverMode: Boolean = false,
+    val newPassword: String = "",
+    val registeredRecoverCode: String? = null,
     val isSuccess: Boolean = false,
     val isMasterRole: Boolean = false, // Only meaningful in register mode
     val requiredRole: String? = null,

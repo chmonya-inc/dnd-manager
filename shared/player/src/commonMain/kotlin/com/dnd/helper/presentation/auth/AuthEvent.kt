@@ -4,6 +4,7 @@ sealed class AuthEvent {
     data class OnUsernameChanged(val username: String) : AuthEvent()
     data class OnPasswordChanged(val password: String) : AuthEvent()
     object ToggleMode : AuthEvent()
+    object ToggleRecoverMode : AuthEvent()
     object ToggleRole : AuthEvent()
     object SetMasterRole : AuthEvent()
     data class SetRequiredRole(val role: String) : AuthEvent()
@@ -11,4 +12,6 @@ sealed class AuthEvent {
     object ClearError : AuthEvent()
     object PasteUsername : AuthEvent()
     object PastePassword : AuthEvent()
+    object PasteNewPassword : AuthEvent()
+    data class OnNewPasswordChanged(val password: String) : AuthEvent()
 }

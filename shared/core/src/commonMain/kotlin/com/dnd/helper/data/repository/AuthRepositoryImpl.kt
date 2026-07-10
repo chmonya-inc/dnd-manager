@@ -36,6 +36,9 @@ class AuthRepositoryImpl(
     override suspend fun register(request: RegisterRequest): Result<AuthResponse> =
         authRequest("${baseUrl()}/auth/register", request, "Registration")
 
+    override suspend fun recover(request: com.dnd.helper.data.remote.dto.auth.PasswordRecoveryRequest): Result<AuthResponse> =
+        authRequest("${baseUrl()}/auth/recover", request, "Password recovery")
+
     override suspend fun refresh(): Result<AuthResponse> {
         val refreshToken = storage.getRefreshToken()
             ?: return Result.failure(Exception("No refresh token"))

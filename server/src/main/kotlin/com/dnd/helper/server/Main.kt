@@ -55,7 +55,7 @@ fun Application.module() {
             rateLimiter(limit = 100, refillPeriod = 60.seconds)
         }
         register(RateLimitName("auth")) {
-            rateLimiter(limit = 5, refillPeriod = 60.seconds)
+            rateLimiter(limit = 20, refillPeriod = 60.seconds)
         }
     }
 

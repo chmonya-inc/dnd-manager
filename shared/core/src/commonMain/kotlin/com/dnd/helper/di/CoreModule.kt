@@ -24,6 +24,9 @@ import org.koin.dsl.module
 val coreModule = module {
     // Client for API calls with special headers
     single {
+        val scope = this
+        val storage = get<com.dnd.helper.domain.storage.CharacterStorage>()
+        
         HttpClient {
             followRedirects = true
             expectSuccess = false 
@@ -43,7 +46,6 @@ val coreModule = module {
                 // Manually add the token here to ensure it's always up-to-date and reactive to logout/login
                 // The Auth plugin's loadTokens can cache tokens internally, but DefaultRequest is called every time.
                 try {
-                    val storage = org.koin.core.context.GlobalContext.get().get<com.dnd.helper.domain.storage.CharacterStorage>()
                     val token = storage.getAuthToken()
                     if (token != null) {
                         header(io.ktor.http.HttpHeaders.Authorization, "Bearer $token")
@@ -55,14 +57,13 @@ val coreModule = module {
                     // We don't need loadTokens anymore as we set the header in DefaultRequest
                     // But we keep refreshTokens to handle 401s automatically
                     refreshTokens {
-                        val authRepo = org.koin.core.context.GlobalContext.get().get<com.dnd.helper.domain.repository.AuthRepository>()
+                        val authRepo = scope.get<com.dnd.helper.domain.repository.AuthRepository>()
                         val result = authRepo.refresh()
                         if (result.isSuccess) {
                             val newToken = result.getOrNull()!!.accessToken
                             io.ktor.client.plugins.auth.providers.BearerTokens(newToken, newToken)
                         } else {
                             // Refresh failed — clear tokens so user is redirected to login
-                            val storage = org.koin.core.context.GlobalContext.get().get<com.dnd.helper.domain.storage.CharacterStorage>()
                             storage.saveAuthToken(null)
                             storage.saveRefreshToken(null)
                             null
