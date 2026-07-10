@@ -35,7 +35,12 @@ fun Application.module() {
     install(IgnoreTrailingSlash)
 
     install(ContentNegotiation) {
-        json()
+        json(kotlinx.serialization.json.Json {
+            ignoreUnknownKeys = true
+            coerceInputValues = true
+            isLenient = true
+            encodeDefaults = true
+        })
     }
 
     install(WebSockets) {
@@ -71,6 +76,14 @@ fun Application.module() {
         level = Level.INFO
     }
 
+    install(StatusPages) {
+        exception<Throwable> { call, cause ->
+            println("[StatusPages] Unhandled exception: ${cause::class.simpleName}: ${cause.message}")
+            cause.printStackTrace()
+            call.respond(HttpStatusCode.InternalServerError, cause.message ?: "Internal server error")
+        }
+    }
+
     install(Authentication) {
         jwt("auth-jwt") {
             authHeader { call ->
@@ -98,11 +111,11 @@ fun Application.module() {
     }
 
     configureHealthRouting()
+    configureAuthRouting()
+    configureCampaignRouting()
+    configureAssignmentRouting()
 
     routing {
-        configureAuthRouting()
         configureApiRouting()
-        configureCampaignRouting()
-        configureAssignmentRouting()
     }
 }
