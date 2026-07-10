@@ -32,6 +32,8 @@ fun main() {
 fun Application.module() {
     DatabaseFactory.init()
 
+    install(IgnoreTrailingSlash)
+
     install(ContentNegotiation) {
         json()
     }
@@ -95,8 +97,9 @@ fun Application.module() {
         }
     }
 
+    configureHealthRouting()
+
     routing {
-        configureHealthRouting()
         configureAuthRouting()
         configureApiRouting()
         configureCampaignRouting()

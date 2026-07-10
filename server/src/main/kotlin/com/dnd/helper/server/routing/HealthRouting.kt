@@ -21,45 +21,43 @@ private val serverStartTime = System.currentTimeMillis()
 
 fun Application.configureHealthRouting() {
     routing {
-        route("/health") {
-            /**
-             * Liveness check — answers the question "is the process alive?".
-             * Never touches the database. Load balancers / orchestrators use
-             * this to decide whether to restart the container.
-             */
-            get {
-                call.respond(
-                    HttpStatusCode.OK,
-                    HealthResponse(
-                        status = "ok",
-                        uptime = System.currentTimeMillis() - serverStartTime,
-                    )
+        /**
+         * Liveness check — answers the question "is the process alive?".
+         * Never touches the database. Load balancers / orchestrators use
+         * this to decide whether to restart the container.
+         */
+        get("/health") {
+            call.respond(
+                HttpStatusCode.OK,
+                HealthResponse(
+                    status = "ok",
+                    uptime = System.currentTimeMillis() - serverStartTime,
                 )
+            )
+        }
+
+        /**
+         * Readiness check — answers "can this instance serve traffic?".
+         * Executes a lightweight DB ping. Returns 503 if the database is
+         * unreachable so the load balancer stops routing traffic here.
+         */
+        get("/health/ready") {
+            val dbStatus = try {
+                DatabaseFactory.dbQuery { transaction { exec("SELECT 1") } }
+                "ok"
+            } catch (e: Exception) {
+                null
             }
 
-            /**
-             * Readiness check — answers "can this instance serve traffic?".
-             * Executes a lightweight DB ping. Returns 503 if the database is
-             * unreachable so the load balancer stops routing traffic here.
-             */
-            get("/ready") {
-                val dbStatus = try {
-                    DatabaseFactory.dbQuery { transaction { exec("SELECT 1") } }
-                    "ok"
-                } catch (e: Exception) {
-                    null
-                }
-
-                val httpStatus = if (dbStatus == "ok") HttpStatusCode.OK else HttpStatusCode.ServiceUnavailable
-                call.respond(
-                    httpStatus,
-                    HealthResponse(
-                        status = if (dbStatus == "ok") "ok" else "unavailable",
-                        uptime = System.currentTimeMillis() - serverStartTime,
-                        database = dbStatus ?: "unreachable",
-                    )
+            val httpStatus = if (dbStatus == "ok") HttpStatusCode.OK else HttpStatusCode.ServiceUnavailable
+            call.respond(
+                httpStatus,
+                HealthResponse(
+                    status = if (dbStatus == "ok") "ok" else "unavailable",
+                    uptime = System.currentTimeMillis() - serverStartTime,
+                    database = dbStatus ?: "unreachable",
                 )
-            }
+            )
         }
     }
 }
