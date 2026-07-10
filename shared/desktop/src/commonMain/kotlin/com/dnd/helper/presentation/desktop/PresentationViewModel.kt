@@ -3,11 +3,14 @@ package com.dnd.helper.presentation.desktop
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
-import kotlin.random.Random
-
 import com.dnd.helper.domain.model.PresentedItem
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class PresentationViewModel(
     private val repository: com.dnd.helper.domain.repository.CharacterRepository
@@ -27,10 +30,12 @@ class PresentationViewModel(
     private val _npcs = MutableStateFlow<List<com.dnd.helper.domain.model.Npc>>(emptyList())
     val npcs = _npcs.asStateFlow()
 
-    private val _locations = MutableStateFlow<List<com.dnd.helper.domain.model.Location>>(emptyList())
+    private val _locations =
+        MutableStateFlow<List<com.dnd.helper.domain.model.Location>>(emptyList())
     val locations = _locations.asStateFlow()
 
-    private val _battlefields = MutableStateFlow<List<com.dnd.helper.domain.model.Battlefield>>(emptyList())
+    private val _battlefields =
+        MutableStateFlow<List<com.dnd.helper.domain.model.Battlefield>>(emptyList())
     val battlefields = _battlefields.asStateFlow()
 
     private val _events = MutableStateFlow<List<com.dnd.helper.domain.model.GameEvent>>(emptyList())
@@ -60,7 +65,15 @@ class PresentationViewModel(
                     refreshSingleEntity(updateType, entityId)
                 } else {
                     // Fallback to full refresh if no ID provided
-                    if (updateType in listOf("characters", "monsters", "npcs", "locations", "battlefields", "events")) {
+                    if (updateType in listOf(
+                            "characters",
+                            "monsters",
+                            "npcs",
+                            "locations",
+                            "battlefields",
+                            "events"
+                        )
+                    ) {
                         refreshAll(force = true)
                     }
                 }
@@ -77,7 +90,7 @@ class PresentationViewModel(
         when (type) {
             "characters" -> {
                 // 1. Refresh in sidebar list is handled by characterListViewModel if it uses same character source
-                
+
                 // 2. Refresh in workspace
                 val result = repository.getCharacter(id)
                 if (result is com.dnd.helper.domain.common.Result.Success) {
@@ -97,13 +110,14 @@ class PresentationViewModel(
                     }
                 }
             }
+
             "monsters" -> {
                 // Refresh monsters list in sidebar
                 val mResult = repository.getMonsters(forceRefresh = true)
                 if (mResult is com.dnd.helper.domain.common.Result.Success) {
                     _monsters.value = mResult.data
                     val monster = mResult.data.find { it.id == id }
-                    
+
                     // Refresh in workspace
                     if (monster != null) {
                         activeItems.forEachIndexed { index, item ->
@@ -123,6 +137,7 @@ class PresentationViewModel(
                     }
                 }
             }
+
             "npcs" -> {
                 val nResult = repository.getNpcs(forceRefresh = true)
                 if (nResult is com.dnd.helper.domain.common.Result.Success) {
@@ -142,48 +157,61 @@ class PresentationViewModel(
                     }
                 }
             }
+
             "locations" -> {
                 val lResult = repository.getLocations(forceRefresh = true)
-                if (lResult is com.dnd.helper.domain.common.Result.Success) _locations.value = lResult.data
+                if (lResult is com.dnd.helper.domain.common.Result.Success) {
+                    _locations.value =
+                        lResult.data
+                }
             }
+
             "battlefields" -> {
                 val bResult = repository.getBattlefields(forceRefresh = true)
-                if (bResult is com.dnd.helper.domain.common.Result.Success) _battlefields.value = bResult.data
+                if (bResult is com.dnd.helper.domain.common.Result.Success) {
+                    _battlefields.value =
+                        bResult.data
+                }
             }
+
             "events" -> {
                 val eResult = repository.getEvents(forceRefresh = true)
-                if (eResult is com.dnd.helper.domain.common.Result.Success) _events.value = eResult.data
+                if (eResult is com.dnd.helper.domain.common.Result.Success) {
+                    _events.value =
+                        eResult.data
+                }
             }
         }
-    }
-
-    /** No-op for WebSocket version */
-    fun startPolling(intervalMs: Long = 1_000L) {
-    }
-
-    /** No-op for WebSocket version */
-    fun stopPolling() {
     }
 
     fun refreshAll(force: Boolean = false) {
         viewModelScope.launch {
             if (!force) _isLoading.value = true
-            
+
             val mResult = repository.getMonsters(forceRefresh = force)
-            if (mResult is com.dnd.helper.domain.common.Result.Success) _monsters.value = mResult.data
-            
+            if (mResult is com.dnd.helper.domain.common.Result.Success) {
+                _monsters.value =
+                    mResult.data
+            }
+
             val nResult = repository.getNpcs(forceRefresh = force)
             if (nResult is com.dnd.helper.domain.common.Result.Success) _npcs.value = nResult.data
-            
+
             val lResult = repository.getLocations(forceRefresh = force)
-            if (lResult is com.dnd.helper.domain.common.Result.Success) _locations.value = lResult.data
+            if (lResult is com.dnd.helper.domain.common.Result.Success) {
+                _locations.value =
+                    lResult.data
+            }
 
             val bResult = repository.getBattlefields(forceRefresh = force)
-            if (bResult is com.dnd.helper.domain.common.Result.Success) _battlefields.value = bResult.data
+            if (bResult is com.dnd.helper.domain.common.Result.Success) {
+                _battlefields.value =
+                    bResult.data
+            }
 
             val eResult = repository.getEvents(forceRefresh = force)
             if (eResult is com.dnd.helper.domain.common.Result.Success) _events.value = eResult.data
-            
+
             refreshActiveItems()
             _isLoading.value = false
         }
@@ -191,9 +219,15 @@ class PresentationViewModel(
 
     private suspend fun refreshActiveItems() {
         // Only refresh characters and monsters since they have dynamic stats
-        val uniqueCharIds = activeItems.filter { it.type.lowercase() == "character" }.mapNotNull { it.sourceId }.distinct()
-        val uniqueMonsterIds = activeItems.filter { it.type.lowercase() == "monster" }.mapNotNull { it.sourceId }.distinct()
-        val uniqueNpcIds = activeItems.filter { it.type.lowercase() == "npc" }.mapNotNull { it.sourceId }.distinct()
+        val uniqueCharIds =
+            activeItems.filter { it.type.lowercase() == "character" }.mapNotNull { it.sourceId }
+                .distinct()
+        val uniqueMonsterIds =
+            activeItems.filter { it.type.lowercase() == "monster" }.mapNotNull { it.sourceId }
+                .distinct()
+        val uniqueNpcIds =
+            activeItems.filter { it.type.lowercase() == "npc" }.mapNotNull { it.sourceId }
+                .distinct()
 
         // 1. Refresh Characters
         uniqueCharIds.forEach { id ->
@@ -278,9 +312,9 @@ class PresentationViewModel(
     }
 
     fun addItem(
-        title: String, 
-        type: String = "Item", 
-        imageUrl: String? = null, 
+        title: String,
+        type: String = "Item",
+        imageUrl: String? = null,
         isBackground: Boolean = false,
         currentHp: Int? = null,
         maxHp: Int? = null,
@@ -294,29 +328,31 @@ class PresentationViewModel(
         if (isBackground) {
             activeItems.removeAll { it.isBackground }
         }
-        
+
         // Backgrounds default to filling the 1000x1000 logical canvas
         val width = if (isBackground) 1000f else 220f
         val height = if (isBackground) 1000f else 240f
-        
-        activeItems.add(PresentedItem(
-            id = id, 
-            sourceId = sourceId,
-            title = title, 
-            type = type, 
-            imageUrl = imageUrl,
-            isBackground = isBackground, 
-            width = width, 
-            height = height,
-            x = if (isBackground) 0f else 100f,
-            y = if (isBackground) 0f else 100f,
-            currentHp = currentHp,
-            maxHp = maxHp,
-            armorClass = armorClass,
-            stats = stats,
-            subInfo = subInfo,
-            description = description
-        ))
+
+        activeItems.add(
+            PresentedItem(
+                id = id,
+                sourceId = sourceId,
+                title = title,
+                type = type,
+                imageUrl = imageUrl,
+                isBackground = isBackground,
+                width = width,
+                height = height,
+                x = if (isBackground) 0f else 100f,
+                y = if (isBackground) 0f else 100f,
+                currentHp = currentHp,
+                maxHp = maxHp,
+                armorClass = armorClass,
+                stats = stats,
+                subInfo = subInfo,
+                description = description
+            )
+        )
     }
 
     fun updatePosition(id: String, x: Float, y: Float) {
@@ -325,7 +361,7 @@ class PresentationViewModel(
             // Allow all items to move into "overscan" areas (the area outside the 1000x1000 logical center)
             // This is necessary to place tokens on maps that have been stretched to fill wide screens.
             activeItems[index] = activeItems[index].copy(
-                x = x.coerceIn(-2000f, 2000f), 
+                x = x.coerceIn(-2000f, 2000f),
                 y = y.coerceIn(-2000f, 2000f)
             )
         }
@@ -374,9 +410,9 @@ class PresentationViewModel(
             val maxHp = item.maxHp ?: 10
             val newHp = ((item.currentHp ?: maxHp) + delta).coerceIn(0, maxHp)
             activeItems[index] = item.copy(currentHp = newHp)
-            
+
             val sourceId = item.sourceId ?: return
-            
+
             // Debounced save to server
             pendingSaveJobs[sourceId]?.cancel()
             pendingSaveJobs[sourceId] = viewModelScope.launch {
@@ -392,6 +428,7 @@ class PresentationViewModel(
                             repository.saveCharacter(updatedChar)
                         }
                     }
+
                     "monster" -> {
                         val result = repository.getMonsters(forceRefresh = true)
                         if (result is com.dnd.helper.domain.common.Result.Success) {
@@ -422,7 +459,7 @@ class PresentationViewModel(
             name = name,
             items = activeItems.toList()
         )
-        
+
         // Optimistic update
         _activeEvent.value = event
         _events.update { list ->
@@ -447,7 +484,7 @@ class PresentationViewModel(
     fun renameEvent(id: String, newName: String) {
         val event = _events.value.find { it.id == id } ?: return
         val updated = event.copy(name = newName)
-        
+
         // Optimistic update
         if (_activeEvent.value?.id == id) {
             _activeEvent.value = updated
@@ -469,7 +506,7 @@ class PresentationViewModel(
         )
         _activeEvent.value = event
         _events.update { it + event }
-        
+
         viewModelScope.launch {
             repository.saveEvent(event)
         }

@@ -43,7 +43,14 @@ fun ThemeDialog(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.small,
                         color = if (currentTheme == theme) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                        border = if (currentTheme == theme) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+                        border = if (currentTheme == theme) {
+                            BorderStroke(
+                                2.dp,
+                                MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            null
+                        }
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),

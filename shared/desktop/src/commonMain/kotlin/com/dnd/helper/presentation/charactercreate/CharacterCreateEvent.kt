@@ -56,7 +56,7 @@ sealed interface CharacterCreateEvent {
     // Proficiencies
     data class SavingThrowsChanged(val value: String) : CharacterCreateEvent
     data class ArmorProficienciesChanged(val value: String) : CharacterCreateEvent
-    
+
     // Multi-select actions
     data class AddLanguage(val value: String) : CharacterCreateEvent
     data class RemoveLanguage(val value: String) : CharacterCreateEvent

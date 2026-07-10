@@ -1,12 +1,29 @@
 package com.dnd.helper.data.import
 
 import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.model.*
+import com.dnd.helper.domain.model.Character
+import com.dnd.helper.domain.model.CharacterAppearance
+import com.dnd.helper.domain.model.CharacterCombat
+import com.dnd.helper.domain.model.CharacterFeatures
+import com.dnd.helper.domain.model.CharacterProficiencies
+import com.dnd.helper.domain.model.CharacterStats
+import com.dnd.helper.domain.model.EquipmentSlot
+import com.dnd.helper.domain.model.Item
+import com.dnd.helper.domain.model.ItemRarity
+import com.dnd.helper.domain.model.Location
+import com.dnd.helper.domain.model.Monster
+import com.dnd.helper.domain.model.MusicTrack
+import com.dnd.helper.domain.model.Note
+import com.dnd.helper.domain.model.Npc
+import com.dnd.helper.domain.model.Spell
+import com.dnd.helper.domain.model.Weapon
 import com.dnd.helper.domain.repository.CharacterRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import org.apache.poi.ss.usermodel.*
+import org.apache.poi.ss.usermodel.Cell
+import org.apache.poi.ss.usermodel.CellType
+import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.File
 import java.io.FileInputStream
@@ -23,22 +40,22 @@ class XlsxImporter(private val repository: CharacterRepository) {
         try {
             FileInputStream(File(filePath)).use { fis ->
                 val workbook = XSSFWorkbook(fis)
-                
+
                 // 1. Import Locations
                 importLocations(workbook)
-                
+
                 // 2. Import Monsters
                 importMonsters(workbook)
-                
+
                 // 3. Import NPCs
                 importNpcs(workbook)
-                
+
                 // 4. Import Music
                 importMusic(workbook)
-                
+
                 // 5. Import Characters (Summary and detailed items)
                 importCharacters(workbook)
-                
+
                 Result.Success(Unit)
             }
         } catch (e: Exception) {
@@ -69,7 +86,11 @@ class XlsxImporter(private val repository: CharacterRepository) {
             val desc = row.getCell(2)?.getVal() ?: ""
             val img = row.getCell(3)?.getVal() ?: ""
             val statsJson = row.getCell(4)?.getVal() ?: "{}"
-            val stats = try { json.decodeFromString<CharacterStats>(statsJson) } catch (_: Exception) { CharacterStats() }
+            val stats = try {
+                json.decodeFromString<CharacterStats>(
+                    statsJson
+                )
+            } catch (_: Exception) { CharacterStats() }
             val maxHp = row.getCell(5)?.getVal()?.toDoubleOrNull()?.toInt() ?: 10
             val curHp = row.getCell(6)?.getVal()?.toDoubleOrNull()?.toInt() ?: maxHp
             val ac = row.getCell(7)?.getVal()?.toDoubleOrNull()?.toInt() ?: 10
@@ -78,22 +99,24 @@ class XlsxImporter(private val repository: CharacterRepository) {
             val type = row.getCell(10)?.getVal() ?: "Humanoid"
             val align = row.getCell(11)?.getVal() ?: "Neutral"
             val size = row.getCell(12)?.getVal() ?: "Medium"
-            
-            repository.saveMonster(Monster(
-                id = id,
-                name = name,
-                description = desc,
-                imageUrl = img,
-                stats = stats,
-                maxHp = maxHp,
-                currentHp = curHp,
-                armorClass = ac,
-                speed = speed,
-                challengeRating = cr,
-                type = type,
-                alignment = align,
-                size = size
-            ))
+
+            repository.saveMonster(
+                Monster(
+                    id = id,
+                    name = name,
+                    description = desc,
+                    imageUrl = img,
+                    stats = stats,
+                    maxHp = maxHp,
+                    currentHp = curHp,
+                    armorClass = ac,
+                    speed = speed,
+                    challengeRating = cr,
+                    type = type,
+                    alignment = align,
+                    size = size
+                )
+            )
         }
     }
 
@@ -127,7 +150,7 @@ class XlsxImporter(private val repository: CharacterRepository) {
             val row = sheet.getRow(i) ?: continue
             val id = row.getCell(0)?.getVal() ?: continue
             if (id == "ID") continue
-            
+
             val name = row.getCell(1)?.getVal() ?: ""
             val playerName = row.getCell(2)?.getVal() ?: ""
             val race = row.getCell(3)?.getVal() ?: ""
@@ -137,7 +160,7 @@ class XlsxImporter(private val repository: CharacterRepository) {
             val img = row.getCell(7)?.getVal() ?: ""
             val maxHp = row.getCell(8)?.getVal()?.toDoubleOrNull()?.toInt() ?: 10
             val curHp = row.getCell(9)?.getVal()?.toDoubleOrNull()?.toInt() ?: maxHp
-            
+
             val stats = CharacterStats(
                 strength = row.getCell(10)?.getVal()?.toDoubleOrNull()?.toInt() ?: 10,
                 dexterity = row.getCell(11)?.getVal()?.toDoubleOrNull()?.toInt() ?: 10,
@@ -146,25 +169,53 @@ class XlsxImporter(private val repository: CharacterRepository) {
                 wisdom = row.getCell(14)?.getVal()?.toDoubleOrNull()?.toInt() ?: 10,
                 charisma = row.getCell(15)?.getVal()?.toDoubleOrNull()?.toInt() ?: 10
             )
-            
+
             val subclass = row.getCell(16)?.getVal() ?: ""
             val bg = row.getCell(17)?.getVal() ?: ""
             val xp = row.getCell(18)?.getVal()?.toDoubleOrNull()?.toInt() ?: 0
-            
-            val appearance = try { json.decodeFromString<CharacterAppearance>(row.getCell(19)?.getVal() ?: "{}") } catch (e: Exception) { CharacterAppearance() }
-            val combat = try { json.decodeFromString<CharacterCombat>(row.getCell(20)?.getVal() ?: "{}") } catch (e: Exception) { CharacterCombat() }
-            val profs = try { json.decodeFromString<CharacterProficiencies>(row.getCell(21)?.getVal() ?: "{}") } catch (e: Exception) { CharacterProficiencies() }
-            val weapons = try { json.decodeFromString<List<Weapon>>(row.getCell(22)?.getVal() ?: "[]") } catch (e: Exception) { emptyList() }
-            val features = try { json.decodeFromString<CharacterFeatures>(row.getCell(23)?.getVal() ?: "{}") } catch (e: Exception) { CharacterFeatures() }
-            val spells = try { json.decodeFromString<List<Spell>>(row.getCell(24)?.getVal() ?: "[]") } catch (e: Exception) { emptyList() }
-            
-            // Try to fetch items from individual sheet first
-            val items = fetchItemsFromSheet(workbook, id) ?: try { 
-                json.decodeFromString<List<Item>>(row.getCell(25)?.getVal() ?: "[]") 
+
+            val appearance = try {
+                json.decodeFromString<CharacterAppearance>(
+                    row.getCell(19)?.getVal() ?: "{}"
+                )
+            } catch (e: Exception) { CharacterAppearance() }
+            val combat = try {
+                json.decodeFromString<CharacterCombat>(
+                    row.getCell(20)?.getVal() ?: "{}"
+                )
+            } catch (e: Exception) { CharacterCombat() }
+            val profs = try {
+                json.decodeFromString<CharacterProficiencies>(
+                    row.getCell(21)?.getVal() ?: "{}"
+                )
+            } catch (e: Exception) { CharacterProficiencies() }
+            val weapons = try {
+                json.decodeFromString<List<Weapon>>(
+                    row.getCell(22)?.getVal() ?: "[]"
+                )
             } catch (e: Exception) { emptyList() }
-            
-            val notes = try { json.decodeFromString<List<Note>>(row.getCell(26)?.getVal() ?: "[]") } catch (e: Exception) { emptyList() }
-            
+            val features = try {
+                json.decodeFromString<CharacterFeatures>(
+                    row.getCell(23)?.getVal() ?: "{}"
+                )
+            } catch (e: Exception) { CharacterFeatures() }
+            val spells = try {
+                json.decodeFromString<List<Spell>>(
+                    row.getCell(24)?.getVal() ?: "[]"
+                )
+            } catch (e: Exception) { emptyList() }
+
+            // Try to fetch items from individual sheet first
+            val items = fetchItemsFromSheet(workbook, id) ?: try {
+                json.decodeFromString<List<Item>>(row.getCell(25)?.getVal() ?: "[]")
+            } catch (e: Exception) { emptyList() }
+
+            val notes = try {
+                json.decodeFromString<List<Note>>(
+                    row.getCell(26)?.getVal() ?: "[]"
+                )
+            } catch (e: Exception) { emptyList() }
+
             val character = Character(
                 id = id, name = name, playerName = playerName, race = race, characterClass = charClass,
                 subclass = subclass, background = bg, level = level, experiencePoints = xp,
@@ -172,7 +223,7 @@ class XlsxImporter(private val repository: CharacterRepository) {
                 maxHp = maxHp, currentHp = curHp, combat = combat, proficiencies = profs,
                 weapons = weapons, features = features, spells = spells, items = items, notes = notes
             )
-            
+
             repository.saveCharacter(character)
         }
     }
@@ -186,12 +237,20 @@ class XlsxImporter(private val repository: CharacterRepository) {
             val itemId = itemRow.getCell(0)?.getVal() ?: continue
             val itemName = itemRow.getCell(1)?.getVal() ?: ""
             val slot = try { EquipmentSlot.valueOf(itemRow.getCell(2)?.getVal() ?: "") } catch (e: Exception) { null }
-            val rarity = try { ItemRarity.valueOf(itemRow.getCell(3)?.getVal() ?: "COMMON") } catch (e: Exception) { ItemRarity.COMMON }
-            val itemStats = try { json.decodeFromString<Map<String, Int>>(itemRow.getCell(4)?.getVal() ?: "{}") } catch (e: Exception) { emptyMap() }
+            val rarity = try {
+                ItemRarity.valueOf(
+                    itemRow.getCell(3)?.getVal() ?: "COMMON"
+                )
+            } catch (e: Exception) { ItemRarity.COMMON }
+            val itemStats = try {
+                json.decodeFromString<Map<String, Int>>(
+                    itemRow.getCell(4)?.getVal() ?: "{}"
+                )
+            } catch (e: Exception) { emptyMap() }
             val itemDesc = itemRow.getCell(5)?.getVal() ?: ""
             val equipped = itemRow.getCell(6)?.getVal()?.lowercase() == "true"
             val itemImg = itemRow.getCell(7)?.getVal()
-            
+
             items.add(Item(itemId, itemName, slot, rarity, itemStats, itemDesc, equipped, itemImg))
         }
         return items

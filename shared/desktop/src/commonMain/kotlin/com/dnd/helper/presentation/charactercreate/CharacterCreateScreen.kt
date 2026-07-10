@@ -82,7 +82,6 @@ import kotlin.random.Random
 @Composable
 fun CharacterCreateScreen(
     existingCharacter: com.dnd.helper.domain.model.Character? = null,
-    onBackClick: () -> Unit,
     onCharacterCreated: () -> Unit,
 ) {
     val viewModelKey = remember { Random.nextLong().toString() }
@@ -125,10 +124,17 @@ fun CharacterCreateScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
                     ) {
                         if (state.isSaving) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
                             Spacer(Modifier.width(8.dp))
                         }
-                        Text(if (existingCharacter == null) "Create Character" else "Update Character", fontWeight = FontWeight.Bold)
+                        Text(
+                            if (existingCharacter == null) "Create Character" else "Update Character",
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -166,16 +172,23 @@ fun CharacterCreateScreen(
                                     contentScale = ContentScale.Crop
                                 )
                             }
-                            
+
                             if (state.imageUrl.startsWith("generating")) {
                                 CircularProgressIndicator(color = Color(0xFF4CAF50))
                             } else {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Button(
                                         onClick = { viewModel.onEvent(CharacterCreateEvent.GenerateImage) },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32).copy(alpha = 0.8f), contentColor = Color.White)
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFF2E7D32).copy(alpha = 0.8f),
+                                            contentColor = Color.White
+                                        )
                                     ) {
-                                        Icon(DndIcons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Icon(
+                                            DndIcons.Filled.AutoAwesome,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
                                         Spacer(Modifier.width(8.dp))
                                         Text("Generate AI Image")
                                     }
@@ -199,13 +212,21 @@ fun CharacterCreateScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                             CharacterTextField(
                                 value = state.aiWidth.toString(),
-                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(it.toIntOrNull() ?: 1024, state.aiHeight)) },
+                                onValueChange = {
+                                    viewModel.onEvent(
+                                        CharacterCreateEvent.AiSizeChanged(it.toIntOrNull() ?: 1024, state.aiHeight)
+                                    )
+                                },
                                 label = "Width",
                                 modifier = Modifier.weight(1f)
                             )
                             CharacterTextField(
                                 value = state.aiHeight.toString(),
-                                onValueChange = { viewModel.onEvent(CharacterCreateEvent.AiSizeChanged(state.aiWidth, it.toIntOrNull() ?: 1024)) },
+                                onValueChange = {
+                                    viewModel.onEvent(
+                                        CharacterCreateEvent.AiSizeChanged(state.aiWidth, it.toIntOrNull() ?: 1024)
+                                    )
+                                },
                                 label = "Height",
                                 modifier = Modifier.weight(1f)
                             )
@@ -213,7 +234,10 @@ fun CharacterCreateScreen(
 
                         Spacer(Modifier.height(16.dp))
 
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             CharacterTextField(
                                 value = state.name,
                                 onValueChange = { viewModel.onEvent(CharacterCreateEvent.NameChanged(it)) },
@@ -221,20 +245,43 @@ fun CharacterCreateScreen(
                                 modifier = Modifier.weight(2f)
                             )
                             Row(
-                                modifier = Modifier.weight(1f).height(56.dp).border(1.dp, Color(0xFF2E7D32), MaterialTheme.shapes.extraSmall),
+                                modifier = Modifier.weight(
+                                    1f
+                                ).height(56.dp).border(1.dp, Color(0xFF2E7D32), MaterialTheme.shapes.extraSmall),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                IconButton(onClick = { viewModel.onEvent(CharacterCreateEvent.LevelChanged((state.level.toIntOrNull() ?: 1).minus(1).coerceAtLeast(1).toString())) }) {
+                                IconButton(
+                                    onClick = {
+                                        viewModel.onEvent(
+                                            CharacterCreateEvent.LevelChanged(
+                                                (state.level.toIntOrNull() ?: 1).minus(1).coerceAtLeast(1).toString()
+                                            )
+                                        )
+                                    }
+                                ) {
                                     Icon(Icons.Default.Remove, null, tint = Color.White)
                                 }
-                                Text("Lvl ${state.level}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold, color = Color.White)
-                                IconButton(onClick = { viewModel.onEvent(CharacterCreateEvent.LevelChanged((state.level.toIntOrNull() ?: 1).plus(1).coerceAtMost(20).toString())) }) {
+                                Text(
+                                    "Lvl ${state.level}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                IconButton(
+                                    onClick = {
+                                        viewModel.onEvent(
+                                            CharacterCreateEvent.LevelChanged(
+                                                (state.level.toIntOrNull() ?: 1).plus(1).coerceAtMost(20).toString()
+                                            )
+                                        )
+                                    }
+                                ) {
                                     Icon(Icons.Default.Add, null, tint = Color.White)
                                 }
                             }
                         }
-                        
+
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             DropdownMenuField(
                                 label = "Race",
@@ -319,15 +366,51 @@ fun CharacterCreateScreen(
                 item {
                     DesktopCardSection(title = "Ability Scores", icon = Icons.Default.BarChart) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                                AbilityScoreBox("STR", state.strength, dndColors.strength, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.StrengthChanged(it)) }
-                                AbilityScoreBox("DEX", state.dexterity, dndColors.dexterity, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.DexterityChanged(it)) }
-                                AbilityScoreBox("CON", state.constitution, dndColors.constitution, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.ConstitutionChanged(it)) }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                AbilityScoreBox(
+                                    "STR",
+                                    state.strength,
+                                    dndColors.strength,
+                                    Modifier.weight(1f)
+                                ) { viewModel.onEvent(CharacterCreateEvent.StrengthChanged(it)) }
+                                AbilityScoreBox(
+                                    "DEX",
+                                    state.dexterity,
+                                    dndColors.dexterity,
+                                    Modifier.weight(1f)
+                                ) { viewModel.onEvent(CharacterCreateEvent.DexterityChanged(it)) }
+                                AbilityScoreBox(
+                                    "CON",
+                                    state.constitution,
+                                    dndColors.constitution,
+                                    Modifier.weight(1f)
+                                ) { viewModel.onEvent(CharacterCreateEvent.ConstitutionChanged(it)) }
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                                AbilityScoreBox("INT", state.intelligence, dndColors.intelligence, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.IntelligenceChanged(it)) }
-                                AbilityScoreBox("WIS", state.wisdom, dndColors.wisdom, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.WisdomChanged(it)) }
-                                AbilityScoreBox("CHA", state.charisma, dndColors.charisma, Modifier.weight(1f)) { viewModel.onEvent(CharacterCreateEvent.CharismaChanged(it)) }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                AbilityScoreBox(
+                                    "INT",
+                                    state.intelligence,
+                                    dndColors.intelligence,
+                                    Modifier.weight(1f)
+                                ) { viewModel.onEvent(CharacterCreateEvent.IntelligenceChanged(it)) }
+                                AbilityScoreBox(
+                                    "WIS",
+                                    state.wisdom,
+                                    dndColors.wisdom,
+                                    Modifier.weight(1f)
+                                ) { viewModel.onEvent(CharacterCreateEvent.WisdomChanged(it)) }
+                                AbilityScoreBox(
+                                    "CHA",
+                                    state.charisma,
+                                    dndColors.charisma,
+                                    Modifier.weight(1f)
+                                ) { viewModel.onEvent(CharacterCreateEvent.CharismaChanged(it)) }
                             }
                         }
                     }
@@ -362,10 +445,10 @@ fun CharacterCreateScreen(
                         }
                     }
                 }
-                
+
                 item {
                     DesktopCardSection(
-                        title = "Spells", 
+                        title = "Spells",
                         icon = Icons.Default.AutoFixHigh,
                         onAddClick = { viewModel.onEvent(CharacterCreateEvent.AddSpell) }
                     ) {
@@ -412,7 +495,7 @@ fun CharacterCreateScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(Modifier.height(8.dp))
-                        
+
                         CharacterTextField(
                             value = state.armorProficiencies,
                             onValueChange = { viewModel.onEvent(CharacterCreateEvent.ArmorProficienciesChanged(it)) },
@@ -596,10 +679,10 @@ fun DesktopCardSection(
 
 @Composable
 fun AbilityScoreBox(
-    label: String, 
-    value: String, 
+    label: String,
+    value: String,
     color: Color,
-    modifier: Modifier = Modifier, 
+    modifier: Modifier = Modifier,
     onValueChange: (String) -> Unit
 ) {
     Box(
@@ -616,7 +699,12 @@ fun AbilityScoreBox(
                 value = value,
                 onValueChange = onValueChange,
                 singleLine = true,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(textAlign = androidx.compose.ui.text.style.TextAlign.Center, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                ),
                 modifier = Modifier.width(60.dp).padding(top = 4.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = Color.Transparent,
@@ -669,8 +757,11 @@ fun <T> DropdownMenuField(
     var expanded by remember { mutableStateOf(false) }
 
     val filteredOptions = remember(value, options) {
-        if (value.isBlank()) options.map(optionLabel)
-        else options.map(optionLabel).filter { it.contains(value, ignoreCase = true) }
+        if (value.isBlank()) {
+            options.map(optionLabel)
+        } else {
+            options.map(optionLabel).filter { it.contains(value, ignoreCase = true) }
+        }
     }
     val isCustomValue = remember(value, options) {
         value.isNotBlank() && options.map(optionLabel).none { it.equals(value, ignoreCase = true) }

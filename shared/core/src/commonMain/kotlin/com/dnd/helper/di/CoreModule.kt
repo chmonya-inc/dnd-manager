@@ -1,19 +1,14 @@
 package com.dnd.helper.di
 
-import coil3.ImageLoader
-import coil3.SingletonImageLoader
-import coil3.network.ktor3.KtorNetworkFetcherFactory
-import coil3.request.crossfade
-import coil3.util.DebugLogger
 import com.dnd.helper.data.remote.KtorRemoteDataSource
 import com.dnd.helper.data.repository.CharacterRepositoryImpl
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.theme.ThemeViewModel
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.request.header
 import io.ktor.serialization.kotlinx.json.json
@@ -26,23 +21,28 @@ val coreModule = module {
     single {
         val scope = this
         val storage = get<com.dnd.helper.domain.storage.CharacterStorage>()
-        
+
         HttpClient {
             followRedirects = true
-            expectSuccess = false 
+            expectSuccess = false
             install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                    coerceInputValues = true
-                    isLenient = true
-                    encodeDefaults = true
-                })
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        coerceInputValues = true
+                        isLenient = true
+                        encodeDefaults = true
+                    }
+                )
             }
             install(WebSockets)
             install(io.ktor.client.plugins.DefaultRequest) {
-                header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                header(
+                    "User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                )
                 header("ngrok-skip-browser-warning", "true")
-                
+
                 // Manually add the token here to ensure it's always up-to-date and reactive to logout/login
                 // The Auth plugin's loadTokens can cache tokens internally, but DefaultRequest is called every time.
                 try {
@@ -100,8 +100,18 @@ val coreModule = module {
     single { KtorRemoteDataSource(get(), get()) }
     single { com.dnd.helper.data.remote.DndApiDataSource(get(), get()) }
     single { com.dnd.helper.data.remote.AiImageService(get(), get()) }
-    single<com.dnd.helper.domain.repository.EditingRepository> { com.dnd.helper.data.repository.EditingRepositoryImpl(get(), get()) }
+    single<com.dnd.helper.domain.repository.EditingRepository> {
+        com.dnd.helper.data.repository.EditingRepositoryImpl(
+            get(),
+            get()
+        )
+    }
     single<CharacterRepository> { CharacterRepositoryImpl(get(), get()) }
-    single<com.dnd.helper.domain.repository.AuthRepository> { com.dnd.helper.data.repository.AuthRepositoryImpl(get(), get()) }
+    single<com.dnd.helper.domain.repository.AuthRepository> {
+        com.dnd.helper.data.repository.AuthRepositoryImpl(
+            get(),
+            get()
+        )
+    }
     single { ThemeViewModel(get()) }
 }

@@ -1,11 +1,25 @@
 package com.dnd.helper.presentation.itemcreate
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,7 +61,10 @@ fun ItemCreateScreen(
                     enabled = !state.isSaving
                 ) {
                     if (state.isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
                     } else {
                         Text("Save Item")
                     }
@@ -134,8 +151,11 @@ fun ItemCreateScreen(
                 options = EquipmentSlot.entries.map { it.name } + listOf("None"),
                 optionLabel = { it },
                 onValueChange = { text ->
-                    val slot = if (text == "None") null
-                               else runCatching { EquipmentSlot.valueOf(text) }.getOrNull()
+                    val slot = if (text == "None") {
+                        null
+                    } else {
+                        runCatching { EquipmentSlot.valueOf(text) }.getOrNull()
+                    }
                     if (text == "None" || slot != null) {
                         viewModel.onEvent(ItemCreateEvent.SlotChanged(slot))
                     }
@@ -169,11 +189,14 @@ fun ItemCreateScreen(
                 )
                 Text("Currently Equipped")
             }
-            
+
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Text("AI Generation", style = MaterialTheme.typography.titleMedium)
-            
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+            Row(
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 OutlinedTextField(
                     value = state.imageUrl,
                     onValueChange = { viewModel.onEvent(ItemCreateEvent.ImageUrlChanged(it)) },
@@ -181,8 +204,22 @@ fun ItemCreateScreen(
                     modifier = Modifier.weight(1f),
                     shape = MaterialTheme.shapes.medium
                 )
-                OutlinedTextField(value = state.aiWidth, onValueChange = { viewModel.onEvent(ItemCreateEvent.AiWidthChanged(it)) }, label = { Text("W") }, modifier = Modifier.width(70.dp), shape = MaterialTheme.shapes.small, singleLine = true)
-                OutlinedTextField(value = state.aiHeight, onValueChange = { viewModel.onEvent(ItemCreateEvent.AiHeightChanged(it)) }, label = { Text("H") }, modifier = Modifier.width(70.dp), shape = MaterialTheme.shapes.small, singleLine = true)
+                OutlinedTextField(
+                    value = state.aiWidth,
+                    onValueChange = { viewModel.onEvent(ItemCreateEvent.AiWidthChanged(it)) },
+                    label = { Text("W") },
+                    modifier = Modifier.width(70.dp),
+                    shape = MaterialTheme.shapes.small,
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = state.aiHeight,
+                    onValueChange = { viewModel.onEvent(ItemCreateEvent.AiHeightChanged(it)) },
+                    label = { Text("H") },
+                    modifier = Modifier.width(70.dp),
+                    shape = MaterialTheme.shapes.small,
+                    singleLine = true
+                )
                 com.dnd.helper.presentation.desktop.ImageGenerationButton(
                     prompt = state.aiPrompt,
                     onImageUrlGenerated = { viewModel.onEvent(ItemCreateEvent.ImageUrlChanged(it)) },
@@ -193,7 +230,7 @@ fun ItemCreateScreen(
                     height = state.aiHeight.toIntOrNull()
                 )
             }
-            
+
             OutlinedTextField(
                 value = state.aiPrompt,
                 onValueChange = { viewModel.onEvent(ItemCreateEvent.AiPromptChanged(it)) },

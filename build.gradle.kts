@@ -12,6 +12,29 @@ plugins {
     alias(libs.plugins.compose.multiplatform) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.kotlin.android) apply false
+    alias(libs.plugins.detekt) apply false
+}
+
+allprojects {
+    apply(plugin = "io.gitlab.arturbosch.detekt")
+    
+    configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+        buildUponDefaultConfig = true
+        autoCorrect = true
+        config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+        source.setFrom(
+            "src/commonMain/kotlin",
+            "src/androidMain/kotlin",
+            "src/jvmMain/kotlin",
+            "src/desktopMain/kotlin",
+            "src/wasmJsMain/kotlin",
+            "src/main/kotlin"
+        )
+    }
+
+    dependencies {
+        "detektPlugins"("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.7")
+    }
 }
 
 // Disable automatic repository injection for Kotlin/JS and Kotlin/Wasm tools

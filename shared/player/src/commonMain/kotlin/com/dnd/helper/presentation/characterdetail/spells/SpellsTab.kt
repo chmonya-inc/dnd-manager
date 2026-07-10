@@ -56,7 +56,7 @@ fun SpellsTab(
     selectedSpell?.let { spell ->
         // Find the latest version of this spell from the list to keep dialog in sync (e.g. during AI generation)
         val latestSpell = spells.find { it.id == spell.id } ?: spell
-        
+
         SpellDetailDialog(
             spell = latestSpell,
             onDismiss = { selectedSpell = null },
@@ -84,7 +84,9 @@ fun SpellsTab(
                 fontWeight = FontWeight.Bold
             )
             if (isMasterMode && isDesktop) {
-                IconButton(onClick = { onEvent(com.dnd.helper.presentation.characterdetail.CharacterDetailEvent.AddSpell) }) {
+                IconButton(
+                    onClick = { onEvent(com.dnd.helper.presentation.characterdetail.CharacterDetailEvent.AddSpell) }
+                ) {
                     Icon(Icons.Default.Add, contentDescription = "Add Spell")
                 }
             }
@@ -92,7 +94,11 @@ fun SpellsTab(
 
         if (spells.isEmpty()) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("No spells added", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "No spells added",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         } else {
             LazyColumn(
@@ -145,7 +151,7 @@ private fun SpellCard(spell: Spell, onClick: () -> Unit) {
             // 1. Icon/Image Background (Covers the card)
             if (isGenerating) {
                 Box(
-                    modifier = Modifier.fillMaxSize().background(damageColor.copy(alpha = 0.1f)), 
+                    modifier = Modifier.fillMaxSize().background(damageColor.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
@@ -172,7 +178,7 @@ private fun SpellCard(spell: Spell, onClick: () -> Unit) {
                     )
                 }
             }
-            
+
             // 2. Text Overlay on Black Background
             Box(
                 modifier = Modifier
@@ -193,13 +199,5 @@ private fun SpellCard(spell: Spell, onClick: () -> Unit) {
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun SpellInfo(label: String, value: String) {
-    Column {
-        Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(text = value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
     }
 }

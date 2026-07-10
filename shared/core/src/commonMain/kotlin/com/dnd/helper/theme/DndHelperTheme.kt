@@ -11,6 +11,48 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+@Composable
+fun DndHelperTheme(
+    theme: AppTheme = AppTheme.DUNGEON,
+    content: @Composable () -> Unit,
+) {
+    val colorScheme = when (theme) {
+        AppTheme.DUNGEON -> DungeonColorScheme
+        AppTheme.PARCHMENT -> ParchmentColorScheme
+        AppTheme.FOREST -> ForestColorScheme
+        AppTheme.BLOOD -> BloodColorScheme
+        AppTheme.CELESTIAL -> CelestialColorScheme
+    }
+
+    val shapes = when (theme) {
+        AppTheme.DUNGEON -> DungeonShapes
+        AppTheme.PARCHMENT -> ParchmentShapes
+        AppTheme.FOREST -> ForestShapes
+        AppTheme.BLOOD -> BloodShapes
+        AppTheme.CELESTIAL -> CelestialShapes
+    }
+
+    val dndColors = when (theme) {
+        AppTheme.DUNGEON -> DungeonDndColors
+        AppTheme.PARCHMENT -> ParchmentDndColors
+        AppTheme.FOREST -> ForestDndColors
+        AppTheme.BLOOD -> BloodDndColors
+        AppTheme.CELESTIAL -> CelestialDndColors
+    }
+
+    CompositionLocalProvider(
+        LocalAppTheme provides theme,
+        LocalDndColors provides dndColors,
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            shapes = shapes,
+            content = content,
+        )
+    }
+}
+
 enum class AppTheme(val displayName: String) {
     DUNGEON("Dungeon Deep"),
     PARCHMENT("Old Parchment"),
@@ -111,45 +153,3 @@ private val CelestialColorScheme = darkColorScheme(
 )
 
 val LocalAppTheme = staticCompositionLocalOf { AppTheme.DUNGEON }
-
-@Composable
-fun DndHelperTheme(
-    theme: AppTheme = AppTheme.DUNGEON,
-    content: @Composable () -> Unit,
-) {
-    val colorScheme = when (theme) {
-        AppTheme.DUNGEON -> DungeonColorScheme
-        AppTheme.PARCHMENT -> ParchmentColorScheme
-        AppTheme.FOREST -> ForestColorScheme
-        AppTheme.BLOOD -> BloodColorScheme
-        AppTheme.CELESTIAL -> CelestialColorScheme
-    }
-    
-    val shapes = when (theme) {
-        AppTheme.DUNGEON -> DungeonShapes
-        AppTheme.PARCHMENT -> ParchmentShapes
-        AppTheme.FOREST -> ForestShapes
-        AppTheme.BLOOD -> BloodShapes
-        AppTheme.CELESTIAL -> CelestialShapes
-    }
-
-    val dndColors = when (theme) {
-        AppTheme.DUNGEON -> DungeonDndColors
-        AppTheme.PARCHMENT -> ParchmentDndColors
-        AppTheme.FOREST -> ForestDndColors
-        AppTheme.BLOOD -> BloodDndColors
-        AppTheme.CELESTIAL -> CelestialDndColors
-    }
-
-    CompositionLocalProvider(
-        LocalAppTheme provides theme,
-        LocalDndColors provides dndColors,
-    ) {
-        MaterialTheme(
-            colorScheme = colorScheme,
-            typography = Typography,
-            shapes = shapes,
-            content = content,
-        )
-    }
-}

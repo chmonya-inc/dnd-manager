@@ -83,7 +83,6 @@ import kotlin.random.Random
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MonsterCreateScreen(
-    onBackClick: () -> Unit,
     onMonsterCreated: () -> Unit,
     initialMonster: com.dnd.helper.domain.model.Monster? = null
 ) {
@@ -116,7 +115,11 @@ fun MonsterCreateScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (state.isSaving) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = Color(0xFF4CAF50))
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                            color = Color(0xFF4CAF50)
+                        )
                     } else {
                         Button(
                             onClick = { viewModel.onEvent(MonsterCreateEvent.SaveMonster) },
@@ -161,19 +164,26 @@ fun MonsterCreateScreen(
                                         contentScale = ContentScale.Crop
                                     )
                                 }
-                                
+
                                 if (state.imageUrl.startsWith("generating")) {
                                     CircularProgressIndicator(color = Color(0xFF4CAF50))
                                 } else {
                                     IconButton(
                                         onClick = { viewModel.onEvent(MonsterCreateEvent.GenerateImage) },
-                                        modifier = Modifier.background(Color(0xFF2E7D32).copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                        modifier = Modifier.background(
+                                            Color(0xFF2E7D32).copy(alpha = 0.5f),
+                                            RoundedCornerShape(8.dp)
+                                        )
                                     ) {
-                                        Icon(DndIcons.Filled.AutoAwesome, contentDescription = "Generate", tint = Color.White)
+                                        Icon(
+                                            DndIcons.Filled.AutoAwesome,
+                                            contentDescription = "Generate",
+                                            tint = Color.White
+                                        )
                                     }
                                 }
                             }
-                            
+
                             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 MonsterTextField(
                                     value = state.name,
@@ -182,7 +192,11 @@ fun MonsterCreateScreen(
                                 )
                                 MonsterTextField(
                                     value = state.challengeRating,
-                                    onValueChange = { viewModel.onEvent(MonsterCreateEvent.ChallengeRatingChanged(it)) },
+                                    onValueChange = {
+                                        viewModel.onEvent(
+                                            MonsterCreateEvent.ChallengeRatingChanged(it)
+                                        )
+                                    },
                                     label = "CR"
                                 )
                                 MonsterTextField(
@@ -194,12 +208,19 @@ fun MonsterCreateScreen(
                         }
 
                         Spacer(Modifier.height(12.dp))
-                        
+
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             DropdownMenuField(
                                 label = "Type",
                                 value = state.type,
-                                options = listOf("Humanoid", "Beast", "Undead", "Fiend", "Dragon", "Construct").map { ApiReferenceDto(name = it) },
+                                options = listOf(
+                                    "Humanoid",
+                                    "Beast",
+                                    "Undead",
+                                    "Fiend",
+                                    "Dragon",
+                                    "Construct"
+                                ).map { ApiReferenceDto(name = it) },
                                 optionLabel = { it.name },
                                 onValueChange = { viewModel.onEvent(MonsterCreateEvent.TypeChanged(it)) },
                                 modifier = Modifier.weight(1f)
@@ -207,7 +228,14 @@ fun MonsterCreateScreen(
                             DropdownMenuField(
                                 label = "Size",
                                 value = state.size,
-                                options = listOf("Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan").map { ApiReferenceDto(name = it) },
+                                options = listOf(
+                                    "Tiny",
+                                    "Small",
+                                    "Medium",
+                                    "Large",
+                                    "Huge",
+                                    "Gargantuan"
+                                ).map { ApiReferenceDto(name = it) },
                                 optionLabel = { it.name },
                                 onValueChange = { viewModel.onEvent(MonsterCreateEvent.SizeChanged(it)) },
                                 modifier = Modifier.weight(1f)
@@ -215,7 +243,7 @@ fun MonsterCreateScreen(
                         }
 
                         Spacer(Modifier.height(8.dp))
-                        
+
                         DropdownMenuField(
                             label = "Alignment",
                             value = state.alignment,
@@ -224,9 +252,9 @@ fun MonsterCreateScreen(
                             onValueChange = { viewModel.onEvent(MonsterCreateEvent.AlignmentChanged(it)) },
                             modifier = Modifier.fillMaxWidth()
                         )
-                        
+
                         Spacer(Modifier.height(8.dp))
-                        
+
                         MonsterTextField(
                             value = state.description,
                             onValueChange = { viewModel.onEvent(MonsterCreateEvent.DescriptionChanged(it)) },
@@ -235,26 +263,39 @@ fun MonsterCreateScreen(
                         )
 
                         Spacer(Modifier.height(16.dp))
-                        Text("AI Generation Settings", fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50), fontSize = 14.sp)
+                        Text(
+                            "AI Generation Settings",
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF4CAF50),
+                            fontSize = 14.sp
+                        )
                         Spacer(Modifier.height(8.dp))
-                        
+
                         MonsterTextField(
                             value = state.aiPrompt,
                             onValueChange = { viewModel.onEvent(MonsterCreateEvent.AiPromptChanged(it)) },
                             label = "AI Prompt",
                             minLines = 2
                         )
-                        
+
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             MonsterTextField(
                                 value = state.aiWidth.toString(),
-                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.AiSizeChanged(it.toIntOrNull() ?: 1024, state.aiHeight)) },
+                                onValueChange = {
+                                    viewModel.onEvent(
+                                        MonsterCreateEvent.AiSizeChanged(it.toIntOrNull() ?: 1024, state.aiHeight)
+                                    )
+                                },
                                 label = "Width",
                                 modifier = Modifier.weight(1f)
                             )
                             MonsterTextField(
                                 value = state.aiHeight.toString(),
-                                onValueChange = { viewModel.onEvent(MonsterCreateEvent.AiSizeChanged(state.aiWidth, it.toIntOrNull() ?: 1024)) },
+                                onValueChange = {
+                                    viewModel.onEvent(
+                                        MonsterCreateEvent.AiSizeChanged(state.aiWidth, it.toIntOrNull() ?: 1024)
+                                    )
+                                },
                                 label = "Height",
                                 modifier = Modifier.weight(1f)
                             )
@@ -271,32 +312,73 @@ fun MonsterCreateScreen(
                 item {
                     MonsterDesktopCardSection(title = "Ability Scores", icon = Icons.Default.BarChart) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                                MonsterAbilityScoreBox("STR", state.strength, dndColors.strength, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.StrengthChanged(it)) }
-                                MonsterAbilityScoreBox("DEX", state.dexterity, dndColors.dexterity, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.DexterityChanged(it)) }
-                                MonsterAbilityScoreBox("CON", state.constitution, dndColors.constitution, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.ConstitutionChanged(it)) }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                MonsterAbilityScoreBox("STR", state.strength, dndColors.strength, Modifier.weight(1f)) {
+                                    viewModel.onEvent(MonsterCreateEvent.StrengthChanged(it))
+                                }
+                                MonsterAbilityScoreBox(
+                                    "DEX",
+                                    state.dexterity,
+                                    dndColors.dexterity,
+                                    Modifier.weight(1f)
+                                ) {
+                                    viewModel.onEvent(MonsterCreateEvent.DexterityChanged(it))
+                                }
+                                MonsterAbilityScoreBox(
+                                    "CON",
+                                    state.constitution,
+                                    dndColors.constitution,
+                                    Modifier.weight(1f)
+                                ) {
+                                    viewModel.onEvent(MonsterCreateEvent.ConstitutionChanged(it))
+                                }
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                                MonsterAbilityScoreBox("INT", state.intelligence, dndColors.intelligence, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.IntelligenceChanged(it)) }
-                                MonsterAbilityScoreBox("WIS", state.wisdom, dndColors.wisdom, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.WisdomChanged(it)) }
-                                MonsterAbilityScoreBox("CHA", state.charisma, dndColors.charisma, Modifier.weight(1f)) { viewModel.onEvent(MonsterCreateEvent.CharismaChanged(it)) }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                MonsterAbilityScoreBox(
+                                    "INT",
+                                    state.intelligence,
+                                    dndColors.intelligence,
+                                    Modifier.weight(1f)
+                                ) {
+                                    viewModel.onEvent(MonsterCreateEvent.IntelligenceChanged(it))
+                                }
+                                MonsterAbilityScoreBox("WIS", state.wisdom, dndColors.wisdom, Modifier.weight(1f)) {
+                                    viewModel.onEvent(MonsterCreateEvent.WisdomChanged(it))
+                                }
+                                MonsterAbilityScoreBox("CHA", state.charisma, dndColors.charisma, Modifier.weight(1f)) {
+                                    viewModel.onEvent(MonsterCreateEvent.CharismaChanged(it))
+                                }
                             }
                         }
                     }
                 }
-                
+
                 item {
                     MonsterDesktopCardSection(title = "Combat Stats") {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            MonsterTextField(value = state.maxHp, onValueChange = { viewModel.onEvent(MonsterCreateEvent.MaxHpChanged(it)) }, label = "HP", modifier = Modifier.weight(1f))
-                            MonsterTextField(value = state.armorClass, onValueChange = { viewModel.onEvent(MonsterCreateEvent.ArmorClassChanged(it)) }, label = "AC", modifier = Modifier.weight(1f))
-                            MonsterTextField(value = state.speed, onValueChange = { viewModel.onEvent(MonsterCreateEvent.SpeedChanged(it)) }, label = "Speed", modifier = Modifier.weight(1f))
+                            MonsterTextField(value = state.maxHp, onValueChange = {
+                                viewModel.onEvent(MonsterCreateEvent.MaxHpChanged(it))
+                            }, label = "HP", modifier = Modifier.weight(1f))
+                            MonsterTextField(value = state.armorClass, onValueChange = {
+                                viewModel.onEvent(MonsterCreateEvent.ArmorClassChanged(it))
+                            }, label = "AC", modifier = Modifier.weight(1f))
+                            MonsterTextField(value = state.speed, onValueChange = {
+                                viewModel.onEvent(MonsterCreateEvent.SpeedChanged(it))
+                            }, label = "Speed", modifier = Modifier.weight(1f))
                         }
                         Spacer(Modifier.height(8.dp))
-                        MonsterTextField(value = state.hitDice, onValueChange = { viewModel.onEvent(MonsterCreateEvent.HitDiceChanged(it)) }, label = "Hit Die (e.g. 2d8+4)")
+                        MonsterTextField(value = state.hitDice, onValueChange = {
+                            viewModel.onEvent(MonsterCreateEvent.HitDiceChanged(it))
+                        }, label = "Hit Die (e.g. 2d8+4)")
                     }
                 }
-                
+
                 item {
                     MonsterDesktopCardSection(title = "Immunities & Resistances") {
                         MultiSelectDropdownField(
@@ -329,45 +411,53 @@ fun MonsterCreateScreen(
             ) {
                 item {
                     MonsterDesktopCardSection(
-                        title = "Special Abilities", 
-                        icon = Icons.Default.Star, 
+                        title = "Special Abilities",
+                        icon = Icons.Default.Star,
                         onAddClick = {
                             actionTypeToEdit = "Special Ability"
                             showActionDialog = true
                         }
                     ) {
                         state.specialAbilities.forEach { ability ->
-                            MonsterActionRichItem(ability.name, ability.desc) { viewModel.onEvent(MonsterCreateEvent.RemoveSpecialAbility(ability)) }
+                            MonsterActionRichItem(ability.name, ability.desc) {
+                                viewModel.onEvent(MonsterCreateEvent.RemoveSpecialAbility(ability))
+                            }
                         }
                     }
                 }
 
                 item {
                     MonsterDesktopCardSection(
-                        title = "Actions", 
-                        icon = Icons.Default.Gavel, 
+                        title = "Actions",
+                        icon = Icons.Default.Gavel,
                         onAddClick = {
                             actionTypeToEdit = "Action"
                             showActionDialog = true
                         }
                     ) {
                         state.actions.forEach { action ->
-                            MonsterActionRichItem(action.name, action.desc) { viewModel.onEvent(MonsterCreateEvent.RemoveAction(action)) }
+                            MonsterActionRichItem(
+                                action.name,
+                                action.desc
+                            ) { viewModel.onEvent(MonsterCreateEvent.RemoveAction(action)) }
                         }
                     }
                 }
-                
+
                 item {
                     MonsterDesktopCardSection(
-                        title = "Legendary Actions", 
-                        icon = Icons.Default.EmojiEvents, 
+                        title = "Legendary Actions",
+                        icon = Icons.Default.EmojiEvents,
                         onAddClick = {
                             actionTypeToEdit = "Legendary Action"
                             showActionDialog = true
                         }
                     ) {
                         state.legendaryActions.forEach { action ->
-                            MonsterActionRichItem(action.name, action.desc) { viewModel.onEvent(MonsterCreateEvent.RemoveLegendaryAction(action)) }
+                            MonsterActionRichItem(
+                                action.name,
+                                action.desc
+                            ) { viewModel.onEvent(MonsterCreateEvent.RemoveLegendaryAction(action)) }
                         }
                     }
                 }
@@ -382,9 +472,13 @@ fun MonsterCreateScreen(
             onDismiss = { showActionDialog = false },
             onConfirm = { actionData ->
                 when (actionTypeToEdit) {
-                    "Special Ability" -> viewModel.onEvent(MonsterCreateEvent.AddSpecialAbility(actionData.toSpecialAbility()))
+                    "Special Ability" -> viewModel.onEvent(
+                        MonsterCreateEvent.AddSpecialAbility(actionData.toSpecialAbility())
+                    )
                     "Action" -> viewModel.onEvent(MonsterCreateEvent.AddAction(actionData.toAction()))
-                    "Legendary Action" -> viewModel.onEvent(MonsterCreateEvent.AddLegendaryAction(actionData.toAction()))
+                    "Legendary Action" -> viewModel.onEvent(
+                        MonsterCreateEvent.AddLegendaryAction(actionData.toAction())
+                    )
                     "Reaction" -> viewModel.onEvent(MonsterCreateEvent.AddReaction(actionData.toAction()))
                 }
                 showActionDialog = false
@@ -448,16 +542,16 @@ fun MonsterAbilityScoreBox(
         verticalArrangement = Arrangement.Center
     ) {
         Text(label, fontWeight = FontWeight.Bold, color = color, fontSize = 12.sp)
-        
+
         // Main editable score - using BasicTextField to remove default Material indicator and padding
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.width(60.dp).padding(vertical = 2.dp),
             textStyle = TextStyle(
-                fontSize = 24.sp, 
-                fontWeight = FontWeight.Bold, 
-                color = Color.White, 
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
                 textAlign = TextAlign.Center
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -470,12 +564,12 @@ fun MonsterAbilityScoreBox(
             val mod = (score - 10) / 2
             if (mod >= 0) "+$mod" else mod.toString()
         } catch (_: Exception) { "+0" }
-        
+
         // Calculated modifier
         Text(
-            text = "($modStr)", 
-            fontWeight = FontWeight.Medium, 
-            color = Color.Gray, 
+            text = "($modStr)",
+            fontWeight = FontWeight.Medium,
+            color = Color.Gray,
             fontSize = 14.sp
         )
     }
@@ -545,17 +639,43 @@ data class ActionDialogData(
     fun toAction() = MonsterActionDto(
         name = name,
         desc = desc,
-        attack_bonus = attackBonus.toIntOrNull(),
-        dc = if (dcValue.isNotBlank()) DcDto(dc_type = ApiReferenceDto(name = dcType), dc_value = dcValue.toDoubleOrNull()) else null,
-        damage = if (damageDice.isNotBlank()) listOf(DamageDto(damage_dice = damageDice, damage_type = ApiReferenceDto(name = damageType))) else emptyList()
+        attackBonus = attackBonus.toIntOrNull(),
+        dc = if (dcValue.isNotBlank()) {
+            DcDto(
+                dcType = ApiReferenceDto(name = dcType),
+                dcValue = dcValue.toDoubleOrNull()
+            )
+        } else {
+            null
+        },
+        damage = if (damageDice.isNotBlank()) {
+            listOf(
+                DamageDto(damageDice = damageDice, damageType = ApiReferenceDto(name = damageType))
+            )
+        } else {
+            emptyList()
+        }
     )
 
     fun toSpecialAbility() = MonsterSpecialAbilityDto(
         name = name,
         desc = desc,
-        attack_bonus = attackBonus.toIntOrNull(),
-        dc = if (dcValue.isNotBlank()) DcDto(dc_type = ApiReferenceDto(name = dcType), dc_value = dcValue.toDoubleOrNull()) else null,
-        damage = if (damageDice.isNotBlank()) listOf(DamageDto(damage_dice = damageDice, damage_type = ApiReferenceDto(name = damageType))) else emptyList()
+        attackBonus = attackBonus.toIntOrNull(),
+        dc = if (dcValue.isNotBlank()) {
+            DcDto(
+                dcType = ApiReferenceDto(name = dcType),
+                dcValue = dcValue.toDoubleOrNull()
+            )
+        } else {
+            null
+        },
+        damage = if (damageDice.isNotBlank()) {
+            listOf(
+                DamageDto(damageDice = damageDice, damageType = ApiReferenceDto(name = damageType))
+            )
+        } else {
+            emptyList()
+        }
     )
 }
 
@@ -581,21 +701,23 @@ fun MonsterActionRichDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text("Add $type", fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50), fontSize = 22.sp)
-                
+
                 MonsterTextField(value = data.name, onValueChange = { data = data.copy(name = it) }, label = "Name")
-                MonsterTextField(value = data.desc, onValueChange = { data = data.copy(desc = it) }, label = "Description", minLines = 3)
-                
+                MonsterTextField(value = data.desc, onValueChange = {
+                    data = data.copy(desc = it)
+                }, label = "Description", minLines = 3)
+
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MonsterTextField(
-                        value = data.attackBonus, 
-                        onValueChange = { data = data.copy(attackBonus = it) }, 
-                        label = "Atk Bonus", 
+                        value = data.attackBonus,
+                        onValueChange = { data = data.copy(attackBonus = it) },
+                        label = "Atk Bonus",
                         modifier = Modifier.weight(1f)
                     )
                     MonsterTextField(
-                        value = data.damageDice, 
-                        onValueChange = { data = data.copy(damageDice = it) }, 
-                        label = "Dmg Dice", 
+                        value = data.damageDice,
+                        onValueChange = { data = data.copy(damageDice = it) },
+                        label = "Dmg Dice",
                         modifier = Modifier.weight(1.5f)
                     )
                 }
@@ -611,13 +733,13 @@ fun MonsterActionRichDialog(
                         modifier = Modifier.weight(1f)
                     )
                     MonsterTextField(
-                        value = data.dcValue, 
-                        onValueChange = { data = data.copy(dcValue = it) }, 
-                        label = "DC Value", 
+                        value = data.dcValue,
+                        onValueChange = { data = data.copy(dcValue = it) },
+                        label = "DC Value",
                         modifier = Modifier.weight(1f)
                     )
                 }
-                
+
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) { Text("Cancel", color = Color.Gray) }
                     Button(

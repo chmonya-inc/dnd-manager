@@ -19,7 +19,7 @@ data class CharacterCreateState(
     val description: String = "",
     val imageUrl: String = "",
     val aiPrompt: String = "",
-    
+
     val availableClasses: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
     val availableSubclasses: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),
     val availableRaces: List<com.dnd.helper.data.remote.dto.common.ApiReferenceDto> = emptyList(),

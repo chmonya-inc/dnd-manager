@@ -11,34 +11,46 @@ import com.dnd.helper.data.remote.dto.auth.PendingAssignmentDto
 import com.dnd.helper.data.remote.dto.auth.RespondAssignmentRequest
 import com.dnd.helper.domain.common.AppError
 import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.model.*
+import com.dnd.helper.domain.model.Battlefield
+import com.dnd.helper.domain.model.Character
+import com.dnd.helper.domain.model.GameEvent
+import com.dnd.helper.domain.model.InitialData
+import com.dnd.helper.domain.model.Location
+import com.dnd.helper.domain.model.LogEntry
+import com.dnd.helper.domain.model.Monster
+import com.dnd.helper.domain.model.MusicTrack
+import com.dnd.helper.domain.model.Npc
 import com.dnd.helper.domain.storage.CharacterStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.statement.bodyAsText
 import io.ktor.client.plugins.websocket.webSocket
-import io.ktor.client.request.*
-import io.ktor.http.*
-import io.ktor.websocket.*
-import kotlinx.coroutines.*
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import io.ktor.websocket.Frame
+import io.ktor.websocket.readText
+import io.ktor.websocket.send
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
 class KtorRemoteDataSource(
     private val httpClient: HttpClient,
     private val storage: CharacterStorage,
 ) {
-    private val json = Json {
-        ignoreUnknownKeys = true
-        coerceInputValues = true
-        isLenient = true
-        encodeDefaults = true
-    }
 
     private fun sessionId(): String = storage.getTableId() ?: "default"
-    
+
     private fun baseUrl(address: String? = storage.getServerAddress()): String {
         if (address != null && address.isNotBlank()) {
             var formatted = address.trim()
@@ -108,7 +120,7 @@ class KtorRemoteDataSource(
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/characters/$id") }
 
     suspend fun saveCharacter(character: Character): Result<Unit> =
-        safeApiCall { 
+        safeApiCall {
             httpClient.post("${baseUrl()}/api/${sessionId()}/characters") {
                 contentType(ContentType.Application.Json)
                 setBody(character)
@@ -230,11 +242,13 @@ class KtorRemoteDataSource(
         safeApiCall {
             httpClient.post("${baseUrl()}/api/characters/assign") {
                 contentType(ContentType.Application.Json)
-                setBody(AssignCharacterRequest(
-                    characterId = characterId,
-                    sessionId = sessionId,
-                    ownerUserId = ownerUserId
-                ))
+                setBody(
+                    AssignCharacterRequest(
+                        characterId = characterId,
+                        sessionId = sessionId,
+                        ownerUserId = ownerUserId
+                    )
+                )
             }
         }
 
@@ -242,11 +256,13 @@ class KtorRemoteDataSource(
         safeApiCall {
             httpClient.post("${baseUrl()}/api/characters/assign-by-username") {
                 contentType(ContentType.Application.Json)
-                setBody(AssignByUsernameRequest(
-                    characterId = characterId,
-                    sessionId = sessionId,
-                    username = username
-                ))
+                setBody(
+                    AssignByUsernameRequest(
+                        characterId = characterId,
+                        sessionId = sessionId,
+                        username = username
+                    )
+                )
             }
         }
 
@@ -260,12 +276,14 @@ class KtorRemoteDataSource(
         safeApiCall {
             httpClient.post("${baseUrl()}/api/campaigns") {
                 contentType(ContentType.Application.Json)
-                setBody(mapOf(
-                    "id" to "",
-                    "name" to name,
-                    "ownerId" to "",
-                    "sessionId" to sessionId
-                ))
+                setBody(
+                    mapOf(
+                        "id" to "",
+                        "name" to name,
+                        "ownerId" to "",
+                        "sessionId" to sessionId
+                    )
+                )
             }
         }
 
@@ -275,11 +293,13 @@ class KtorRemoteDataSource(
         safeApiCall {
             httpClient.post("${baseUrl()}/api/assignments") {
                 contentType(ContentType.Application.Json)
-                setBody(CreateAssignmentRequest(
-                    characterId = characterId,
-                    sessionId = sessionId,
-                    playerUsername = playerUsername
-                ))
+                setBody(
+                    CreateAssignmentRequest(
+                        characterId = characterId,
+                        sessionId = sessionId,
+                        playerUsername = playerUsername
+                    )
+                )
             }
         }
 
@@ -290,10 +310,12 @@ class KtorRemoteDataSource(
         safeApiCall {
             httpClient.post("${baseUrl()}/api/assignments/respond") {
                 contentType(ContentType.Application.Json)
-                setBody(RespondAssignmentRequest(
-                    assignmentId = assignmentId,
-                    accept = accept
-                ))
+                setBody(
+                    RespondAssignmentRequest(
+                        assignmentId = assignmentId,
+                        accept = accept
+                    )
+                )
             }
         }
 

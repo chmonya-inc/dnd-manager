@@ -1,8 +1,11 @@
 package com.dnd.helper
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.setValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -12,8 +15,18 @@ import com.dnd.helper.presentation.charactercreate.CharacterCreateViewModel
 import com.dnd.helper.presentation.characterdetail.CharacterDetailScreen
 import com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
-import com.dnd.helper.presentation.desktop.*
+import com.dnd.helper.presentation.desktop.AssignCharacterViewModel
+import com.dnd.helper.presentation.desktop.CampaignPickerScreen
+import com.dnd.helper.presentation.desktop.LibraryViewModel
+import com.dnd.helper.presentation.desktop.LogViewModel
+import com.dnd.helper.presentation.desktop.MainDesktopScreen
+import com.dnd.helper.presentation.desktop.MusicViewModel
+import com.dnd.helper.presentation.desktop.PresentationViewModel
+import com.dnd.helper.presentation.desktop.RulesLibraryViewModel
+import com.dnd.helper.presentation.desktop.SessionsViewModel
+import com.dnd.helper.presentation.desktop.SettingsViewModel
 import com.dnd.helper.presentation.start.StartScreen
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -61,7 +74,7 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
         val navController = rememberNavController()
         val authRepository = org.koin.compose.koinInject<com.dnd.helper.domain.repository.AuthRepository>()
         val storage = org.koin.compose.koinInject<com.dnd.helper.domain.storage.CharacterStorage>()
-        
+
         val startDest: Any = if (authRepository.getRefreshToken() != null) {
             if (storage.getTableId().isNullOrBlank()) CampaignPicker else MainDesktop
         } else {
@@ -147,7 +160,6 @@ fun DesktopApp(koinConfiguration: KoinAppDeclaration = {}) {
             }
             composable<CharacterCreate> {
                 CharacterCreateScreen(
-                    onBackClick = { navController.popBackStack() },
                     onCharacterCreated = {
                         navController.popBackStack()
                     }

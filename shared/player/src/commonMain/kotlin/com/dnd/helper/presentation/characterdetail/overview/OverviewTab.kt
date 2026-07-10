@@ -146,7 +146,9 @@ private fun HeaderCard(
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                             onError = { state ->
-                                println("[AsyncImage] Failed to load avatar for ${character.name}: ${state.result.throwable}")
+                                println(
+                                    "[AsyncImage] Failed to load avatar for ${character.name}: ${state.result.throwable}"
+                                )
                             },
                         )
                     }
@@ -566,7 +568,6 @@ private fun DeathSaves(
 ) {
     val isStable = successes >= 3
     val isDead = failures >= 3
-    val canRoll = !isStable && !isDead
 
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
@@ -725,7 +726,13 @@ private fun StatControls(
     val statConfigs = listOf(
         StatControlConfig("strength", stats.strength, "STR", DndIcons.Filled.FitnessCenter, Color(0xFFEF5350)),
         StatControlConfig("dexterity", stats.dexterity, "DEX", DndIcons.Filled.DirectionsRun, Color(0xFF66BB6A)),
-        StatControlConfig("constitution", stats.constitution, "CON", DndIcons.Filled.HealthAndSafety, Color(0xFFFFA726)),
+        StatControlConfig(
+            "constitution",
+            stats.constitution,
+            "CON",
+            DndIcons.Filled.HealthAndSafety,
+            Color(0xFFFFA726)
+        ),
         StatControlConfig("intelligence", stats.intelligence, "INT", DndIcons.Filled.Lightbulb, Color(0xFF42A5F5)),
         StatControlConfig("wisdom", stats.wisdom, "WIS", DndIcons.Filled.Visibility, Color(0xFFAB47BC)),
         StatControlConfig("charisma", stats.charisma, "CHA", DndIcons.Filled.Mood, Color(0xFFEC407A)),
@@ -767,84 +774,89 @@ private fun StatControls(
                     Spacer(Modifier.height(8.dp))
 
                     statConfigs.forEach { config ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.width(80.dp),
-                    ) {
-                        Icon(
-                            imageVector = config.icon,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = config.color,
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(
-                            text = config.label,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = config.color,
-                        )
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        IconButton(
-                            onClick = { onEvent(CharacterDetailEvent.UpdateStat(config.statName, -amount)) },
-                            modifier = Modifier.size(40.dp),
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Icon(DndIcons.Filled.Remove, null, modifier = Modifier.size(22.dp), tint = config.color)
-                        }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.width(80.dp),
+                            ) {
+                                Icon(
+                                    imageVector = config.icon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = config.color,
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = config.label,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = config.color,
+                                )
+                            }
 
-                        Box(
-                            modifier = Modifier
-                                .width(44.dp)
-                                .height(32.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                                    MaterialTheme.shapes.small,
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            BasicTextField(
-                                value = amountText,
-                                onValueChange = { if (it.all { it.isDigit() } && it.length < 3) amountText = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                    textAlign = TextAlign.Center,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                ),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                IconButton(
+                                    onClick = { onEvent(CharacterDetailEvent.UpdateStat(config.statName, -amount)) },
+                                    modifier = Modifier.size(40.dp),
+                                ) {
+                                    Icon(
+                                        DndIcons.Filled.Remove,
+                                        null,
+                                        modifier = Modifier.size(22.dp),
+                                        tint = config.color
+                                    )
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .width(44.dp)
+                                        .height(32.dp)
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                            MaterialTheme.shapes.small,
+                                        ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    BasicTextField(
+                                        value = amountText,
+                                        onValueChange = { if (it.all { it.isDigit() } && it.length < 3) amountText = it },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                            textAlign = TextAlign.Center,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                        ),
+                                        singleLine = true,
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    )
+                                }
+
+                                IconButton(
+                                    onClick = { onEvent(CharacterDetailEvent.UpdateStat(config.statName, amount)) },
+                                    modifier = Modifier.size(40.dp),
+                                ) {
+                                    Icon(Icons.Default.Add, null, modifier = Modifier.size(22.dp), tint = config.color)
+                                }
+                            }
+
+                            Text(
+                                text = config.value.toString(),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.width(36.dp),
+                                textAlign = TextAlign.End,
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                         }
-
-                        IconButton(
-                            onClick = { onEvent(CharacterDetailEvent.UpdateStat(config.statName, amount)) },
-                            modifier = Modifier.size(40.dp),
-                        ) {
-                            Icon(Icons.Default.Add, null, modifier = Modifier.size(22.dp), tint = config.color)
-                        }
+                        Spacer(Modifier.height(4.dp))
                     }
-
-                    Text(
-                        text = config.value.toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.width(36.dp),
-                        textAlign = TextAlign.End,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-                Spacer(Modifier.height(4.dp))
-            }
                 }
             }
         }
@@ -925,8 +937,11 @@ private fun InspirationExhaustionRow(
                         .size(32.dp)
                         .clip(CircleShape)
                         .background(
-                            if (combat.inspiration) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                            if (combat.inspiration) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                            }
                         ),
                     contentAlignment = Alignment.Center,
                 ) {

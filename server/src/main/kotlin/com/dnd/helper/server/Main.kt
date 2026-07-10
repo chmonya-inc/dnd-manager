@@ -2,25 +2,33 @@ package com.dnd.helper.server
 
 import com.dnd.helper.server.database.DatabaseFactory
 import com.dnd.helper.server.routing.configureApiRouting
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.application.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.ktor.server.plugins.calllogging.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.plugins.statuspages.StatusPages
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.server.plugins.ratelimit.*
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
-import com.dnd.helper.server.routing.configureAuthRouting
 import com.dnd.helper.server.routing.configureAssignmentRouting
+import com.dnd.helper.server.routing.configureAuthRouting
 import com.dnd.helper.server.routing.configureCampaignRouting
 import com.dnd.helper.server.routing.configureHealthRouting
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.Application
+import io.ktor.server.application.install
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.jwt.jwt
+import io.ktor.server.auth.parseAuthorizationHeader
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.calllogging.CallLogging
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.plugins.ratelimit.RateLimit
+import io.ktor.server.plugins.ratelimit.RateLimitName
+import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.response.respond
+import io.ktor.server.routing.IgnoreTrailingSlash
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.pingPeriod
+import io.ktor.server.websocket.timeout
 import org.slf4j.event.Level
 import kotlin.time.Duration.Companion.seconds
 
@@ -35,12 +43,14 @@ fun Application.module() {
     install(IgnoreTrailingSlash)
 
     install(ContentNegotiation) {
-        json(kotlinx.serialization.json.Json {
-            ignoreUnknownKeys = true
-            coerceInputValues = true
-            isLenient = true
-            encodeDefaults = true
-        })
+        json(
+            kotlinx.serialization.json.Json {
+                ignoreUnknownKeys = true
+                coerceInputValues = true
+                isLenient = true
+                encodeDefaults = true
+            }
+        )
     }
 
     install(WebSockets) {
@@ -94,7 +104,9 @@ fun Application.module() {
                 null
             }
             verifier(
-                com.auth0.jwt.JWT.require(com.auth0.jwt.algorithms.Algorithm.HMAC256(com.dnd.helper.server.routing.jwtSecret))
+                com.auth0.jwt.JWT.require(
+                    com.auth0.jwt.algorithms.Algorithm.HMAC256(com.dnd.helper.server.routing.jwtSecret)
+                )
                     .withIssuer(com.dnd.helper.server.routing.JWT_ISSUER)
                     .build()
             )

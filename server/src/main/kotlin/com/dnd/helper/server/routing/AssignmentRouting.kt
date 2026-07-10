@@ -10,19 +10,26 @@ import com.dnd.helper.server.database.Characters
 import com.dnd.helper.server.database.DatabaseFactory.dbQuery
 import com.dnd.helper.server.database.Users
 import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
+import io.ktor.server.application.Application
+import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import org.jetbrains.exposed.sql.*
+import io.ktor.server.auth.principal
+import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.routing
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.innerJoin
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
 import java.util.UUID
 
 fun Application.configureAssignmentRouting() {
     routing {
         authenticate("auth-jwt") {
-
             // --- Master: Create assignment request (send to player) ---
             post("/api/assignments") {
                 val principal = call.principal<JWTPrincipal>()
@@ -60,7 +67,7 @@ fun Application.configureAssignmentRouting() {
                     CharacterAssignments.selectAll()
                         .where {
                             (CharacterAssignments.characterId eq body.characterId) and
-                            (CharacterAssignments.status eq "PENDING")
+                                (CharacterAssignments.status eq "PENDING")
                         }
                         .toList()
                 }
@@ -68,7 +75,10 @@ fun Application.configureAssignmentRouting() {
                 // Rule 1: Same player already has a pending assignment for this character → reject
                 val samePlayerPending = existingPending.find { it[CharacterAssignments.playerId] == playerId }
                 if (samePlayerPending != null) {
-                    call.respond(HttpStatusCode.Conflict, "This character already has a pending assignment for player '${body.playerUsername}'")
+                    call.respond(
+                        HttpStatusCode.Conflict,
+                        "This character already has a pending assignment for player '${body.playerUsername}'"
+                    )
                     return@post
                 }
 

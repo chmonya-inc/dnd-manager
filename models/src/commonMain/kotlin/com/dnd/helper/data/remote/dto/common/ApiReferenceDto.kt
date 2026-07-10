@@ -1,17 +1,18 @@
 package com.dnd.helper.data.remote.dto.common
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ApiReferenceDto(
-    val index: String = "",
-    val name: String = "",
-    val url: String = "",
-    val updated_at: String? = null,
+    @SerialName("index") val index: String = "",
+    @SerialName("name") val name: String = "",
+    @SerialName("url") val url: String = "",
+    @SerialName("updated_at") val updatedAt: String? = null,
 )
 
 @Serializable
 data class ApiReferenceListDto(
-    val count: Int = 0,
-    val results: List<ApiReferenceDto> = emptyList(),
+    @SerialName("count") val count: Int = 0,
+    @SerialName("results") val results: List<ApiReferenceDto> = emptyList(),
 )

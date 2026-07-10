@@ -1,10 +1,11 @@
 package com.dnd.helper.data.remote.dto.common
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class DcDto(
-    val dc_type: ApiReferenceDto = ApiReferenceDto(),
-    val dc_value: Double? = null,
-    val success_type: String = "none", // "none" | "half" | "other"
+    @SerialName("dc_type") val dcType: ApiReferenceDto = ApiReferenceDto(),
+    @SerialName("dc_value") val dcValue: Double? = null,
+    @SerialName("success_type") val successType: String = "none", // "none" | "half" | "other"
 )

@@ -2,9 +2,19 @@ package com.dnd.helper.presentation.desktop
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,12 +23,35 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DragIndicator
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -162,19 +195,24 @@ fun CampaignPickerScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .then(
-                                        if (isDragTarget) Modifier.border(
-                                            3.dp,
-                                            MaterialTheme.colorScheme.primary,
-                                            RoundedCornerShape(12.dp)
-                                        ) else Modifier
+                                        if (isDragTarget) {
+                                            Modifier.border(
+                                                3.dp,
+                                                MaterialTheme.colorScheme.primary,
+                                                RoundedCornerShape(12.dp)
+                                            )
+                                        } else {
+                                            Modifier
+                                        }
                                     ),
                                 colors = CardDefaults.cardColors(
-                                    containerColor = if (isDragTarget)
+                                    containerColor = if (isDragTarget) {
                                         MaterialTheme.colorScheme.primaryContainer
-                                    else if (isSelected)
+                                    } else if (isSelected) {
                                         MaterialTheme.colorScheme.primaryContainer
-                                    else
+                                    } else {
                                         MaterialTheme.colorScheme.surface
+                                    }
                                 )
                             ) {
                                 Row(
@@ -304,7 +342,10 @@ fun CampaignPickerScreen(
                             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                         } else if (state.previewData != null) {
                             val data = state.previewData!!
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(32.dp)
+                            ) {
                                 PreviewStatCard(
                                     title = "Characters",
                                     count = data.characters.size,
@@ -373,21 +414,42 @@ fun CampaignPickerScreen(
 
                             Spacer(Modifier.height(32.dp))
 
-                            Text("Quick Summary", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text(
+                                "Quick Summary",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
                             Spacer(Modifier.height(16.dp))
 
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
                             ) {
-                                Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
                                     if (data.characters.isNotEmpty()) {
-                                        Text("Recent Heroes: ${data.characters.take(3).joinToString { it.name }}", style = MaterialTheme.typography.bodyLarge)
+                                        Text(
+                                            "Recent Heroes: ${data.characters.take(3).joinToString { it.name }}",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
                                     }
                                     if (data.npcs.isNotEmpty()) {
-                                        Text("Key NPCs: ${data.npcs.take(3).joinToString { it.name }}", style = MaterialTheme.typography.bodyLarge)
+                                        Text(
+                                            "Key NPCs: ${data.npcs.take(3).joinToString { it.name }}",
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
                                     }
-                                    Text("Campaign ID for players: ${com.dnd.helper.domain.common.IdUtils.encode(campaign.id)}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                    Text(
+                                        "Campaign ID for players: ${com.dnd.helper.domain.common.IdUtils.encode(
+                                            campaign.id
+                                        )}",
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
                         }
@@ -429,15 +491,22 @@ private fun CharacterRow(
         modifier = Modifier
             .fillMaxWidth()
             .then(
-                if (isDragging) Modifier.border(
-                    2.dp,
-                    MaterialTheme.colorScheme.primary,
-                    RoundedCornerShape(12.dp)
-                ) else Modifier
+                if (isDragging) {
+                    Modifier.border(
+                        2.dp,
+                        MaterialTheme.colorScheme.primary,
+                        RoundedCornerShape(12.dp)
+                    )
+                } else {
+                    Modifier
+                }
             ),
         colors = CardDefaults.cardColors(
-            containerColor = if (isDragging) MaterialTheme.colorScheme.primaryContainer
-                             else MaterialTheme.colorScheme.surface
+            containerColor = if (isDragging) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
         )
     ) {
         Row(

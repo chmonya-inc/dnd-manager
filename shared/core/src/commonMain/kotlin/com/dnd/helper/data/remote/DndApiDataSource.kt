@@ -1,8 +1,28 @@
 package com.dnd.helper.data.remote
 
-import com.dnd.helper.data.remote.dto.character.*
+import com.dnd.helper.data.remote.DndApiDataSource.Companion.BASE
+import com.dnd.helper.data.remote.dto.character.AbilityScoreDto
+import com.dnd.helper.data.remote.dto.character.AlignmentDto
+import com.dnd.helper.data.remote.dto.character.BackgroundDto
+import com.dnd.helper.data.remote.dto.character.ClassDto
+import com.dnd.helper.data.remote.dto.character.ClassLevelDto
+import com.dnd.helper.data.remote.dto.character.DndSkillDto
+import com.dnd.helper.data.remote.dto.character.FeatDto
+import com.dnd.helper.data.remote.dto.character.FeatureDto
+import com.dnd.helper.data.remote.dto.character.LanguageDto
+import com.dnd.helper.data.remote.dto.character.ProficiencyDto
+import com.dnd.helper.data.remote.dto.character.RaceDto
+import com.dnd.helper.data.remote.dto.character.SubclassDto
+import com.dnd.helper.data.remote.dto.character.SubraceDto
+import com.dnd.helper.data.remote.dto.character.TraitDto
 import com.dnd.helper.data.remote.dto.common.ApiReferenceListDto
-import com.dnd.helper.data.remote.dto.equipment.*
+import com.dnd.helper.data.remote.dto.equipment.ArmorDto
+import com.dnd.helper.data.remote.dto.equipment.EquipmentCategoryDto
+import com.dnd.helper.data.remote.dto.equipment.EquipmentPackDto
+import com.dnd.helper.data.remote.dto.equipment.GearDto
+import com.dnd.helper.data.remote.dto.equipment.MagicItemDto
+import com.dnd.helper.data.remote.dto.equipment.WeaponDto
+import com.dnd.helper.data.remote.dto.equipment.WeaponPropertyDto
 import com.dnd.helper.data.remote.dto.game.ConditionDto
 import com.dnd.helper.data.remote.dto.game.DamageTypeDto
 import com.dnd.helper.data.remote.dto.game.RuleDto
@@ -12,24 +32,13 @@ import com.dnd.helper.data.remote.dto.spell.MagicSchoolDto
 import com.dnd.helper.data.remote.dto.spell.SpellDto
 import com.dnd.helper.domain.common.AppError
 import com.dnd.helper.domain.common.Result
+import com.dnd.helper.domain.storage.CharacterStorage
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.isSuccess
-
-/**
- * Data source for the official D&D 5e SRD API (https://www.dnd5eapi.co/api/2014).
- *
- * - All methods return [Result] matching the project-wide error handling pattern.
- * - Responses are cached in-memory after the first successful fetch (TTL = process lifetime).
- *   SRD data never changes, so indefinite caching is safe for reference resources.
- * - The [httpClient] is the same Koin-managed client used by [KtorRemoteDataSource].
- *   It already has ContentNegotiation + JSON configured with ignoreUnknownKeys = true.
- */
-import com.dnd.helper.domain.storage.CharacterStorage
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
 
 class DndApiDataSource(
     private val httpClient: HttpClient,
@@ -353,7 +362,7 @@ class DndApiDataSource(
         }
 
         return safeApiCall<ApiReferenceListDto> { httpClient.getSrd(endpoint) }
-            .also { result -> 
+            .also { result ->
                 if (result is Result.Success) {
                     listCache[endpoint] = result.data
                     storage.saveApiCache(cacheKey, jsonParser.encodeToString(result.data))
@@ -385,7 +394,7 @@ class DndApiDataSource(
         }
 
         return safeApiCall<T> { httpClient.fetch() }
-            .also { result -> 
+            .also { result ->
                 if (result is Result.Success) {
                     cache[key] = result.data
                     storage.saveApiCache(cacheKey, jsonParser.encodeToString(result.data))

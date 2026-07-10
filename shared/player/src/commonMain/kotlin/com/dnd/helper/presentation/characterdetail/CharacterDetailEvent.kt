@@ -19,13 +19,13 @@ sealed interface CharacterDetailEvent {
     data class UpdateAiSize(val width: Int, val height: Int) : CharacterDetailEvent
     data object SaveChanges : CharacterDetailEvent
     data object ToggleMasterMode : CharacterDetailEvent
-    
+
     // Spells
     data object AddSpell : CharacterDetailEvent
     data class RemoveSpell(val spellId: String) : CharacterDetailEvent
     data class UpdateSpell(val spell: com.dnd.helper.domain.model.Spell) : CharacterDetailEvent
     data class GenerateSpellImage(val spellId: String) : CharacterDetailEvent
-    
+
     // Items
     data object AddItem : CharacterDetailEvent
     data class RemoveItem(val itemId: String) : CharacterDetailEvent

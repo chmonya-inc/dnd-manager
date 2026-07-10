@@ -1,9 +1,10 @@
 package com.dnd.helper.data.remote.dto.common
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class PrerequisiteDto(
-    val ability_score: ApiReferenceDto? = null,
-    val minimum_score: Double? = null,
+    @SerialName("ability_score") val abilityScore: ApiReferenceDto? = null,
+    @SerialName("minimum_score") val minimumScore: Double? = null,
 )

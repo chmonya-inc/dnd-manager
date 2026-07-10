@@ -1,18 +1,44 @@
 package com.dnd.helper.presentation.auth
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.dnd.helper.di.isDesktop
+import com.dnd.helper.shared.core.generated.resources.Res
+import com.dnd.helper.shared.core.generated.resources.logo
 import com.dnd.helper.theme.DndIcons
 import org.jetbrains.compose.resources.painterResource
-import com.dnd.helper.shared.core.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -48,18 +74,20 @@ fun AuthScreen(
 
     if (showRecoverCodeDialog) {
         AlertDialog(
-            onDismissRequest = { 
+            onDismissRequest = {
                 showRecoverCodeDialog = false
                 onAuthSuccess()
             },
             title = { Text("Save your Recovery Code") },
-            text = { 
+            text = {
                 androidx.compose.foundation.text.selection.SelectionContainer {
-                    Text("Your password recovery code is:\n\n${state.registeredRecoverCode}\n\nPlease save this code somewhere safe. You can use it to reset your password later.") 
+                    Text(
+                        "Your password recovery code is:\n\n${state.registeredRecoverCode}\n\nPlease save this code somewhere safe. You can use it to reset your password later."
+                    )
                 }
             },
             confirmButton = {
-                Button(onClick = { 
+                Button(onClick = {
                     showRecoverCodeDialog = false
                     onAuthSuccess()
                 }) {
@@ -113,16 +141,16 @@ fun AuthScreen(
                         contentDescription = null,
                         modifier = Modifier.size(120.dp)
                     )
-                    
+
                     Spacer(modifier = Modifier.height(24.dp))
-                    
+
                     Text(
                         text = if (state.isRecoverMode) "Recover Password" else if (state.isLoginMode) "Login" else "Register",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    
+
                     Spacer(modifier = Modifier.height(32.dp))
 
                     OutlinedTextField(
@@ -210,7 +238,7 @@ fun AuthScreen(
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
-                    
+
                     state.errorRoleMismatch?.let { error ->
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
@@ -250,8 +278,11 @@ fun AuthScreen(
                         enabled = !state.isLoading
                     ) {
                         Text(
-                            if (state.isLoginMode) "Don't have an account? Register"
-                            else "Already have an account? Login",
+                            if (state.isLoginMode) {
+                                "Don't have an account? Register"
+                            } else {
+                                "Already have an account? Login"
+                            },
                             color = MaterialTheme.colorScheme.primary
                         )
                     }

@@ -2,16 +2,15 @@ package com.dnd.helper.presentation.monstercreate
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.model.Monster
-import com.dnd.helper.domain.model.CharacterStats
-import com.dnd.helper.domain.repository.CharacterRepository
-import com.dnd.helper.domain.repository.EditingRepository
-import com.dnd.helper.domain.repository.GenerationStatus
 import com.dnd.helper.data.remote.DndApiDataSource
 import com.dnd.helper.data.remote.GenerationType
 import com.dnd.helper.data.remote.PromptGenerator
-import com.dnd.helper.data.remote.dto.monster.*
+import com.dnd.helper.domain.common.Result
+import com.dnd.helper.domain.model.CharacterStats
+import com.dnd.helper.domain.model.Monster
+import com.dnd.helper.domain.repository.CharacterRepository
+import com.dnd.helper.domain.repository.EditingRepository
+import com.dnd.helper.domain.repository.GenerationStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,7 +39,9 @@ class MonsterCreateViewModel(
                             if (task.entityType == "monster" && (currentState.imageUrl == task.id || currentState.imageUrl == "generating:${task.id}")) {
                                 changed = true
                                 currentState.copy(imageUrl = task.resultUrl!!)
-                            } else currentState
+                            } else {
+                                currentState
+                            }
                         }
                         // If it's a real monster (not a temporary fresh one), auto-save the image update
                         if (changed && !tempId.startsWith("temp-monster-")) {
@@ -50,7 +51,9 @@ class MonsterCreateViewModel(
                         _state.update { currentState ->
                             if (task.entityType == "monster" && (currentState.imageUrl == task.id || currentState.imageUrl == "generating:${task.id}")) {
                                 currentState.copy(imageUrl = "")
-                            } else currentState
+                            } else {
+                                currentState
+                            }
                         }
                     }
                 }
@@ -87,69 +90,169 @@ class MonsterCreateViewModel(
                 _state.value = _state.value.copy(name = event.value)
                 updateDefaultPrompt()
             }
+
             is MonsterCreateEvent.DescriptionChanged -> {
                 _state.value = _state.value.copy(description = event.value)
                 updateDefaultPrompt()
             }
-            is MonsterCreateEvent.ChallengeRatingChanged -> _state.value = _state.value.copy(challengeRating = event.value)
+
+            is MonsterCreateEvent.ChallengeRatingChanged ->
+                _state.value =
+                    _state.value.copy(challengeRating = event.value)
+
             is MonsterCreateEvent.TypeChanged -> {
                 _state.value = _state.value.copy(type = event.value)
                 updateDefaultPrompt()
             }
+
             is MonsterCreateEvent.AlignmentChanged -> {
                 _state.value = _state.value.copy(alignment = event.value)
                 updateDefaultPrompt()
             }
+
             is MonsterCreateEvent.SizeChanged -> {
                 _state.value = _state.value.copy(size = event.value)
                 updateDefaultPrompt()
             }
-            is MonsterCreateEvent.MaxHpChanged -> _state.value = _state.value.copy(maxHp = event.value)
-            is MonsterCreateEvent.ArmorClassChanged -> _state.value = _state.value.copy(armorClass = event.value)
-            is MonsterCreateEvent.SpeedChanged -> _state.value = _state.value.copy(speed = event.value)
-            is MonsterCreateEvent.HitDiceChanged -> _state.value = _state.value.copy(hitDice = event.value)
-            
-            is MonsterCreateEvent.StrengthChanged -> _state.value = _state.value.copy(strength = event.value)
-            is MonsterCreateEvent.DexterityChanged -> _state.value = _state.value.copy(dexterity = event.value)
-            is MonsterCreateEvent.ConstitutionChanged -> _state.value = _state.value.copy(constitution = event.value)
-            is MonsterCreateEvent.IntelligenceChanged -> _state.value = _state.value.copy(intelligence = event.value)
-            is MonsterCreateEvent.WisdomChanged -> _state.value = _state.value.copy(wisdom = event.value)
-            is MonsterCreateEvent.CharismaChanged -> _state.value = _state.value.copy(charisma = event.value)
 
-            is MonsterCreateEvent.AddLanguage -> _state.update { it.copy(selectedLanguages = it.selectedLanguages + event.item) }
-            is MonsterCreateEvent.RemoveLanguage -> _state.update { it.copy(selectedLanguages = it.selectedLanguages - event.item) }
-            
-            is MonsterCreateEvent.AddSpecialAbility -> _state.update { it.copy(specialAbilities = it.specialAbilities + event.ability) }
-            is MonsterCreateEvent.RemoveSpecialAbility -> _state.update { it.copy(specialAbilities = it.specialAbilities - event.ability) }
-            
+            is MonsterCreateEvent.MaxHpChanged ->
+                _state.value =
+                    _state.value.copy(maxHp = event.value)
+
+            is MonsterCreateEvent.ArmorClassChanged ->
+                _state.value =
+                    _state.value.copy(armorClass = event.value)
+
+            is MonsterCreateEvent.SpeedChanged ->
+                _state.value =
+                    _state.value.copy(speed = event.value)
+
+            is MonsterCreateEvent.HitDiceChanged ->
+                _state.value =
+                    _state.value.copy(hitDice = event.value)
+
+            is MonsterCreateEvent.StrengthChanged ->
+                _state.value =
+                    _state.value.copy(strength = event.value)
+
+            is MonsterCreateEvent.DexterityChanged ->
+                _state.value =
+                    _state.value.copy(dexterity = event.value)
+
+            is MonsterCreateEvent.ConstitutionChanged ->
+                _state.value =
+                    _state.value.copy(constitution = event.value)
+
+            is MonsterCreateEvent.IntelligenceChanged ->
+                _state.value =
+                    _state.value.copy(intelligence = event.value)
+
+            is MonsterCreateEvent.WisdomChanged ->
+                _state.value =
+                    _state.value.copy(wisdom = event.value)
+
+            is MonsterCreateEvent.CharismaChanged ->
+                _state.value =
+                    _state.value.copy(charisma = event.value)
+
+            is MonsterCreateEvent.AddLanguage -> _state.update {
+                it.copy(
+                    selectedLanguages = it.selectedLanguages + event.item
+                )
+            }
+
+            is MonsterCreateEvent.RemoveLanguage -> _state.update {
+                it.copy(
+                    selectedLanguages = it.selectedLanguages - event.item
+                )
+            }
+
+            is MonsterCreateEvent.AddSpecialAbility -> _state.update {
+                it.copy(
+                    specialAbilities = it.specialAbilities + event.ability
+                )
+            }
+
+            is MonsterCreateEvent.RemoveSpecialAbility -> _state.update {
+                it.copy(
+                    specialAbilities = it.specialAbilities - event.ability
+                )
+            }
+
             is MonsterCreateEvent.AddAction -> _state.update { it.copy(actions = it.actions + event.action) }
             is MonsterCreateEvent.RemoveAction -> _state.update { it.copy(actions = it.actions - event.action) }
-            
-            is MonsterCreateEvent.AddLegendaryAction -> _state.update { it.copy(legendaryActions = it.legendaryActions + event.action) }
-            is MonsterCreateEvent.RemoveLegendaryAction -> _state.update { it.copy(legendaryActions = it.legendaryActions - event.action) }
-            
+
+            is MonsterCreateEvent.AddLegendaryAction -> _state.update {
+                it.copy(
+                    legendaryActions = it.legendaryActions + event.action
+                )
+            }
+
+            is MonsterCreateEvent.RemoveLegendaryAction -> _state.update {
+                it.copy(
+                    legendaryActions = it.legendaryActions - event.action
+                )
+            }
+
             is MonsterCreateEvent.AddReaction -> _state.update { it.copy(reactions = it.reactions + event.action) }
             is MonsterCreateEvent.RemoveReaction -> _state.update { it.copy(reactions = it.reactions - event.action) }
-            
-            is MonsterCreateEvent.AddConditionImmunity -> _state.value = _state.value.copy(selectedConditionImmunities = _state.value.selectedConditionImmunities + event.value)
-            is MonsterCreateEvent.RemoveConditionImmunity -> _state.value = _state.value.copy(selectedConditionImmunities = _state.value.selectedConditionImmunities - event.value)
-            
-            is MonsterCreateEvent.AddDamageImmunity -> _state.value = _state.value.copy(selectedDamageImmunities = _state.value.selectedDamageImmunities + event.value)
-            is MonsterCreateEvent.RemoveDamageImmunity -> _state.value = _state.value.copy(selectedDamageImmunities = _state.value.selectedDamageImmunities - event.value)
-            
-            is MonsterCreateEvent.AddDamageResistance -> _state.value = _state.value.copy(selectedDamageResistances = _state.value.selectedDamageResistances + event.value)
-            is MonsterCreateEvent.RemoveDamageResistance -> _state.value = _state.value.copy(selectedDamageResistances = _state.value.selectedDamageResistances - event.value)
-            
-            is MonsterCreateEvent.AddDamageVulnerability -> _state.value = _state.value.copy(selectedDamageVulnerabilities = _state.value.selectedDamageVulnerabilities + event.value)
-            is MonsterCreateEvent.RemoveDamageVulnerability -> _state.value = _state.value.copy(selectedDamageVulnerabilities = _state.value.selectedDamageVulnerabilities - event.value)
 
-            is MonsterCreateEvent.AddProficiency -> _state.update { it.copy(monsterProficiencies = it.monsterProficiencies + event.value) }
-            is MonsterCreateEvent.RemoveProficiency -> _state.update { it.copy(monsterProficiencies = it.monsterProficiencies - event.value) }
+            is MonsterCreateEvent.AddConditionImmunity ->
+                _state.value =
+                    _state.value.copy(selectedConditionImmunities = _state.value.selectedConditionImmunities + event.value)
 
-            is MonsterCreateEvent.ImageUrlChanged -> _state.value = _state.value.copy(imageUrl = event.value)
-            is MonsterCreateEvent.AiSizeChanged -> _state.value = _state.value.copy(aiWidth = event.width, aiHeight = event.height)
-            is MonsterCreateEvent.AiPromptChanged -> _state.value = _state.value.copy(aiPrompt = event.value)
-            
+            is MonsterCreateEvent.RemoveConditionImmunity ->
+                _state.value =
+                    _state.value.copy(selectedConditionImmunities = _state.value.selectedConditionImmunities - event.value)
+
+            is MonsterCreateEvent.AddDamageImmunity ->
+                _state.value =
+                    _state.value.copy(selectedDamageImmunities = _state.value.selectedDamageImmunities + event.value)
+
+            is MonsterCreateEvent.RemoveDamageImmunity ->
+                _state.value =
+                    _state.value.copy(selectedDamageImmunities = _state.value.selectedDamageImmunities - event.value)
+
+            is MonsterCreateEvent.AddDamageResistance ->
+                _state.value =
+                    _state.value.copy(selectedDamageResistances = _state.value.selectedDamageResistances + event.value)
+
+            is MonsterCreateEvent.RemoveDamageResistance ->
+                _state.value =
+                    _state.value.copy(selectedDamageResistances = _state.value.selectedDamageResistances - event.value)
+
+            is MonsterCreateEvent.AddDamageVulnerability ->
+                _state.value =
+                    _state.value.copy(selectedDamageVulnerabilities = _state.value.selectedDamageVulnerabilities + event.value)
+
+            is MonsterCreateEvent.RemoveDamageVulnerability ->
+                _state.value =
+                    _state.value.copy(selectedDamageVulnerabilities = _state.value.selectedDamageVulnerabilities - event.value)
+
+            is MonsterCreateEvent.AddProficiency -> _state.update {
+                it.copy(
+                    monsterProficiencies = it.monsterProficiencies + event.value
+                )
+            }
+
+            is MonsterCreateEvent.RemoveProficiency -> _state.update {
+                it.copy(
+                    monsterProficiencies = it.monsterProficiencies - event.value
+                )
+            }
+
+            is MonsterCreateEvent.ImageUrlChanged ->
+                _state.value =
+                    _state.value.copy(imageUrl = event.value)
+
+            is MonsterCreateEvent.AiSizeChanged ->
+                _state.value =
+                    _state.value.copy(aiWidth = event.width, aiHeight = event.height)
+
+            is MonsterCreateEvent.AiPromptChanged ->
+                _state.value =
+                    _state.value.copy(aiPrompt = event.value)
+
             is MonsterCreateEvent.GenerateImage -> generateImage()
             is MonsterCreateEvent.SaveMonster -> saveMonster()
             is MonsterCreateEvent.LoadMonster -> loadMonster(event.monster)
@@ -158,7 +261,7 @@ class MonsterCreateViewModel(
 
     private fun loadMonster(monster: Monster) {
         tempId = monster.id
-        _state.update { 
+        _state.update {
             it.copy(
                 name = monster.name,
                 description = monster.description,
@@ -204,7 +307,7 @@ class MonsterCreateViewModel(
     private fun generateImage() {
         val s = _state.value
         if (s.aiPrompt.isBlank()) return
-        
+
         viewModelScope.launch {
             val taskId = editingRepository.startGeneration(
                 entityId = tempId,
@@ -222,7 +325,7 @@ class MonsterCreateViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(isSaving = true, error = null)
             val s = _state.value
-            
+
             val monster = Monster(
                 id = tempId,
                 name = s.name.ifBlank { "Unknown Monster" },
@@ -258,8 +361,13 @@ class MonsterCreateViewModel(
             )
 
             when (val res = repository.saveMonster(monster)) {
-                is Result.Success -> _state.value = _state.value.copy(isSaving = false, isSaved = true)
-                is Result.Error -> _state.value = _state.value.copy(isSaving = false, error = "Failed to save monster")
+                is Result.Success ->
+                    _state.value =
+                        _state.value.copy(isSaving = false, isSaved = true)
+
+                is Result.Error ->
+                    _state.value =
+                        _state.value.copy(isSaving = false, error = "Failed to save monster")
             }
         }
     }
