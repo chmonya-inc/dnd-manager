@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -52,6 +53,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -97,7 +99,8 @@ private val NotesColor = Color(0xFF795548) // Brown for notes
 @Composable
 fun MasterCharacterDetailScreen(
     viewModel: CharacterDetailViewModel,
-    onEditClick: (com.dnd.helper.domain.model.Character) -> Unit = {}
+    onEditClick: (com.dnd.helper.domain.model.Character) -> Unit = {},
+    onDeleteClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -109,10 +112,32 @@ fun MasterCharacterDetailScreen(
 
     var showDiceDialog by remember { mutableStateOf(false) }
     var showAssignDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val assignViewModel: AssignCharacterViewModel = koinViewModel()
 
     if (showDiceDialog) {
         DiceRollDialog(onDismiss = { showDiceDialog = false })
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Character") },
+            text = { Text("Are you sure you want to delete \"${state.character?.name}\"? This cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.onEvent(CharacterDetailEvent.DeleteCharacter)
+                        onDeleteClick()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 
     if (showAssignDialog) {
@@ -222,6 +247,14 @@ fun MasterCharacterDetailScreen(
                             IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.Refresh) }) {
                                 Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")
                             }
+                            // Delete Character button
+                            IconButton(onClick = { showDeleteDialog = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -247,6 +280,9 @@ fun MasterCharacterDetailScreen(
         ) {
             if (state.isLoading) {
                 CircularProgressIndicator()
+            } else if (state.character == null) {
+                // Character was deleted — show nothing, selection will be cleared by parent
+                Text("Character deleted", color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else if (state.error != null) {
                 Text(text = state.error!!, color = MaterialTheme.colorScheme.error)
             } else {

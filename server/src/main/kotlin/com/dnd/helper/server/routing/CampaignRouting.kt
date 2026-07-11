@@ -2,7 +2,11 @@ package com.dnd.helper.server.routing
 
 import com.dnd.helper.data.remote.dto.auth.AssignCharacterRequest
 import com.dnd.helper.data.remote.dto.auth.CampaignDto
+import com.dnd.helper.data.remote.dto.auth.CharacterTemplateDto
+import com.dnd.helper.data.remote.dto.auth.JoinCampaignRequest
 import com.dnd.helper.data.remote.dto.auth.MyCharacterDto
+import com.dnd.helper.data.remote.dto.auth.MyCharactersResponse
+import com.dnd.helper.domain.model.Character
 import com.dnd.helper.server.database.Campaigns
 import com.dnd.helper.server.database.Characters
 import com.dnd.helper.server.database.DatabaseFactory.dbQuery
@@ -14,14 +18,21 @@ import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
+import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.not
+import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.sql.upsert
 import java.util.UUID
 
 fun Application.configureCampaignRouting() {
@@ -57,10 +68,10 @@ fun Application.configureCampaignRouting() {
                         }
                     }
 
-                    call.respond(HttpStatusCode.OK, CampaignDto(campaignId, body.name, userId, body.sessionId))
+                    call.respond(HttpStatusCode.OK, CampaignDto(campaignId, body.name, userId, body.sessionId, false))
                 }
 
-                // List all campaigns for the current master
+                // Get campaigns for Master
                 get {
                     val principal = call.principal<JWTPrincipal>()
                     val userId = principal?.payload?.getClaim("userId")?.asString()
@@ -72,14 +83,50 @@ fun Application.configureCampaignRouting() {
                     val campaigns = transaction {
                         Campaigns.selectAll().where { Campaigns.ownerId eq userId }.map {
                             CampaignDto(
-                                it[Campaigns.id],
-                                it[Campaigns.name],
-                                it[Campaigns.ownerId],
-                                it[Campaigns.sessionId]
+                                id = it[Campaigns.id],
+                                name = it[Campaigns.name],
+                                ownerId = it[Campaigns.ownerId],
+                                sessionId = it[Campaigns.sessionId],
+                                isStarted = it[Campaigns.isStarted]
                             )
                         }
                     }
                     call.respond(campaigns)
+                }
+
+                // Start/Stop a campaign
+                post("/{id}/toggle-start") {
+                    val principal = call.principal<JWTPrincipal>()
+                    val userId = principal?.payload?.getClaim("userId")?.asString()
+                    if (userId == null) {
+                        call.respond(HttpStatusCode.Unauthorized)
+                        return@post
+                    }
+
+                    val idParam = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                    val body = call.receive<Map<String, Boolean>>()
+                    val isStarted = body["isStarted"] ?: false
+
+                    val result = transaction {
+                        // Match by either campaign UUID or sessionId (client uses sessionId)
+                        val campaign = Campaigns.selectAll()
+                            .where { (Campaigns.id eq idParam) or (Campaigns.sessionId eq idParam) }
+                            .singleOrNull()
+                        if (campaign == null || campaign[Campaigns.ownerId] != userId) {
+                            false
+                        } else {
+                            Campaigns.update({ Campaigns.id eq campaign[Campaigns.id] }) {
+                                it[Campaigns.isStarted] = isStarted
+                            }
+                            true
+                        }
+                    }
+
+                    if (result) {
+                        call.respond(HttpStatusCode.OK)
+                    } else {
+                        call.respond(HttpStatusCode.NotFound)
+                    }
                 }
             }
 
@@ -193,7 +240,7 @@ fun Application.configureCampaignRouting() {
                 }
             }
 
-            // Get characters belonging to the current user (Player app)
+            // Get character templates + campaign instances for the current user (Player app)
             get("/api/my-characters") {
                 val principal = call.principal<JWTPrincipal>()
                 val userId = principal?.payload?.getClaim("userId")?.asString()
@@ -202,20 +249,224 @@ fun Application.configureCampaignRouting() {
                     return@get
                 }
 
-                val myChars = dbQuery {
-                    Characters.selectAll().where { Characters.userId eq userId }.map { row ->
-                        val sessionId = row[Characters.sessionId]
-                        val campaignName = Campaigns.selectAll()
-                            .where { Campaigns.sessionId eq sessionId }
-                            .singleOrNull()?.get(Campaigns.name)
-                        MyCharacterDto(
-                            character = rowToCharacter(row),
-                            sessionId = sessionId,
-                            campaignName = campaignName
-                        )
+                val personalSession = "user-$userId"
+
+                val templates = dbQuery {
+                    Characters.selectAll()
+                        .where { (Characters.userId eq userId) and (Characters.sessionId eq personalSession) }
+                        .map { rowToCharacter(it) }
+                }
+
+                // All non-template rows owned by this user (campaign instances)
+                val instances = dbQuery {
+                    Characters.selectAll()
+                        .where { (Characters.userId eq userId) and not(Characters.sessionId eq personalSession) }
+                        .map { row ->
+                            val sessionId = row[Characters.sessionId]
+                            val campaign = Campaigns.selectAll()
+                                .where { Campaigns.sessionId eq sessionId }
+                                .singleOrNull()
+                            val campaignName = campaign?.get(Campaigns.name)
+                            val isGameStarted = campaign?.get(Campaigns.isStarted) ?: false
+
+                            MyCharacterDto(
+                                character = rowToCharacter(row),
+                                sessionId = sessionId,
+                                campaignName = campaignName,
+                                isGameStarted = isGameStarted
+                            )
+                        }
+                }
+
+                val templateIds = templates.map { it.id }.toSet()
+
+                // Group instances under their surviving template
+                val grouped = templates.map { template ->
+                    CharacterTemplateDto(
+                        template = template,
+                        instances = instances.filter {
+                            it.character.playerName == "instance:${template.id}"
+                        }
+                    )
+                }
+
+                // Instances whose template was deleted (orphaned) — shown as standalone cards
+                val standaloneInstances = instances.filter {
+                    it.character.playerName.startsWith("instance:") &&
+                        it.character.playerName.removePrefix("instance:") !in templateIds
+                }
+
+                call.respond(MyCharactersResponse(templates = grouped, standaloneInstances = standaloneInstances))
+            }
+
+            // Get a single character template from the player's personal session
+            get("/api/my-characters/{id}") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("userId")?.asString()
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized)
+                    return@get
+                }
+
+                val charId = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                val personalSession = "user-$userId"
+
+                val template = dbQuery {
+                    Characters.selectAll()
+                        .where {
+                            (Characters.id eq charId) and
+                                (Characters.sessionId eq personalSession) and
+                                (Characters.userId eq userId)
+                        }
+                        .singleOrNull()?.let { rowToCharacter(it) }
+                }
+
+                if (template == null) call.respond(HttpStatusCode.NotFound) else call.respond(template)
+            }
+
+            // Player creates their own character (stored in personal session user-{userId})
+            post("/api/my-characters") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("userId")?.asString()
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized)
+                    return@post
+                }
+
+                val char = call.receive<Character>()
+                val charId = if (char.id.isBlank()) UUID.randomUUID().toString() else char.id
+                // ponytail: personal session = user-{userId}; ceiling is session isolation (can't websocket-watch own chars)
+                val personalSession = "user-$userId"
+
+                transaction {
+                    Characters.upsert {
+                        it[id] = charId
+                        it[sessionId] = personalSession
+                        it[Characters.userId] = userId
+                        it[name] = char.name
+                        it[playerName] = char.playerName
+                        it[race] = char.race
+                        it[characterClass] = char.characterClass
+                        it[level] = char.level
+                        it[description] = char.description
+                        it[imageUrl] = char.imageUrl
+                        it[maxHp] = char.maxHp
+                        it[currentHp] = char.currentHp
+                        it[strength] = char.stats.strength
+                        it[dexterity] = char.stats.dexterity
+                        it[constitution] = char.stats.constitution
+                        it[intelligence] = char.stats.intelligence
+                        it[wisdom] = char.stats.wisdom
+                        it[charisma] = char.stats.charisma
+                        it[subclass] = char.subclass
+                        it[background] = char.background
+                        it[experiencePoints] = char.experiencePoints
+                        it[appearance] = char.appearance
+                        it[combat] = char.combat
+                        it[proficiencies] = char.proficiencies
+                        it[weapons] = char.weapons
+                        it[features] = char.features
+                        it[spells] = char.spells
+                        it[items] = char.items
+                        it[notes] = char.notes
                     }
                 }
-                call.respond(myChars)
+                call.respond(HttpStatusCode.OK, mapOf("id" to charId))
+            }
+
+            // Player joins a campaign: links their character into the game session
+            post("/api/my-characters/{id}/join") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("userId")?.asString()
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized)
+                    return@post
+                }
+
+                val charId = call.parameters["id"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+                val body = call.receive<JoinCampaignRequest>()
+                val gameId = body.gameId.trim()
+
+                val result = transaction {
+                    // Verify player owns this character
+                    val existing = Characters.selectAll()
+                        .where { (Characters.id eq charId) and (Characters.userId eq userId) }
+                        .singleOrNull() ?: return@transaction "NOT_FOUND"
+
+                    val currentSession = existing[Characters.sessionId]
+                    if (currentSession == gameId) return@transaction "ALREADY_JOINED"
+
+                    // Upsert into the game session (creates a copy if it doesn't exist, or updates if it does)
+                    Characters.upsert {
+                        it[id] = charId
+                        it[sessionId] = gameId
+                        it[Characters.userId] = userId
+                        it[name] = existing[Characters.name]
+                        it[playerName] = "instance:${existing[Characters.id]}" // Link to template ID
+                        it[race] = existing[Characters.race]
+                        it[characterClass] = existing[Characters.characterClass]
+                        it[level] = existing[Characters.level]
+                        it[description] = existing[Characters.description]
+                        it[imageUrl] = existing[Characters.imageUrl]
+                        it[maxHp] = existing[Characters.maxHp]
+                        it[currentHp] = existing[Characters.currentHp]
+                        it[strength] = existing[Characters.strength]
+                        it[dexterity] = existing[Characters.dexterity]
+                        it[constitution] = existing[Characters.constitution]
+                        it[intelligence] = existing[Characters.intelligence]
+                        it[wisdom] = existing[Characters.wisdom]
+                        it[charisma] = existing[Characters.charisma]
+                        it[subclass] = existing[Characters.subclass]
+                        it[background] = existing[Characters.background]
+                        it[experiencePoints] = existing[Characters.experiencePoints]
+                        it[appearance] = existing[Characters.appearance]
+                        it[combat] = existing[Characters.combat]
+                        it[proficiencies] = existing[Characters.proficiencies]
+                        it[weapons] = existing[Characters.weapons]
+                        it[features] = existing[Characters.features]
+                        it[spells] = existing[Characters.spells]
+                        it[items] = existing[Characters.items]
+                        it[notes] = existing[Characters.notes]
+                    }
+
+                    // We NO LONGER delete from old personal session.
+                    // The character in user-{userId} remains as a template.
+
+                    gameId
+                }
+
+                when (result) {
+                    "NOT_FOUND" -> call.respond(HttpStatusCode.NotFound, "Character not found or not owned by you")
+                    "ALREADY_JOINED" -> call.respond(HttpStatusCode.OK)
+                    else -> {
+                        SessionManager.notifyUpdate(result as String, "characters", charId)
+                        call.respond(HttpStatusCode.OK)
+                    }
+                }
+            }
+
+            // Player deletes a character template. Campaign copies are intentionally kept.
+            delete("/api/my-characters/{id}") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("userId")?.asString()
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized)
+                    return@delete
+                }
+
+                val charId = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest)
+                val personalSession = "user-$userId"
+
+                transaction {
+                    Characters.deleteWhere {
+                        (Characters.id eq charId) and
+                            (Characters.sessionId eq personalSession) and
+                            (Characters.userId eq userId)
+                    }
+                }
+
+                SessionManager.notifyUpdate(personalSession, "characters", charId)
+                call.respond(HttpStatusCode.OK)
             }
         }
     }

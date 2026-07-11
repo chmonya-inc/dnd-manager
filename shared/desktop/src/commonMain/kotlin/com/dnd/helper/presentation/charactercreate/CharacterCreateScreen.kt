@@ -51,6 +51,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -152,6 +153,46 @@ fun CharacterCreateScreen(
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                if (existingCharacter == null) {
+                    item {
+                        var showTemplates by remember { mutableStateOf(false) }
+                        Box {
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.onEvent(CharacterCreateEvent.LoadTemplates)
+                                    showTemplates = true
+                                }
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.List, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("From template")
+                            }
+                            DropdownMenu(
+                                expanded = showTemplates,
+                                onDismissRequest = { showTemplates = false }
+                            ) {
+                                if (state.templates.isEmpty()) {
+                                    DropdownMenuItem(
+                                        text = { Text("No templates yet") },
+                                        onClick = { showTemplates = false }
+                                    )
+                                } else {
+                                    state.templates.forEach { template ->
+                                        DropdownMenuItem(
+                                            text = { Text(template.name.ifBlank { "Untitled" }) },
+                                            onClick = {
+                                                viewModel.onEvent(
+                                                    CharacterCreateEvent.StartFromTemplate(template)
+                                                )
+                                                showTemplates = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 item {
                     DesktopCardSection(title = "Basic Info", icon = Icons.Default.Person) {
                         // Image Generator Area

@@ -6,7 +6,7 @@ import com.dnd.helper.data.remote.dto.auth.AssignCharacterRequest
 import com.dnd.helper.data.remote.dto.auth.AssignmentStatusDto
 import com.dnd.helper.data.remote.dto.auth.CampaignDto
 import com.dnd.helper.data.remote.dto.auth.CreateAssignmentRequest
-import com.dnd.helper.data.remote.dto.auth.MyCharacterDto
+import com.dnd.helper.data.remote.dto.auth.MyCharactersResponse
 import com.dnd.helper.data.remote.dto.auth.PendingAssignmentDto
 import com.dnd.helper.data.remote.dto.auth.RespondAssignmentRequest
 import com.dnd.helper.domain.common.AppError
@@ -266,11 +266,43 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun getMyCharacters(): Result<List<MyCharacterDto>> =
+    suspend fun getMyCharacters(): Result<MyCharactersResponse> =
         safeApiCall { httpClient.get("${baseUrl()}/api/my-characters") }
+
+    suspend fun getMyCharacter(characterId: String): Result<Character> =
+        safeApiCall { httpClient.get("${baseUrl()}/api/my-characters/$characterId") }
+
+    suspend fun createMyCharacter(character: Character): Result<Unit> =
+        safeApiCall {
+            httpClient.post("${baseUrl()}/api/my-characters") {
+                contentType(ContentType.Application.Json)
+                setBody(character)
+            }
+        }
+
+    suspend fun deleteMyCharacter(characterId: String): Result<Unit> =
+        safeApiCall { httpClient.delete("${baseUrl()}/api/my-characters/$characterId") }
+
+    suspend fun joinCampaign(characterId: String, gameId: String): Result<Unit> =
+        safeApiCall {
+            httpClient.post("${baseUrl()}/api/my-characters/$characterId/join") {
+                contentType(ContentType.Application.Json)
+                setBody(
+                    com.dnd.helper.data.remote.dto.auth.JoinCampaignRequest(gameId = gameId)
+                )
+            }
+        }
 
     suspend fun getCampaigns(): Result<List<CampaignDto>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/campaigns") }
+
+    suspend fun toggleCampaignStart(campaignId: String, isStarted: Boolean): Result<Unit> =
+        safeApiCall {
+            httpClient.post("${baseUrl()}/api/campaigns/$campaignId/toggle-start") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("isStarted" to isStarted))
+            }
+        }
 
     suspend fun createCampaign(name: String, sessionId: String): Result<CampaignDto> =
         safeApiCall {

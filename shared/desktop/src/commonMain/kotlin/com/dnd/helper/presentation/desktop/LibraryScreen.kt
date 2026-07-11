@@ -67,6 +67,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -107,8 +108,12 @@ import org.koin.compose.viewmodel.koinViewModel
 fun LibraryScreen(
     viewModel: LibraryViewModel = koinViewModel(),
     presentationViewModel: PresentationViewModel = koinViewModel(),
-    onNavigateToCreator: (CreatorType) -> Unit = {}
+    onNavigateToCreator: (CreatorType) -> Unit = {},
+    initialLibraryType: LibraryType? = null
 ) {
+    LaunchedEffect(initialLibraryType) {
+        initialLibraryType?.let { viewModel.onTypeSelected(it) }
+    }
     val state by viewModel.state.collectAsState()
     val dndColors = LocalDndColors.current
 

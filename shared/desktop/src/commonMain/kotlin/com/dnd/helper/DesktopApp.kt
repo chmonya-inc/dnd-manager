@@ -54,12 +54,12 @@ object Presenter
 val desktopModule = module {
     factory { LibraryViewModel(get(), get()) }
     factory { RulesLibraryViewModel(get()) }
-    factory { CharacterCreateViewModel(get(), get(), get(), get()) }
+    factory { CharacterCreateViewModel(get(), get(), get(), get(), get()) }
     factory { com.dnd.helper.presentation.monstercreate.MonsterCreateViewModel(get(), get(), get()) }
     factory { com.dnd.helper.presentation.itemcreate.ItemCreateViewModel(get(), get(), get()) }
     factory { LogViewModel(get()) }
     factory { MusicViewModel(get(), get()) }
-    factory { SessionsViewModel(get(), get()) }
+    factory { SessionsViewModel(get(), get(), get()) }
     factory { SettingsViewModel(get(), get()) }
     factory { AssignCharacterViewModel(get(), get()) }
     single { PresentationViewModel(get()) }

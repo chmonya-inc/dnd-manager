@@ -32,6 +32,7 @@ object Campaigns : Table("campaigns") {
     val name = varchar("name", 200)
     val ownerId = varchar("owner_id", 50) // references Users.id (the Master)
     val sessionId = varchar("session_id", 50) // links to the existing session/table concept
+    val isStarted = bool("is_started").default(false)
     override val primaryKey = PrimaryKey(id)
 }
 

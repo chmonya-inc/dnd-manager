@@ -20,11 +20,14 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.innerJoin
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.sql.upsert
 import java.util.UUID
 
 fun Application.configureAssignmentRouting() {
@@ -187,35 +190,98 @@ fun Application.configureAssignmentRouting() {
                 val sessionId = assignment[CharacterAssignments.sessionId]
 
                 if (body.accept) {
-                    // ACCEPTED: set character.userId to this player
+                    // ACCEPTED: Create a template copy for the player AND link the campaign instance
+                    val personalSession = "user-$userId"
+
                     dbQuery {
+                        // 1. Mark assignment as accepted
                         CharacterAssignments.update({ CharacterAssignments.id eq body.assignmentId }) {
                             it[CharacterAssignments.status] = "ACCEPTED"
                             it[CharacterAssignments.respondedAt] = System.currentTimeMillis()
                         }
-                        Characters.update({ Characters.id eq characterId }) {
-                            it[Characters.userId] = userId
+
+                        // 2. Fetch the full character data from the campaign instance
+                        val charRow = Characters.selectAll()
+                            .where { (Characters.id eq characterId) and (Characters.sessionId eq sessionId) }
+                            .singleOrNull()
+
+                        if (charRow != null) {
+                            // 3. Create a template copy in the player's personal session
+                            val templateId = UUID.randomUUID().toString()
+                            Characters.upsert {
+                                it[Characters.id] = templateId
+                                it[Characters.sessionId] = personalSession
+                                it[Characters.userId] = userId
+                                it[Characters.name] = charRow[Characters.name]
+                                it[Characters.playerName] = "" // Template has no instance link
+                                it[Characters.race] = charRow[Characters.race]
+                                it[Characters.characterClass] = charRow[Characters.characterClass]
+                                it[Characters.level] = charRow[Characters.level]
+                                it[Characters.description] = charRow[Characters.description]
+                                it[Characters.imageUrl] = charRow[Characters.imageUrl]
+                                it[Characters.maxHp] = charRow[Characters.maxHp]
+                                it[Characters.currentHp] = charRow[Characters.currentHp]
+                                it[Characters.strength] = charRow[Characters.strength]
+                                it[Characters.dexterity] = charRow[Characters.dexterity]
+                                it[Characters.constitution] = charRow[Characters.constitution]
+                                it[Characters.intelligence] = charRow[Characters.intelligence]
+                                it[Characters.wisdom] = charRow[Characters.wisdom]
+                                it[Characters.charisma] = charRow[Characters.charisma]
+                                it[Characters.subclass] = charRow[Characters.subclass]
+                                it[Characters.background] = charRow[Characters.background]
+                                it[Characters.experiencePoints] = charRow[Characters.experiencePoints]
+                                it[Characters.appearance] = charRow[Characters.appearance]
+                                it[Characters.combat] = charRow[Characters.combat]
+                                it[Characters.proficiencies] = charRow[Characters.proficiencies]
+                                it[Characters.weapons] = charRow[Characters.weapons]
+                                it[Characters.features] = charRow[Characters.features]
+                                it[Characters.spells] = charRow[Characters.spells]
+                                it[Characters.items] = charRow[Characters.items]
+                                it[Characters.notes] = charRow[Characters.notes]
+                            }
+
+                            // 4. Link the campaign instance to the new template
+                            Characters.update(
+                                { (Characters.id eq characterId) and (Characters.sessionId eq sessionId) }
+                            ) {
+                                it[Characters.userId] = userId
+                                it[Characters.playerName] = "instance:$templateId"
+                            }
                         }
                     }
-                    // Notify master's session that character ownership changed
+                    // Notify both the master's session and the player's personal session
                     SessionManager.notifyUpdate(sessionId, "assignment_accepted", characterId)
                     SessionManager.notifyUpdate(sessionId, "characters", characterId)
+                    SessionManager.notifyUpdate(personalSession, "characters", characterId)
                     call.respond(HttpStatusCode.OK)
                 } else {
-                    // REVOKED: mark assignment as revoked.
-                    // Per requirement: "If revoked, it is gone to server, and players have no info about this char"
-                    // We set userId to NULL (unassigned) so player won't see it in my-characters
+                    // REVOKED: mark assignment as revoked and clean up player data
                     dbQuery {
                         CharacterAssignments.update({ CharacterAssignments.id eq body.assignmentId }) {
                             it[CharacterAssignments.status] = "REVOKED"
                             it[CharacterAssignments.respondedAt] = System.currentTimeMillis()
                         }
-                        Characters.update({ Characters.id eq characterId }) {
+                        // Find the template ID linked to this instance (if accepted previously)
+                        val instanceRow = Characters.selectAll()
+                            .where { (Characters.id eq characterId) and (Characters.sessionId eq sessionId) }
+                            .singleOrNull()
+                        val playerNameVal = instanceRow?.get(Characters.playerName) ?: ""
+                        if (playerNameVal.startsWith("instance:")) {
+                            val templateId = playerNameVal.removePrefix("instance:")
+                            // Delete the template from player's personal session
+                            Characters.deleteWhere {
+                                (Characters.id eq templateId) and (Characters.sessionId eq "user-$userId")
+                            }
+                        }
+                        // Unassign the campaign instance
+                        Characters.update({ (Characters.id eq characterId) and (Characters.sessionId eq sessionId) }) {
                             it[Characters.userId] = null
+                            it[Characters.playerName] = ""
                         }
                     }
                     SessionManager.notifyUpdate(sessionId, "assignment_revoked", characterId)
                     SessionManager.notifyUpdate(sessionId, "characters", characterId)
+                    SessionManager.notifyUpdate("user-$userId", "characters", characterId)
                     call.respond(HttpStatusCode.OK)
                 }
             }

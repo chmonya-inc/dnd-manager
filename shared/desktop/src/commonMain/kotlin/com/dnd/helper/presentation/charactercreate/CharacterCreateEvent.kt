@@ -107,6 +107,8 @@ sealed interface CharacterCreateEvent {
 
     // Features
     data class LoadCharacter(val character: com.dnd.helper.domain.model.Character) : CharacterCreateEvent
+    data class StartFromTemplate(val character: com.dnd.helper.domain.model.Character) : CharacterCreateEvent
+    data object LoadTemplates : CharacterCreateEvent
 
     data object SaveCharacter : CharacterCreateEvent
 

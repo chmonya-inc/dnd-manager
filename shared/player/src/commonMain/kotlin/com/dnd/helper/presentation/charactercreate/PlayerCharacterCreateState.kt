@@ -4,7 +4,7 @@ import com.dnd.helper.domain.model.Item
 import com.dnd.helper.domain.model.Spell
 import com.dnd.helper.domain.model.Weapon
 
-data class CharacterCreateState(
+data class PlayerCharacterCreateState(
     // Basic info
     val name: String = "",
     val playerName: String = "",
@@ -96,8 +96,10 @@ data class CharacterCreateState(
     // UI state
     val isSaving: Boolean = false,
     val isSaved: Boolean = false,
+    val savedCharacterId: String? = null,
     val error: String? = null,
+    val isLoading: Boolean = false,
+    val isEditMode: Boolean = false,
     val aiWidth: Int = 1024,
     val aiHeight: Int = 1024,
-    val templates: List<com.dnd.helper.domain.model.Character> = emptyList(),
 )
