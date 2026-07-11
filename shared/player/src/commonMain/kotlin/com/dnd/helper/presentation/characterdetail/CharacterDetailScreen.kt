@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
@@ -27,6 +28,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -67,9 +69,41 @@ fun CharacterDetailScreen(
     }
 
     var showDiceDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     if (showDiceDialog) {
         DiceRollDialog(onDismiss = { showDiceDialog = false })
+    }
+
+    if (showDeleteDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Character") },
+            text = {
+                Text(
+                    "Are you sure you want to delete \"${state.character?.name}\"? This will also remove it from all campaigns."
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.onEvent(CharacterDetailEvent.DeleteCharacter)
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Navigate back after deletion
+    if (state.character == null && !state.isLoading) {
+        LaunchedEffect(Unit) { onBackClick() }
     }
 
     Scaffold(
@@ -145,6 +179,13 @@ fun CharacterDetailScreen(
                         }
                         IconButton(onClick = { viewModel.onEvent(CharacterDetailEvent.Refresh) }) {
                             Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")
+                        }
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
                 },

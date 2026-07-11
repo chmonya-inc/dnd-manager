@@ -90,6 +90,7 @@ fun MainDesktopScreen(
     var selectedTab by remember { mutableStateOf<DesktopTab>(DesktopTab.Characters) }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
     var initialCreatorType by remember { mutableStateOf<CreatorType?>(null) }
+    var pendingLibraryType by remember { mutableStateOf<LibraryType?>(null) }
     var showDiceDialog by remember { mutableStateOf(false) }
     var showMusicPlayer by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
@@ -298,6 +299,9 @@ fun MainDesktopScreen(
                                     initialCreatorType = CreatorType.Character(character)
                                     selectedTab = DesktopTab.Creator
                                 },
+                                onDeleteCharacter = { characterId ->
+                                    selectedCharacterId = null
+                                },
                                 sessionKey = activeTableId,
                             )
                         }
@@ -305,7 +309,8 @@ fun MainDesktopScreen(
                             onNavigateToCreator = { type ->
                                 initialCreatorType = type
                                 selectedTab = DesktopTab.Creator
-                            }
+                            },
+                            initialLibraryType = pendingLibraryType
                         )
                         DesktopTab.RulesLibrary -> RulesLibraryScreen()
                         DesktopTab.Creator -> CreatorScreen(
@@ -318,8 +323,25 @@ fun MainDesktopScreen(
                                     null -> {
                                         selectedTab = DesktopTab.Characters
                                     }
-                                    else -> {
+                                    is CreatorType.Monster -> {
                                         selectedTab = DesktopTab.Library
+                                        pendingLibraryType = LibraryType.Mobs
+                                    }
+                                    is CreatorType.Npc -> {
+                                        selectedTab = DesktopTab.Library
+                                        pendingLibraryType = LibraryType.Npcs
+                                    }
+                                    is CreatorType.Location -> {
+                                        selectedTab = DesktopTab.Library
+                                        pendingLibraryType = LibraryType.Locations
+                                    }
+                                    is CreatorType.Battlefield -> {
+                                        selectedTab = DesktopTab.Library
+                                        pendingLibraryType = LibraryType.Battlefields
+                                    }
+                                    is CreatorType.Item -> {
+                                        selectedTab = DesktopTab.Library
+                                        pendingLibraryType = LibraryType.Items
                                     }
                                 }
                                 initialCreatorType = null
@@ -373,6 +395,7 @@ fun CharactersSplitPane(
     onCharacterSelected: (String) -> Unit,
     onCreateCharacter: () -> Unit,
     onEditCharacter: (com.dnd.helper.domain.model.Character) -> Unit = {},
+    onDeleteCharacter: (String) -> Unit = {},
     sessionKey: String = "",
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
@@ -399,7 +422,8 @@ fun CharactersSplitPane(
                     }
                 MasterCharacterDetailScreen(
                     viewModel = viewModel,
-                    onEditClick = onEditCharacter
+                    onEditClick = onEditCharacter,
+                    onDeleteClick = { onDeleteCharacter(selectedCharacterId) }
                 )
             } else {
                 Column(

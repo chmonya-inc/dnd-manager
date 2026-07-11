@@ -17,7 +17,6 @@ import com.dnd.helper.domain.model.Item
 import com.dnd.helper.domain.model.ItemRarity
 import com.dnd.helper.domain.model.Spell
 import com.dnd.helper.domain.model.Weapon
-import com.dnd.helper.domain.repository.CharacterRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,8 +24,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-class CharacterCreateViewModel(
-    private val repository: CharacterRepository,
+class PlayerCharacterCreateViewModel(
     private val remoteDataSource: com.dnd.helper.data.remote.KtorRemoteDataSource,
     private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
     private val api: com.dnd.helper.data.remote.DndApiDataSource,
@@ -34,9 +32,8 @@ class CharacterCreateViewModel(
 ) : ViewModel() {
 
     private var tempId = "temp-char-${Random.nextInt(1000000, 9999999)}"
-    private var isEditing = false
-    private val _state = MutableStateFlow(CharacterCreateState())
-    val state: StateFlow<CharacterCreateState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(PlayerCharacterCreateState())
+    val state: StateFlow<PlayerCharacterCreateState> = _state.asStateFlow()
 
     init {
         // Listen for background image generation completion
@@ -151,19 +148,19 @@ class CharacterCreateViewModel(
         }
     }
 
-    fun onEvent(event: CharacterCreateEvent) {
+    fun onEvent(event: PlayerCharacterCreateEvent) {
         when (event) {
             // Basic info
-            is CharacterCreateEvent.NameChanged -> {
+            is PlayerCharacterCreateEvent.NameChanged -> {
                 _state.value = _state.value.copy(name = event.value)
                 updateDefaultPrompt()
             }
 
-            is CharacterCreateEvent.PlayerNameChanged ->
+            is PlayerCharacterCreateEvent.PlayerNameChanged ->
                 _state.value =
                     _state.value.copy(playerName = event.value)
 
-            is CharacterCreateEvent.RaceChanged -> {
+            is PlayerCharacterCreateEvent.RaceChanged -> {
                 _state.value = _state.value.copy(race = event.value, subrace = "")
                 updateDefaultPrompt()
 
@@ -178,12 +175,12 @@ class CharacterCreateViewModel(
                 }
             }
 
-            is CharacterCreateEvent.SubraceChanged -> {
+            is PlayerCharacterCreateEvent.SubraceChanged -> {
                 _state.value = _state.value.copy(subrace = event.value)
                 updateDefaultPrompt()
             }
 
-            is CharacterCreateEvent.ClassChanged -> {
+            is PlayerCharacterCreateEvent.ClassChanged -> {
                 _state.value = _state.value.copy(characterClass = event.value, subclass = "")
                 updateDefaultPrompt()
 
@@ -199,304 +196,309 @@ class CharacterCreateViewModel(
                 }
             }
 
-            is CharacterCreateEvent.SubclassChanged -> {
+            is PlayerCharacterCreateEvent.SubclassChanged -> {
                 _state.value = _state.value.copy(subclass = event.value)
                 updateDefaultPrompt()
             }
 
-            is CharacterCreateEvent.BackgroundChanged -> {
+            is PlayerCharacterCreateEvent.BackgroundChanged -> {
                 _state.value = _state.value.copy(background = event.value)
                 updateDefaultPrompt()
             }
 
-            is CharacterCreateEvent.AlignmentChanged -> {
+            is PlayerCharacterCreateEvent.AlignmentChanged -> {
                 _state.value = _state.value.copy(alignment = event.value)
                 updateDefaultPrompt()
             }
 
-            is CharacterCreateEvent.LevelChanged ->
+            is PlayerCharacterCreateEvent.LevelChanged ->
                 _state.value =
                     _state.value.copy(level = event.value)
 
-            is CharacterCreateEvent.ExperiencePointsChanged ->
+            is PlayerCharacterCreateEvent.ExperiencePointsChanged ->
                 _state.value =
                     _state.value.copy(experiencePoints = event.value)
 
-            is CharacterCreateEvent.DescriptionChanged -> {
+            is PlayerCharacterCreateEvent.DescriptionChanged -> {
                 _state.value = _state.value.copy(description = event.value)
                 updateDefaultPrompt()
             }
 
-            is CharacterCreateEvent.ImageUrlChanged ->
+            is PlayerCharacterCreateEvent.ImageUrlChanged ->
                 _state.value =
                     _state.value.copy(imageUrl = event.value)
 
             // Appearance
-            is CharacterCreateEvent.AgeChanged ->
+            is PlayerCharacterCreateEvent.AgeChanged ->
                 _state.value =
                     _state.value.copy(age = event.value)
 
-            is CharacterCreateEvent.GenderChanged ->
+            is PlayerCharacterCreateEvent.GenderChanged ->
                 _state.value =
                     _state.value.copy(gender = event.value)
 
-            is CharacterCreateEvent.HeightChanged ->
+            is PlayerCharacterCreateEvent.HeightChanged ->
                 _state.value =
                     _state.value.copy(height = event.value)
 
-            is CharacterCreateEvent.WeightChanged ->
+            is PlayerCharacterCreateEvent.WeightChanged ->
                 _state.value =
                     _state.value.copy(weight = event.value)
 
-            is CharacterCreateEvent.EyesChanged ->
+            is PlayerCharacterCreateEvent.EyesChanged ->
                 _state.value =
                     _state.value.copy(eyes = event.value)
 
-            is CharacterCreateEvent.HairChanged ->
+            is PlayerCharacterCreateEvent.HairChanged ->
                 _state.value =
                     _state.value.copy(hair = event.value)
 
-            is CharacterCreateEvent.SkinChanged ->
+            is PlayerCharacterCreateEvent.SkinChanged ->
                 _state.value =
                     _state.value.copy(skin = event.value)
 
             // Ability Scores
-            is CharacterCreateEvent.StrengthChanged ->
+            is PlayerCharacterCreateEvent.StrengthChanged ->
                 _state.value =
                     _state.value.copy(strength = event.value)
 
-            is CharacterCreateEvent.DexterityChanged ->
+            is PlayerCharacterCreateEvent.DexterityChanged ->
                 _state.value =
                     _state.value.copy(dexterity = event.value)
 
-            is CharacterCreateEvent.ConstitutionChanged ->
+            is PlayerCharacterCreateEvent.ConstitutionChanged ->
                 _state.value =
                     _state.value.copy(constitution = event.value)
 
-            is CharacterCreateEvent.IntelligenceChanged ->
+            is PlayerCharacterCreateEvent.IntelligenceChanged ->
                 _state.value =
                     _state.value.copy(intelligence = event.value)
 
-            is CharacterCreateEvent.WisdomChanged ->
+            is PlayerCharacterCreateEvent.WisdomChanged ->
                 _state.value =
                     _state.value.copy(wisdom = event.value)
 
-            is CharacterCreateEvent.CharismaChanged ->
+            is PlayerCharacterCreateEvent.CharismaChanged ->
                 _state.value =
                     _state.value.copy(charisma = event.value)
 
             // HP & Combat
-            is CharacterCreateEvent.MaxHpChanged ->
+            is PlayerCharacterCreateEvent.MaxHpChanged ->
                 _state.value =
                     _state.value.copy(maxHp = event.value)
 
-            is CharacterCreateEvent.CurrentHpChanged ->
+            is PlayerCharacterCreateEvent.CurrentHpChanged ->
                 _state.value =
                     _state.value.copy(currentHp = event.value)
 
-            is CharacterCreateEvent.TempHpChanged ->
+            is PlayerCharacterCreateEvent.TempHpChanged ->
                 _state.value =
                     _state.value.copy(tempHp = event.value)
 
-            is CharacterCreateEvent.ArmorClassChanged ->
+            is PlayerCharacterCreateEvent.ArmorClassChanged ->
                 _state.value =
                     _state.value.copy(armorClass = event.value)
 
-            is CharacterCreateEvent.InitiativeChanged ->
+            is PlayerCharacterCreateEvent.InitiativeChanged ->
                 _state.value =
                     _state.value.copy(initiative = event.value)
 
-            is CharacterCreateEvent.SpeedChanged ->
+            is PlayerCharacterCreateEvent.SpeedChanged ->
                 _state.value =
                     _state.value.copy(speed = event.value)
 
-            is CharacterCreateEvent.ProficiencyBonusChanged ->
+            is PlayerCharacterCreateEvent.ProficiencyBonusChanged ->
                 _state.value =
                     _state.value.copy(proficiencyBonus = event.value)
 
-            is CharacterCreateEvent.HitDiceChanged ->
+            is PlayerCharacterCreateEvent.HitDiceChanged ->
                 _state.value =
                     _state.value.copy(hitDice = event.value)
 
-            is CharacterCreateEvent.HitDiceCurrentChanged ->
+            is PlayerCharacterCreateEvent.HitDiceCurrentChanged ->
                 _state.value =
                     _state.value.copy(hitDiceCurrent = event.value)
 
             // Status
-            is CharacterCreateEvent.InspirationChanged ->
+            is PlayerCharacterCreateEvent.InspirationChanged ->
                 _state.value =
                     _state.value.copy(inspiration = event.value)
 
-            is CharacterCreateEvent.ExhaustionChanged ->
+            is PlayerCharacterCreateEvent.ExhaustionChanged ->
                 _state.value =
                     _state.value.copy(exhaustion = event.value)
 
-            is CharacterCreateEvent.ConditionsChanged ->
+            is PlayerCharacterCreateEvent.ConditionsChanged ->
                 _state.value =
                     _state.value.copy(conditions = event.value)
 
-            is CharacterCreateEvent.DeathSaveSuccessesChanged ->
+            is PlayerCharacterCreateEvent.DeathSaveSuccessesChanged ->
                 _state.value =
                     _state.value.copy(deathSaveSuccesses = event.value)
 
-            is CharacterCreateEvent.DeathSaveFailuresChanged ->
+            is PlayerCharacterCreateEvent.DeathSaveFailuresChanged ->
                 _state.value =
                     _state.value.copy(deathSaveFailures = event.value)
 
             // Proficiencies
-            is CharacterCreateEvent.SavingThrowsChanged ->
+            is PlayerCharacterCreateEvent.SavingThrowsChanged ->
                 _state.value =
                     _state.value.copy(savingThrows = event.value)
 
-            is CharacterCreateEvent.ArmorProficienciesChanged -> {
+            is PlayerCharacterCreateEvent.ArmorProficienciesChanged -> {
                 _state.value = _state.value.copy(armorProficiencies = event.value)
                 updateDefaultPrompt()
             }
 
-            is CharacterCreateEvent.AddLanguage ->
+            is PlayerCharacterCreateEvent.AddLanguage ->
                 _state.value =
                     _state.value.copy(selectedLanguages = _state.value.selectedLanguages + event.value)
 
-            is CharacterCreateEvent.RemoveLanguage ->
+            is PlayerCharacterCreateEvent.RemoveLanguage ->
                 _state.value =
                     _state.value.copy(selectedLanguages = _state.value.selectedLanguages - event.value)
 
-            is CharacterCreateEvent.AddProficiencySkill ->
+            is PlayerCharacterCreateEvent.AddProficiencySkill ->
                 _state.value =
                     _state.value.copy(selectedSkills = _state.value.selectedSkills + event.value)
 
-            is CharacterCreateEvent.RemoveProficiencySkill ->
+            is PlayerCharacterCreateEvent.RemoveProficiencySkill ->
                 _state.value =
                     _state.value.copy(selectedSkills = _state.value.selectedSkills - event.value)
 
-            is CharacterCreateEvent.AddProficiencyWeapon -> {
+            is PlayerCharacterCreateEvent.AddProficiencyWeapon -> {
                 _state.value =
                     _state.value.copy(selectedWeapons = _state.value.selectedWeapons + event.value)
                 updateDefaultPrompt()
             }
 
-            is CharacterCreateEvent.RemoveProficiencyWeapon -> {
+            is PlayerCharacterCreateEvent.RemoveProficiencyWeapon -> {
                 _state.value =
                     _state.value.copy(selectedWeapons = _state.value.selectedWeapons - event.value)
                 updateDefaultPrompt()
             }
 
-            is CharacterCreateEvent.AddProficiencyTool ->
+            is PlayerCharacterCreateEvent.AddProficiencyTool ->
                 _state.value =
                     _state.value.copy(selectedTools = _state.value.selectedTools + event.value)
 
-            is CharacterCreateEvent.RemoveProficiencyTool ->
+            is PlayerCharacterCreateEvent.RemoveProficiencyTool ->
                 _state.value =
                     _state.value.copy(selectedTools = _state.value.selectedTools - event.value)
 
             // Items
-            CharacterCreateEvent.AddItem -> addItem()
-            is CharacterCreateEvent.RemoveItem -> removeItem(event.index)
-            is CharacterCreateEvent.ItemNameChanged -> updateItem(event.index) { it.copy(name = event.value) }
-            is CharacterCreateEvent.ItemSlotChanged -> updateItem(event.index) { it.copy(slot = event.value) }
-            is CharacterCreateEvent.ItemRarityChanged -> updateItem(event.index) { it.copy(rarity = event.value) }
-            is CharacterCreateEvent.ItemDescriptionChanged -> updateItem(
+            PlayerCharacterCreateEvent.AddItem -> addItem()
+            is PlayerCharacterCreateEvent.RemoveItem -> removeItem(event.index)
+            is PlayerCharacterCreateEvent.ItemNameChanged -> updateItem(event.index) { it.copy(name = event.value) }
+            is PlayerCharacterCreateEvent.ItemSlotChanged -> updateItem(event.index) { it.copy(slot = event.value) }
+            is PlayerCharacterCreateEvent.ItemRarityChanged -> updateItem(event.index) { it.copy(rarity = event.value) }
+            is PlayerCharacterCreateEvent.ItemDescriptionChanged -> updateItem(
                 event.index
             ) { it.copy(description = event.value) }
 
-            is CharacterCreateEvent.ItemImageUrlChanged -> updateItem(event.index) {
+            is PlayerCharacterCreateEvent.ItemImageUrlChanged -> updateItem(event.index) {
                 it.copy(
                     imageUrl = event.value
                 )
             }
 
-            is CharacterCreateEvent.ItemEquippedChanged -> updateItem(event.index) {
+            is PlayerCharacterCreateEvent.ItemEquippedChanged -> updateItem(event.index) {
                 it.copy(
                     equipped = event.value
                 )
             }
 
             // Weapons
-            CharacterCreateEvent.AddWeapon -> addWeapon()
-            is CharacterCreateEvent.RemoveWeapon -> removeWeapon(event.index)
-            is CharacterCreateEvent.WeaponNameChanged -> updateWeapon(event.index) { it.copy(name = event.value) }
-            is CharacterCreateEvent.WeaponAttackBonusChanged -> updateWeapon(
+            PlayerCharacterCreateEvent.AddWeapon -> addWeapon()
+            is PlayerCharacterCreateEvent.RemoveWeapon -> removeWeapon(event.index)
+            is PlayerCharacterCreateEvent.WeaponNameChanged -> updateWeapon(event.index) { it.copy(name = event.value) }
+            is PlayerCharacterCreateEvent.WeaponAttackBonusChanged -> updateWeapon(
                 event.index
             ) { it.copy(attackBonus = event.value) }
 
-            is CharacterCreateEvent.WeaponDamageChanged -> updateWeapon(event.index) {
+            is PlayerCharacterCreateEvent.WeaponDamageChanged -> updateWeapon(event.index) {
                 it.copy(
                     damage = event.value
                 )
             }
 
-            is CharacterCreateEvent.WeaponDamageTypeChanged -> updateWeapon(
+            is PlayerCharacterCreateEvent.WeaponDamageTypeChanged -> updateWeapon(
                 event.index
             ) { it.copy(damageType = event.value) }
 
-            is CharacterCreateEvent.WeaponNotesChanged -> updateWeapon(event.index) { it.copy(notes = event.value) }
+            is PlayerCharacterCreateEvent.WeaponNotesChanged -> updateWeapon(
+                event.index
+            ) { it.copy(notes = event.value) }
 
             // Spells
-            CharacterCreateEvent.AddSpell -> addSpell()
-            is CharacterCreateEvent.RemoveSpell -> removeSpell(event.index)
-            is CharacterCreateEvent.SpellNameChanged -> updateSpell(event.index) { it.copy(name = event.value) }
-            is CharacterCreateEvent.SpellDescriptionChanged -> updateSpell(
+            PlayerCharacterCreateEvent.AddSpell -> addSpell()
+            is PlayerCharacterCreateEvent.RemoveSpell -> removeSpell(event.index)
+            is PlayerCharacterCreateEvent.SpellNameChanged -> updateSpell(event.index) { it.copy(name = event.value) }
+            is PlayerCharacterCreateEvent.SpellDescriptionChanged -> updateSpell(
                 event.index
             ) { it.copy(description = event.value) }
 
-            is CharacterCreateEvent.SpellLevelChanged -> updateSpell(event.index) {
+            is PlayerCharacterCreateEvent.SpellLevelChanged -> updateSpell(event.index) {
                 it.copy(level = event.value.toIntOrNull() ?: 0)
             }
 
-            is CharacterCreateEvent.SpellSchoolChanged -> updateSpell(event.index) { it.copy(school = event.value) }
-            is CharacterCreateEvent.SpellCastingTimeChanged -> updateSpell(
+            is PlayerCharacterCreateEvent.SpellSchoolChanged -> updateSpell(
+                event.index
+            ) { it.copy(school = event.value) }
+            is PlayerCharacterCreateEvent.SpellCastingTimeChanged -> updateSpell(
                 event.index
             ) { it.copy(castingTime = event.value) }
 
-            is CharacterCreateEvent.SpellRangeChanged -> updateSpell(event.index) { it.copy(range = event.value) }
-            is CharacterCreateEvent.SpellDurationChanged -> updateSpell(event.index) {
+            is PlayerCharacterCreateEvent.SpellRangeChanged -> updateSpell(event.index) { it.copy(range = event.value) }
+            is PlayerCharacterCreateEvent.SpellDurationChanged -> updateSpell(event.index) {
                 it.copy(
                     duration = event.value
                 )
             }
 
-            is CharacterCreateEvent.SpellDamageChanged -> updateSpell(event.index) { it.copy(damage = event.value) }
-            is CharacterCreateEvent.SpellDamageTypeChanged -> updateSpell(
+            is PlayerCharacterCreateEvent.SpellDamageChanged -> updateSpell(
+                event.index
+            ) { it.copy(damage = event.value) }
+            is PlayerCharacterCreateEvent.SpellDamageTypeChanged -> updateSpell(
                 event.index
             ) { it.copy(damageType = event.value) }
 
             // Features
             // Features
-            is CharacterCreateEvent.AddClassFeature ->
+            is PlayerCharacterCreateEvent.AddClassFeature ->
                 _state.value =
                     _state.value.copy(selectedClassFeatures = _state.value.selectedClassFeatures + event.value)
 
-            is CharacterCreateEvent.RemoveClassFeature ->
+            is PlayerCharacterCreateEvent.RemoveClassFeature ->
                 _state.value =
                     _state.value.copy(selectedClassFeatures = _state.value.selectedClassFeatures - event.value)
 
-            is CharacterCreateEvent.AddRacialTrait ->
+            is PlayerCharacterCreateEvent.AddRacialTrait ->
                 _state.value =
                     _state.value.copy(selectedRacialTraits = _state.value.selectedRacialTraits + event.value)
 
-            is CharacterCreateEvent.RemoveRacialTrait ->
+            is PlayerCharacterCreateEvent.RemoveRacialTrait ->
                 _state.value =
                     _state.value.copy(selectedRacialTraits = _state.value.selectedRacialTraits - event.value)
 
-            is CharacterCreateEvent.AddFeat ->
+            is PlayerCharacterCreateEvent.AddFeat ->
                 _state.value =
                     _state.value.copy(selectedFeats = _state.value.selectedFeats + event.value)
 
-            is CharacterCreateEvent.RemoveFeat ->
+            is PlayerCharacterCreateEvent.RemoveFeat ->
                 _state.value =
                     _state.value.copy(selectedFeats = _state.value.selectedFeats - event.value)
 
-            is CharacterCreateEvent.LoadCharacter -> loadCharacter(event.character)
-            is CharacterCreateEvent.StartFromTemplate -> startFromTemplate(event.character)
-            CharacterCreateEvent.LoadTemplates -> loadTemplates()
-            is CharacterCreateEvent.SaveCharacter -> saveCharacter()
-            is CharacterCreateEvent.GenerateImage -> generateImage()
-            is CharacterCreateEvent.GenerateItemImage -> generateItemImage(event.index)
-            is CharacterCreateEvent.AiSizeChanged ->
+            is PlayerCharacterCreateEvent.LoadCharacter -> loadCharacter(event.characterId)
+            is PlayerCharacterCreateEvent.SaveCharacter -> saveCharacter()
+            is PlayerCharacterCreateEvent.DismissError -> _state.value = _state.value.copy(error = null)
+            is PlayerCharacterCreateEvent.GenerateImage -> generateImage()
+            is PlayerCharacterCreateEvent.GenerateItemImage -> generateItemImage(event.index)
+            is PlayerCharacterCreateEvent.AiSizeChanged ->
                 _state.value =
                     _state.value.copy(aiWidth = event.width, aiHeight = event.height)
 
-            is CharacterCreateEvent.AiPromptChanged ->
+            is PlayerCharacterCreateEvent.AiPromptChanged ->
                 _state.value =
                     _state.value.copy(aiPrompt = event.value)
         }
@@ -649,99 +651,86 @@ class CharacterCreateViewModel(
         }
     }
 
-    private fun loadCharacter(character: Character) {
-        _state.value = stateFromCharacter(character)
-        tempId = character.id
-        isEditing = true
-        updateDefaultPrompt()
-    }
-
-    // Prefill the form from a saved template, but treat the result as a brand-new character
-    // (fresh id, create mode) so saving produces new template + campaign char, not an overwrite.
-    private fun startFromTemplate(character: Character) {
-        _state.value = stateFromCharacter(character)
-        tempId = "temp-char-${Random.nextInt(1000000, 9999999)}"
-        isEditing = false
-        updateDefaultPrompt()
-    }
-
-    private fun loadTemplates() {
+    private fun loadCharacter(characterId: String) {
+        _state.value = _state.value.copy(isLoading = true)
         viewModelScope.launch {
-            when (val res = remoteDataSource.getMyCharacters()) {
-                is Result.Success ->
-                    _state.value =
-                        _state.value.copy(templates = res.data.templates.map { it.template })
-                is Result.Error -> {}
+            val result = remoteDataSource.getMyCharacter(characterId)
+            if (result is com.dnd.helper.domain.common.Result.Success) {
+                val character = result.data
+                _state.value = PlayerCharacterCreateState(
+                    name = character.name,
+                    playerName = character.playerName,
+                    race = character.race,
+                    subrace = character.subrace,
+                    characterClass = character.characterClass,
+                    subclass = character.subclass,
+                    background = character.background,
+                    alignment = character.alignment,
+                    level = character.level.toString(),
+                    experiencePoints = character.experiencePoints.toString(),
+                    description = character.description,
+                    imageUrl = character.imageUrl ?: "",
+                    age = character.appearance.age.toString(),
+                    gender = character.appearance.gender,
+                    height = character.appearance.height,
+                    weight = character.appearance.weight,
+                    eyes = character.appearance.eyes,
+                    hair = character.appearance.hair,
+                    skin = character.appearance.skin,
+                    strength = character.stats.strength.toString(),
+                    dexterity = character.stats.dexterity.toString(),
+                    constitution = character.stats.constitution.toString(),
+                    intelligence = character.stats.intelligence.toString(),
+                    wisdom = character.stats.wisdom.toString(),
+                    charisma = character.stats.charisma.toString(),
+                    maxHp = character.maxHp.toString(),
+                    currentHp = character.currentHp.toString(),
+                    tempHp = character.combat.tempHp.toString(),
+                    armorClass = character.combat.armorClass.toString(),
+                    initiative = character.combat.initiative.toString(),
+                    speed = character.combat.speed.toString(),
+                    proficiencyBonus = character.combat.proficiencyBonus.toString(),
+                    hitDice = character.combat.hitDice,
+                    hitDiceCurrent = character.combat.hitDiceCurrent.toString(),
+                    inspiration = character.combat.inspiration,
+                    exhaustion = character.combat.exhaustion.toString(),
+                    conditions = character.combat.conditions.joinToString(", "),
+                    deathSaveSuccesses = character.combat.deathSaveSuccesses.toString(),
+                    deathSaveFailures = character.combat.deathSaveFailures.toString(),
+                    savingThrows = character.proficiencies.savingThrows.joinToString(", "),
+                    armorProficiencies = character.proficiencies.armor.joinToString(", "),
+                    selectedSkills = character.proficiencies.skills,
+                    selectedWeapons = character.proficiencies.weapons,
+                    selectedTools = character.proficiencies.tools,
+                    selectedLanguages = character.proficiencies.languages,
+                    selectedClassFeatures = character.features.classFeatures,
+                    selectedRacialTraits = character.features.racialTraits,
+                    selectedFeats = character.features.feats,
+                    items = character.items,
+                    weapons = character.weapons,
+                    spellList = character.spells,
+                    notes = character.notes,
+                    availableClasses = _state.value.availableClasses,
+                    availableRaces = _state.value.availableRaces,
+                    availableBackgrounds = _state.value.availableBackgrounds,
+                    availableAlignments = _state.value.availableAlignments,
+                    availableLanguages = _state.value.availableLanguages,
+                    availableSkills = _state.value.availableSkills,
+                    availableEquipment = _state.value.availableEquipment,
+                    availableFeats = _state.value.availableFeats,
+                    availableFeatures = _state.value.availableFeatures,
+                    availableTraits = _state.value.availableTraits,
+                    availableSpells = _state.value.availableSpells,
+                    isEditMode = true,
+                    isLoading = false
+                )
+                tempId = character.id
+                updateDefaultPrompt()
+            } else {
+                _state.value = _state.value.copy(isLoading = false, error = "Failed to load character")
             }
         }
     }
-
-    private fun stateFromCharacter(character: Character): CharacterCreateState =
-        CharacterCreateState(
-            name = character.name,
-            playerName = character.playerName,
-            race = character.race,
-            subrace = character.subrace,
-            characterClass = character.characterClass,
-            subclass = character.subclass,
-            background = character.background,
-            alignment = character.alignment,
-            level = character.level.toString(),
-            experiencePoints = character.experiencePoints.toString(),
-            description = character.description,
-            imageUrl = character.imageUrl ?: "",
-            age = character.appearance.age.toString(),
-            gender = character.appearance.gender,
-            height = character.appearance.height,
-            weight = character.appearance.weight,
-            eyes = character.appearance.eyes,
-            hair = character.appearance.hair,
-            skin = character.appearance.skin,
-            strength = character.stats.strength.toString(),
-            dexterity = character.stats.dexterity.toString(),
-            constitution = character.stats.constitution.toString(),
-            intelligence = character.stats.intelligence.toString(),
-            wisdom = character.stats.wisdom.toString(),
-            charisma = character.stats.charisma.toString(),
-            maxHp = character.maxHp.toString(),
-            currentHp = character.currentHp.toString(),
-            tempHp = character.combat.tempHp.toString(),
-            armorClass = character.combat.armorClass.toString(),
-            initiative = character.combat.initiative.toString(),
-            speed = character.combat.speed.toString(),
-            proficiencyBonus = character.combat.proficiencyBonus.toString(),
-            hitDice = character.combat.hitDice,
-            hitDiceCurrent = character.combat.hitDiceCurrent.toString(),
-            inspiration = character.combat.inspiration,
-            exhaustion = character.combat.exhaustion.toString(),
-            conditions = character.combat.conditions.joinToString(", "),
-            deathSaveSuccesses = character.combat.deathSaveSuccesses.toString(),
-            deathSaveFailures = character.combat.deathSaveFailures.toString(),
-            savingThrows = character.proficiencies.savingThrows.joinToString(", "),
-            armorProficiencies = character.proficiencies.armor.joinToString(", "),
-            selectedSkills = character.proficiencies.skills,
-            selectedWeapons = character.proficiencies.weapons,
-            selectedTools = character.proficiencies.tools,
-            selectedLanguages = character.proficiencies.languages,
-            selectedClassFeatures = character.features.classFeatures,
-            selectedRacialTraits = character.features.racialTraits,
-            selectedFeats = character.features.feats,
-            items = character.items,
-            weapons = character.weapons,
-            spellList = character.spells,
-            notes = character.notes,
-            availableClasses = _state.value.availableClasses,
-            availableRaces = _state.value.availableRaces,
-            availableBackgrounds = _state.value.availableBackgrounds,
-            availableAlignments = _state.value.availableAlignments,
-            availableLanguages = _state.value.availableLanguages,
-            availableSkills = _state.value.availableSkills,
-            availableEquipment = _state.value.availableEquipment,
-            availableFeats = _state.value.availableFeats,
-            availableFeatures = _state.value.availableFeatures,
-            availableTraits = _state.value.availableTraits,
-            availableSpells = _state.value.availableSpells
-        )
 
     private fun parseCommaList(input: String): List<String> =
         input.split(",").map { it.trim() }.filter { it.isNotBlank() }
@@ -852,14 +841,12 @@ class CharacterCreateViewModel(
         _state.value = s.copy(isSaving = true, error = null)
 
         viewModelScope.launch {
-            val result = repository.saveCharacter(character)
-            // On create, also keep a reusable template in the master's personal session.
-            if (result is Result.Success && !isEditing) {
-                remoteDataSource.createMyCharacter(character)
-            }
+            // Templates live in the player's personal session; createMyCharacter upserts by id,
+            // so it handles both create and edit.
+            val result = remoteDataSource.createMyCharacter(character)
             when (result) {
                 is Result.Success -> {
-                    _state.value = _state.value.copy(isSaving = false, isSaved = true)
+                    _state.value = _state.value.copy(isSaving = false, isSaved = true, savedCharacterId = character.id)
                 }
 
                 is Result.Error -> {

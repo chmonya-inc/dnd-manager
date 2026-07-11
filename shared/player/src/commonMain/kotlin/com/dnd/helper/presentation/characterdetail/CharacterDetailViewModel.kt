@@ -248,6 +248,7 @@ class CharacterDetailViewModel(
                 _state.value = _state.value.copy(aiWidth = event.width, aiHeight = event.height)
             }
             CharacterDetailEvent.SaveChanges -> saveChanges()
+            CharacterDetailEvent.DeleteCharacter -> deleteCharacter()
             CharacterDetailEvent.ToggleMasterMode -> {
                 _state.value = _state.value.copy(isMasterMode = !_state.value.isMasterMode)
             }
@@ -765,6 +766,24 @@ class CharacterDetailViewModel(
                             isLoading = false,
                         )
                     }
+                }
+            }
+        }
+    }
+
+    private fun deleteCharacter() {
+        val currentCharacter = _state.value.character ?: return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isSaving = true)
+            when (val result = repository.deleteCharacter(currentCharacter.id)) {
+                is Result.Success -> {
+                    _state.value = _state.value.copy(isSaving = false, character = null)
+                }
+                is Result.Error -> {
+                    _state.value = _state.value.copy(
+                        isSaving = false,
+                        error = "Failed to delete: ${result.error}"
+                    )
                 }
             }
         }

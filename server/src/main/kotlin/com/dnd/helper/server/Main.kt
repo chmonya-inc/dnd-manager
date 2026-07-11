@@ -61,9 +61,9 @@ fun Application.module() {
     }
 
     install(RateLimit) {
-        global {
-            rateLimiter(limit = 100, refillPeriod = 60.seconds)
-        }
+        // Only rate-limit auth endpoints to prevent brute-force attacks.
+        // No global rate limit — it would conflict with WebSocket upgrade
+        // requests and legitimate 2-second polling from player/desktop apps.
         register(RateLimitName("auth")) {
             rateLimiter(limit = 20, refillPeriod = 60.seconds)
         }

@@ -6,14 +6,18 @@ import com.dnd.helper.data.remote.KtorRemoteDataSource
 import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.common.toUserMessage
+import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class SessionsViewModel(
     private val storage: CharacterStorage,
-    private val remoteDataSource: KtorRemoteDataSource
+    private val remoteDataSource: KtorRemoteDataSource,
+    private val characterRepository: CharacterRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -25,6 +29,101 @@ class SessionsViewModel(
 
     init {
         loadCampaigns()
+        observeWebSocketUpdates()
+        startPolling()
+    }
+
+    /**
+     * Observe WebSocket updates — react to character changes
+     * by refreshing the campaign preview and campaign list.
+     */
+    private fun observeWebSocketUpdates() {
+        viewModelScope.launch {
+            characterRepository.remoteUpdates.collect { updateMessage ->
+                val updateType = updateMessage.split(":").firstOrNull() ?: return@collect
+                when (updateType) {
+                    "characters" -> {
+                        refreshCampaignsSilently()
+                        refreshPreviewSilently()
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Periodic polling every 2 seconds — silently refreshes campaigns
+     * and preview data without showing loading indicators.
+     */
+    private fun startPolling() {
+        viewModelScope.launch {
+            while (isActive) {
+                delay(2_000)
+                refreshCampaignsSilently()
+                refreshPreviewSilently()
+            }
+        }
+    }
+
+    /**
+     * Silently refresh campaigns without showing loading indicator.
+     * Only updates if data has changed.
+     */
+    private fun refreshCampaignsSilently() {
+        viewModelScope.launch {
+            when (val res = remoteDataSource.getCampaigns()) {
+                is Result.Success -> {
+                    val campaigns = res.data.map {
+                        Campaign(
+                            id = it.sessionId,
+                            name = it.name,
+                            isStarted = it.isStarted
+                        )
+                    }
+                    val current = _state.value.campaigns
+                    if (current.size != campaigns.size ||
+                        current.zip(campaigns).any { (old, new) ->
+                            old.id != new.id ||
+                                old.name != new.name ||
+                                old.isStarted != new.isStarted
+                        }
+                    ) {
+                        _state.value = _state.value.copy(campaigns = campaigns)
+
+                        // Auto-select if not already selected
+                        if (_state.value.previewCampaignId == null && campaigns.isNotEmpty()) {
+                            val currentActive = storage.getTableId()
+                            if (!currentActive.isNullOrBlank() && campaigns.any { it.id == currentActive }) {
+                                selectCampaignForPreview(currentActive)
+                            } else {
+                                selectCampaignForPreview(campaigns.first().id)
+                            }
+                        }
+                    }
+                }
+                is Result.Error -> {}
+            }
+        }
+    }
+
+    /**
+     * Silently refresh the preview data without showing loading indicator.
+     */
+    private fun refreshPreviewSilently() {
+        val previewId = _state.value.previewCampaignId ?: return
+        viewModelScope.launch {
+            val oldId = storage.getTableId()
+            storage.saveTableId(previewId)
+            when (val res = remoteDataSource.getInitialData()) {
+                is Result.Success -> {
+                    if (_state.value.previewCampaignId == previewId) {
+                        _state.value = _state.value.copy(previewData = res.data)
+                    }
+                }
+                is Result.Error -> {}
+            }
+            if (oldId != null) storage.saveTableId(oldId) else storage.saveTableId("")
+        }
     }
 
     fun loadCampaigns() {
@@ -32,7 +131,13 @@ class SessionsViewModel(
             _state.value = _state.value.copy(isLoading = true, error = null)
             when (val res = remoteDataSource.getCampaigns()) {
                 is Result.Success -> {
-                    val campaigns = res.data.map { Campaign(id = it.sessionId, name = it.name) }
+                    val campaigns = res.data.map {
+                        Campaign(
+                            id = it.sessionId,
+                            name = it.name,
+                            isStarted = it.isStarted
+                        )
+                    }
                     _state.value = _state.value.copy(
                         campaigns = campaigns,
                         isLoading = false
@@ -59,6 +164,30 @@ class SessionsViewModel(
     fun selectCampaign(id: String) {
         storage.saveTableId(id)
         _state.value = _state.value.copy(activeTableId = id)
+    }
+
+    fun toggleCampaignStart(id: String, isStarted: Boolean) {
+        // Optimistic update: reflect the change immediately
+        _state.value = _state.value.copy(
+            campaigns = _state.value.campaigns.map {
+                if (it.id == id) it.copy(isStarted = isStarted) else it
+            }
+        )
+        viewModelScope.launch {
+            val res = remoteDataSource.toggleCampaignStart(id, isStarted)
+            if (res is Result.Success) {
+                // Silently refresh to confirm server state
+                refreshCampaignsSilently()
+            } else {
+                // Revert on failure
+                _state.value = _state.value.copy(
+                    campaigns = _state.value.campaigns.map {
+                        if (it.id == id) it.copy(isStarted = !isStarted) else it
+                    },
+                    error = (res as Result.Error).error.toUserMessage()
+                )
+            }
+        }
     }
 
     fun selectCampaignForPreview(id: String) {

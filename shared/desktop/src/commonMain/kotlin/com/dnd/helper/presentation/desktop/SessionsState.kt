@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 data class Campaign(
     val id: String,
     val name: String,
+    val isStarted: Boolean = false
 )
 
 data class SessionsState(
