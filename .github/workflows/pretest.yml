@@ -25,6 +25,7 @@ jobs:
       build-script: "detekt"
       build-path: "**/build/reports/detekt/*"
       archive: true
+      artifact-name: detekt
 
   test:
     name: Run test
@@ -36,3 +37,4 @@ jobs:
       build-script: "testDebugUnitTest"
       build-path: "**/build/test-results/testDebugUnitTest/*"
       archive: true
+      artifact-name: test
