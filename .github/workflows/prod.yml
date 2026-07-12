@@ -71,7 +71,6 @@ jobs:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
     with:
-      platform: windows
       runs-on: windows-latest
       build-script: ":desktop:packageReleaseMsi"
       build-path: desktop/build/compose/binaries/main-release/msi/*.msi

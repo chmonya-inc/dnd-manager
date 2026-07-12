@@ -71,7 +71,6 @@ jobs:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
     with:
-      platform: windows
       runs-on: windows-latest
       build-script: ":desktop:packageMsi"
       build-path: desktop/build/compose/binaries/main/msi/*.msi
@@ -91,7 +90,6 @@ jobs:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
     with:
-      platform: android
       runs-on: ubuntu-latest
       build-script: ":app:assembleDebug"
       build-path: app/build/outputs/apk/debug/*.apk
