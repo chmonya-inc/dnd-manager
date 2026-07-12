@@ -8,6 +8,8 @@ on:
 jobs:
   assemble:
     name: Run assemble
+    permissions:
+      contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
     with:
       runs-on: ubuntu-latest
