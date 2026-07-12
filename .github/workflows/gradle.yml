@@ -58,6 +58,8 @@ jobs:
       - run: chmod +x gradlew
 
       - run: ./gradlew ${{ inputs.build-script }} --build-cache
+        env:
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
 
       - uses: actions/upload-artifact@v7
         if: ${{ inputs.build-path }}
