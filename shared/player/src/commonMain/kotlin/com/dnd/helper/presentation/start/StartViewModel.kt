@@ -2,11 +2,12 @@ package com.dnd.helper.presentation.start
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dnd.helper.data.remote.KtorRemoteDataSource
+import com.dnd.helper.data.remote.RemoteDataSource
 import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.domain.repository.AuthRepository
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,10 +16,13 @@ import kotlinx.coroutines.launch
 
 class StartViewModel(
     private val storage: CharacterStorage,
-    private val remoteDataSource: KtorRemoteDataSource,
+    private val remoteDataSource: RemoteDataSource,
     private val authRepository: AuthRepository,
     private val characterRepository: CharacterRepository,
+    coroutineScope: CoroutineScope? = null
 ) : ViewModel() {
+    private val scope = coroutineScope ?: viewModelScope
+
     private val _state = MutableStateFlow(
         StartState(
             characterId = storage.getCharacterId() ?: "",
@@ -37,7 +41,7 @@ class StartViewModel(
     }
 
     private fun observeWebSocketUpdates() {
-        viewModelScope.launch {
+        scope.launch {
             characterRepository.remoteUpdates.collect { updateMessage ->
                 val parts = updateMessage.split(":")
                 val updateType = parts.firstOrNull() ?: return@collect
@@ -56,7 +60,7 @@ class StartViewModel(
     }
 
     private fun startPolling() {
-        viewModelScope.launch {
+        scope.launch {
             while (isActive) {
                 delay(2_000)
                 refreshPendingAssignmentsSilently()
@@ -66,7 +70,7 @@ class StartViewModel(
     }
 
     fun loadMyCharacters() {
-        viewModelScope.launch {
+        scope.launch {
             _state.value = _state.value.copy(isLoadingMyCharacters = true)
             when (val res = remoteDataSource.getMyCharacters()) {
                 is com.dnd.helper.domain.common.Result.Success -> {
@@ -84,7 +88,7 @@ class StartViewModel(
     }
 
     private fun refreshMyCharactersSilently() {
-        viewModelScope.launch {
+        scope.launch {
             when (val res = remoteDataSource.getMyCharacters()) {
                 is com.dnd.helper.domain.common.Result.Success -> {
                     val current = _state.value
@@ -103,7 +107,7 @@ class StartViewModel(
     }
 
     private fun refreshPendingAssignmentsSilently() {
-        viewModelScope.launch {
+        scope.launch {
             when (val res = remoteDataSource.getPendingAssignments()) {
                 is com.dnd.helper.domain.common.Result.Success -> {
                     val current = _state.value.pendingAssignments
@@ -126,7 +130,7 @@ class StartViewModel(
     }
 
     fun loadPendingAssignments() {
-        viewModelScope.launch {
+        scope.launch {
             _state.value = _state.value.copy(isLoadingAssignments = true)
             when (val res = remoteDataSource.getPendingAssignments()) {
                 is com.dnd.helper.domain.common.Result.Success -> {
@@ -144,7 +148,7 @@ class StartViewModel(
     }
 
     private fun respondToAssignment(assignmentId: String, accept: Boolean) {
-        viewModelScope.launch {
+        scope.launch {
             when (val res = remoteDataSource.respondToAssignment(assignmentId, accept)) {
                 is com.dnd.helper.domain.common.Result.Success -> {
                     _state.value = _state.value.copy(
@@ -193,7 +197,7 @@ class StartViewModel(
                 loadPendingAssignments()
             }
             StartEvent.Logout -> {
-                viewModelScope.launch {
+                scope.launch {
                     authRepository.logout()
                 }
             }
@@ -206,7 +210,7 @@ class StartViewModel(
     }
 
     private fun deleteCharacter(characterId: String) {
-        viewModelScope.launch {
+        scope.launch {
             when (remoteDataSource.deleteMyCharacter(characterId)) {
                 is com.dnd.helper.domain.common.Result.Success -> {
                     loadMyCharacters()
@@ -218,7 +222,7 @@ class StartViewModel(
 
     private fun joinCampaign(characterId: String, gameId: String) {
         val decodedGameId = IdUtils.decode(gameId)
-        viewModelScope.launch {
+        scope.launch {
             _state.value = _state.value.copy(isJoiningCampaign = true, joinError = null)
             when (val res = remoteDataSource.joinCampaign(characterId, decodedGameId)) {
                 is com.dnd.helper.domain.common.Result.Success -> {

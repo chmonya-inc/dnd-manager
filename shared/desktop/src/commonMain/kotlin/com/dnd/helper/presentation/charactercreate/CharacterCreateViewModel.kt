@@ -27,7 +27,7 @@ import kotlin.random.Random
 
 class CharacterCreateViewModel(
     private val repository: CharacterRepository,
-    private val remoteDataSource: com.dnd.helper.data.remote.KtorRemoteDataSource,
+    private val remoteDataSource: com.dnd.helper.data.remote.RemoteDataSource,
     private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
     private val api: com.dnd.helper.data.remote.DndApiDataSource,
     private val storage: com.dnd.helper.domain.storage.CharacterStorage,

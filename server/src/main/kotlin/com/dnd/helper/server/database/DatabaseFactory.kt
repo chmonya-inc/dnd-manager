@@ -7,14 +7,18 @@ import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransacti
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object DatabaseFactory {
-    fun init() {
+    fun init(isTest: Boolean = System.getProperty("isTest") == "true") {
         val host = System.getenv("DB_HOST") ?: "localhost"
         val port = System.getenv("DB_PORT") ?: "5432"
         val dbName = System.getenv("DB_NAME") ?: "dndhelper"
         val user = System.getenv("DB_USER") ?: "postgres"
         val password = System.getenv("DB_PASSWORD") ?: "postgres"
 
-        val url = "jdbc:postgresql://$host:$port/$dbName"
+        val url = if (isTest) {
+            System.getProperty("DB_URL") ?: "jdbc:postgresql://$host:$port/$dbName"
+        } else {
+            "jdbc:postgresql://$host:$port/$dbName"
+        }
 
         while (true) {
             try {
@@ -79,6 +83,9 @@ object DatabaseFactory {
                 break // Exit the retry loop on success
             } catch (e: Exception) {
                 println("[DatabaseFactory] Failed to connect or initialize database: ${e.message}")
+                if (isTest) {
+                    throw e // Don't retry in tests
+                }
                 println("[DatabaseFactory] Retrying in 5 seconds...")
                 Thread.sleep(5000)
             }

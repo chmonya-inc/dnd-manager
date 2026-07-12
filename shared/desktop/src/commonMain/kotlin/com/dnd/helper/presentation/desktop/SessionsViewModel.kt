@@ -2,7 +2,7 @@ package com.dnd.helper.presentation.desktop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dnd.helper.data.remote.KtorRemoteDataSource
+import com.dnd.helper.data.remote.RemoteDataSource
 import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.common.toUserMessage
@@ -16,8 +16,9 @@ import kotlinx.coroutines.launch
 
 class SessionsViewModel(
     private val storage: CharacterStorage,
-    private val remoteDataSource: KtorRemoteDataSource,
+    private val remoteDataSource: RemoteDataSource,
     private val characterRepository: CharacterRepository,
+    private val pollingIntervalMs: Long = 2_000L
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -30,7 +31,9 @@ class SessionsViewModel(
     init {
         loadCampaigns()
         observeWebSocketUpdates()
-        startPolling()
+        if (pollingIntervalMs > 0) {
+            startPolling()
+        }
     }
 
     /**
@@ -58,7 +61,7 @@ class SessionsViewModel(
     private fun startPolling() {
         viewModelScope.launch {
             while (isActive) {
-                delay(2_000)
+                delay(pollingIntervalMs)
                 refreshCampaignsSilently()
                 refreshPreviewSilently()
             }
@@ -253,16 +256,13 @@ class SessionsViewModel(
     }
 
     fun deleteCampaignLocal(id: String) {
-        // Since we are not deleting on server for now, just remove from view?
-        // Actually, the requirement was to show sessions owned by master.
-        // If master "deletes" it should probably be deleted on server too.
-        // For now, let's just filter it out of the local state if we don't have a server delete yet.
+        val currentActiveId = _state.value.activeTableId
         val updated = _state.value.campaigns.filter { it.id != id }
         _state.value = _state.value.copy(
             campaigns = updated,
-            activeTableId = if (_state.value.activeTableId == id) "" else _state.value.activeTableId
+            activeTableId = if (currentActiveId == id) "" else currentActiveId
         )
-        if (_state.value.activeTableId == id) {
+        if (currentActiveId == id) {
             storage.saveTableId("")
         }
     }

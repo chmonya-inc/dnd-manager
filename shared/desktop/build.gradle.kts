@@ -65,6 +65,14 @@ kotlin {
         val wasmJsMain by getting {
             dependencies {}
         }
+
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.turbine)
+            }
+        }
     }
 }
 

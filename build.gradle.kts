@@ -28,7 +28,8 @@ allprojects {
             "src/jvmMain/kotlin",
             "src/desktopMain/kotlin",
             "src/wasmJsMain/kotlin",
-            "src/main/kotlin"
+            "src/main/kotlin",
+            "src/main/java"
         )
     }
 
