@@ -19,9 +19,31 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  detekt:
+    name: Run detekt
+    permissions:
+      contents: write
+    uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
+    with:
+      runs-on: ubuntu-latest
+      build-script: "detekt"
+      build-path: "**/build/reports/detekt/*"
+      archive: true
+
+  test:
+    name: Run test
+    permissions:
+      contents: write
+    uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
+    with:
+      runs-on: ubuntu-latest
+      build-script: "testDebugUnitTest"
+      build-path: "**/build/test-results/testDebugUnitTest/*"
+      archive: true
+
   build-api:
     name: Build api
-    needs: version
+    needs: [test, detekt, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-api
@@ -31,7 +53,7 @@ jobs:
 
   build-web:
     name: Build web
-    needs: version
+    needs: [test, detekt, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-web
@@ -42,36 +64,41 @@ jobs:
 
   build-desktop:
     name: Build desktop
-    needs: version
+    needs: [test, detekt, version]
     permissions:
       contents: write
-    uses: chmonya-inc/dnd-manager/.github/workflows/client.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
     with:
-      version: ${{ needs.version.outputs.version }}
       platform: windows
       runs-on: windows-latest
-      build-number: ${{ github.run_number }}
       build-script: ":desktop:packageReleaseMsi"
       build-path: desktop/build/compose/binaries/main-release/msi/*.msi
-      backend-url-desktop: ${{ vars.APPS_SCRIPT_URL_DESKTOP }}
-      backend-url-android: ${{ vars.APPS_SCRIPT_URL_ANDROID }}
+      build-envs: |
+        {
+          "APP_BUILD_NUMBER": "${{ github.run_number }}}",
+          "APP_VERSION_NUMBER": "${{ needs.version.outputs.version }}",
+          "APPS_SCRIPT_URL_DESKTOP": "${{ vars.APPS_SCRIPT_URL_DESKTOP }}",
+          "IMGBB_API_KEY": ${{ secrets.IMGBB_API_KEY }}
+        }
     secrets: inherit
 
   build-app:
     name: Build mobile app
-    needs: version
+    needs: [test, detekt, version]
     permissions:
       contents: write
-    uses: chmonya-inc/dnd-manager/.github/workflows/client.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
     with:
-      version: ${{ needs.version.outputs.version }}
-      platform: android
       runs-on: ubuntu-latest
-      build-number: ${{ github.run_number }}
       build-script: ":app:assembleRelease"
       build-path: app/build/outputs/apk/release/*.apk
-      backend-url-desktop: ${{ vars.APPS_SCRIPT_URL_DESKTOP }}
-      backend-url-android: ${{ vars.APPS_SCRIPT_URL_ANDROID }}
+      build-envs: |
+        {
+          "APP_BUILD_NUMBER": "${{ github.run_number }}}",
+          "APP_VERSION_NUMBER": "${{ needs.version.outputs.version }}",
+          "APPS_SCRIPT_URL_ANDROID": "${{ vars.APPS_SCRIPT_URL_ANDROID }}",
+          "IMGBB_API_KEY": ${{ secrets.IMGBB_API_KEY }}
+        }
     secrets: inherit
 
   deploy-api:

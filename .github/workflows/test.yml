@@ -3,7 +3,7 @@ name: Build test version and deploy
 on:
   push:
     branches:
-      - develop
+      - test
 
 jobs:
   version:
@@ -19,9 +19,31 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  detekt:
+    name: Run detekt
+    permissions:
+      contents: write
+    uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
+    with:
+      runs-on: ubuntu-latest
+      build-script: "detekt"
+      build-path: "**/build/reports/detekt/*"
+      archive: true
+
+  test:
+    name: Run test
+    permissions:
+      contents: write
+    uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
+    with:
+      runs-on: ubuntu-latest
+      build-script: "testDebugUnitTest"
+      build-path: "**/build/test-results/testDebugUnitTest/*"
+      archive: true
+
   build-api:
     name: Build api
-    needs: version
+    needs: [test, detekt, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-api
@@ -31,7 +53,7 @@ jobs:
 
   build-web:
     name: Build web
-    needs: version
+    needs: [test, detekt, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-web
@@ -42,61 +64,51 @@ jobs:
 
   build-desktop:
     name: Build desktop
-    needs: version
+    needs: [test, detekt, version]
     permissions:
       contents: write
-    uses: chmonya-inc/dnd-manager/.github/workflows/client.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
     with:
-      version: ${{ needs.version.outputs.version }}
       platform: windows
       runs-on: windows-latest
-      build-number: ${{ github.run_number }}
       build-script: ":desktop:packageMsi"
       build-path: desktop/build/compose/binaries/main/msi/*.msi
-      backend-url-desktop: ${{ vars.APPS_SCRIPT_URL_DESKTOP_TEST }}
-      backend-url-android: ${{ vars.APPS_SCRIPT_URL_ANDROID_TEST }}
+      build-envs: |
+        {
+          "APP_BUILD_NUMBER": "${{ github.run_number }}}",
+          "APP_VERSION_NUMBER": "${{ needs.version.outputs.version }}",
+          "APPS_SCRIPT_URL_DESKTOP": "${{ vars.APPS_SCRIPT_URL_DESKTOP_TEST }}",
+          "APPS_SCRIPT_URL_ANDROID": "${{ vars.APPS_SCRIPT_URL_ANDROID_TEST }}",
+          "IMGBB_API_KEY": ${{ secrets.IMGBB_API_KEY }}
+        }
     secrets: inherit
 
   build-app:
     name: Build mobile
-    needs: version
+    needs: [test, detekt, version]
     permissions:
       contents: write
-    uses: chmonya-inc/dnd-manager/.github/workflows/client.yml@v2
+    uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
     with:
-      version: ${{ needs.version.outputs.version }}
       platform: android
       runs-on: ubuntu-latest
-      build-number: ${{ github.run_number }}
       build-script: ":app:assembleDebug"
       build-path: app/build/outputs/apk/debug/*.apk
-      backend-url-android: ${{ vars.APPS_SCRIPT_URL_ANDROID_TEST }}
-      backend-url-desktop: ${{ vars.APPS_SCRIPT_URL_DESKTOP_TEST }}
-    secrets: inherit
-
-  detekt:
-    name: Run detekt
-    needs: version
-    permissions:
-      contents: write
-    uses: chmonya-inc/dnd-manager/.github/workflows/client.yml@v2
-    with:
-      version: ${{ needs.version.outputs.version }}
-      platform: detekt
-      runs-on: ubuntu-latest
-      build-number: ${{ github.run_number }}
-      build-script: "detekt"
-      build-path: "**/build/reports/detekt/*"
-      backend-url-android: ""
-      backend-url-desktop: ""
-      archive: true
+      build-envs: |
+        {
+          "APP_BUILD_NUMBER": "${{ github.run_number }}}",
+          "APP_VERSION_NUMBER": "${{ needs.version.outputs.version }}",
+          "APPS_SCRIPT_URL_DESKTOP": "${{ vars.APPS_SCRIPT_URL_DESKTOP_TEST }}",
+          "APPS_SCRIPT_URL_ANDROID": "${{ vars.APPS_SCRIPT_URL_ANDROID_TEST }}",
+          "IMGBB_API_KEY": ${{ secrets.IMGBB_API_KEY }}
+        }
     secrets: inherit
 
   deploy-api:
     needs: [build-api, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
-      version: ${{ needs.version.outputs.version }}-${{ github.run_number }}
+      version: ${{ needs.version.outputs.version }}
       image-name: chmonya777/dndmanager-api
       image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       release-name: dndmanager-api
@@ -109,7 +121,7 @@ jobs:
     needs: [build-web, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
-      version: ${{ needs.version.outputs.version }}-${{ github.run_number }}
+      version: ${{ needs.version.outputs.version }}
       image-name: chmonya777/dndmanager-web
       image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       release-name: dndmanager-web
