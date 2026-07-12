@@ -3,6 +3,7 @@ package com.dnd.helper.presentation.desktop
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dnd.helper.domain.common.Result
+import com.dnd.helper.domain.common.toUserMessage
 import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.LogEntry
 import com.dnd.helper.domain.repository.CharacterRepository
@@ -15,7 +16,7 @@ import kotlinx.serialization.json.Json
 data class LogState(
     val logs: List<LogEntry> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class LogViewModel(
@@ -41,12 +42,18 @@ class LogViewModel(
 
     fun refreshLogs(force: Boolean = false) {
         viewModelScope.launch {
-            if (!force) _state.value = _state.value.copy(isLoading = true)
-            val result = repository.getLogs()
-            if (result is Result.Success) {
-                _state.value = _state.value.copy(logs = result.data, isLoading = false)
-            } else {
-                _state.value = _state.value.copy(isLoading = false)
+            if (!force) _state.value = _state.value.copy(isLoading = true, error = null)
+            when (val result = repository.getLogs()) {
+                is Result.Success -> {
+                    _state.value = _state.value.copy(logs = result.data, isLoading = false, error = null)
+                }
+                is Result.Error -> {
+                    _state.value = _state.value.copy(
+                        logs = emptyList(),
+                        isLoading = false,
+                        error = result.error.toUserMessage()
+                    )
+                }
             }
         }
     }

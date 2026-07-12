@@ -12,9 +12,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
-    private val repository: AuthRepository
+    private val repository: AuthRepository,
+    coroutineScope: kotlinx.coroutines.CoroutineScope? = null
 ) : ViewModel() {
 
+    private val scope = coroutineScope ?: viewModelScope
     private val _state = MutableStateFlow(AuthState())
     val state = _state.asStateFlow()
 
@@ -49,7 +51,7 @@ class AuthViewModel(
     }
 
     private fun pasteNewPassword() {
-        viewModelScope.launch {
+        scope.launch {
             com.dnd.helper.di.pasteFromClipboard()?.let { text ->
                 _state.update { it.copy(newPassword = text) }
             }
@@ -57,7 +59,7 @@ class AuthViewModel(
     }
 
     private fun pasteUsername() {
-        viewModelScope.launch {
+        scope.launch {
             com.dnd.helper.di.pasteFromClipboard()?.let { text ->
                 _state.update { it.copy(username = text) }
             }
@@ -65,7 +67,7 @@ class AuthViewModel(
     }
 
     private fun pastePassword() {
-        viewModelScope.launch {
+        scope.launch {
             com.dnd.helper.di.pasteFromClipboard()?.let { text ->
                 _state.update { it.copy(password = text) }
             }
@@ -81,7 +83,7 @@ class AuthViewModel(
 
         _state.update { it.copy(isLoading = true, error = null, errorRoleMismatch = null) }
 
-        viewModelScope.launch {
+        scope.launch {
             val result = if (currentState.isRecoverMode) {
                 if (currentState.newPassword.isBlank()) {
                     _state.update { it.copy(isLoading = false, error = "New password cannot be empty") }

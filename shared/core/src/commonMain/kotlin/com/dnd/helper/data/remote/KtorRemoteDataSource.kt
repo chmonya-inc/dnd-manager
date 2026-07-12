@@ -6,6 +6,7 @@ import com.dnd.helper.data.remote.dto.auth.AssignCharacterRequest
 import com.dnd.helper.data.remote.dto.auth.AssignmentStatusDto
 import com.dnd.helper.data.remote.dto.auth.CampaignDto
 import com.dnd.helper.data.remote.dto.auth.CreateAssignmentRequest
+import com.dnd.helper.data.remote.dto.auth.JoinCampaignRequest
 import com.dnd.helper.data.remote.dto.auth.MyCharactersResponse
 import com.dnd.helper.data.remote.dto.auth.PendingAssignmentDto
 import com.dnd.helper.data.remote.dto.auth.RespondAssignmentRequest
@@ -42,12 +43,11 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 
 class KtorRemoteDataSource(
     private val httpClient: HttpClient,
     private val storage: CharacterStorage,
-) {
+) : RemoteDataSource {
 
     private fun sessionId(): String = storage.getTableId() ?: "default"
 
@@ -67,7 +67,7 @@ class KtorRemoteDataSource(
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun observeUpdates(): Flow<String> = kotlinx.coroutines.flow.combine(
+    override fun observeUpdates(): Flow<String> = kotlinx.coroutines.flow.combine(
         storage.getServerAddressFlow(),
         storage.getTableIdFlow()
     ) { address, tableId ->
@@ -110,16 +110,16 @@ class KtorRemoteDataSource(
         }
     }
 
-    suspend fun getInitialData(): Result<InitialData> =
+    override suspend fun getInitialData(): Result<InitialData> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/initial-data") }
 
-    suspend fun getCharacters(): Result<List<Character>> =
+    override suspend fun getCharacters(): Result<List<Character>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/characters") }
 
-    suspend fun getCharacter(id: String): Result<Character> =
+    override suspend fun getCharacter(id: String): Result<Character> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/characters/$id") }
 
-    suspend fun saveCharacter(character: Character): Result<Unit> =
+    override suspend fun saveCharacter(character: Character): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/${sessionId()}/characters") {
                 contentType(ContentType.Application.Json)
@@ -127,7 +127,7 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun saveCharacterToSession(character: Character, targetSessionId: String): Result<Unit> =
+    override suspend fun saveCharacterToSession(character: Character, targetSessionId: String): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/$targetSessionId/characters") {
                 contentType(ContentType.Application.Json)
@@ -135,16 +135,16 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun deleteCharacter(id: String): Result<Unit> =
+    override suspend fun deleteCharacter(id: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/characters/$id") }
 
-    suspend fun deleteCharacterFromSession(id: String, sourceSessionId: String): Result<Unit> =
+    override suspend fun deleteCharacterFromSession(id: String, sourceSessionId: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/$sourceSessionId/characters/$id") }
 
-    suspend fun getLocations(): Result<List<Location>> =
+    override suspend fun getLocations(): Result<List<Location>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/locations") }
 
-    suspend fun saveLocation(location: Location): Result<Unit> =
+    override suspend fun saveLocation(location: Location): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/${sessionId()}/locations") {
                 contentType(ContentType.Application.Json)
@@ -152,13 +152,13 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun deleteLocation(id: String): Result<Unit> =
+    override suspend fun deleteLocation(id: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/locations/$id") }
 
-    suspend fun getBattlefields(): Result<List<Battlefield>> =
+    override suspend fun getBattlefields(): Result<List<Battlefield>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/battlefields") }
 
-    suspend fun saveBattlefield(battlefield: Battlefield): Result<Unit> =
+    override suspend fun saveBattlefield(battlefield: Battlefield): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/${sessionId()}/battlefields") {
                 contentType(ContentType.Application.Json)
@@ -166,13 +166,13 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun deleteBattlefield(id: String): Result<Unit> =
+    override suspend fun deleteBattlefield(id: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/battlefields/$id") }
 
-    suspend fun getMonsters(): Result<List<Monster>> =
+    override suspend fun getMonsters(): Result<List<Monster>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/monsters") }
 
-    suspend fun saveMonster(monster: Monster): Result<Unit> =
+    override suspend fun saveMonster(monster: Monster): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/${sessionId()}/monsters") {
                 contentType(ContentType.Application.Json)
@@ -180,13 +180,13 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun deleteMonster(id: String): Result<Unit> =
+    override suspend fun deleteMonster(id: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/monsters/$id") }
 
-    suspend fun getNpcs(): Result<List<Npc>> =
+    override suspend fun getNpcs(): Result<List<Npc>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/npcs") }
 
-    suspend fun saveNpc(npc: Npc): Result<Unit> =
+    override suspend fun saveNpc(npc: Npc): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/${sessionId()}/npcs") {
                 contentType(ContentType.Application.Json)
@@ -194,13 +194,13 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun deleteNpc(id: String): Result<Unit> =
+    override suspend fun deleteNpc(id: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/npcs/$id") }
 
-    suspend fun getMusic(): Result<List<MusicTrack>> =
+    override suspend fun getMusic(): Result<List<MusicTrack>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/music") }
 
-    suspend fun saveMusic(music: MusicTrack): Result<Unit> =
+    override suspend fun saveMusic(music: MusicTrack): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/${sessionId()}/music") {
                 contentType(ContentType.Application.Json)
@@ -208,13 +208,13 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun deleteMusic(id: String): Result<Unit> =
+    override suspend fun deleteMusic(id: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/music/$id") }
 
-    suspend fun getLogs(): Result<List<LogEntry>> =
+    override suspend fun getLogs(): Result<List<LogEntry>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/logs") }
 
-    suspend fun saveLog(log: LogEntry): Result<Unit> =
+    override suspend fun saveLog(log: LogEntry): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/${sessionId()}/logs") {
                 contentType(ContentType.Application.Json)
@@ -222,10 +222,10 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun getEvents(): Result<List<GameEvent>> =
+    override suspend fun getEvents(): Result<List<GameEvent>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/${sessionId()}/events") }
 
-    suspend fun saveEvent(event: GameEvent): Result<Unit> =
+    override suspend fun saveEvent(event: GameEvent): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/${sessionId()}/events") {
                 contentType(ContentType.Application.Json)
@@ -233,12 +233,12 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun deleteEvent(id: String): Result<Unit> =
+    override suspend fun deleteEvent(id: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/${sessionId()}/events/$id") }
 
     // --- Campaign & Character Assignment ---
 
-    suspend fun assignCharacter(characterId: String, sessionId: String, ownerUserId: String?): Result<Unit> =
+    override suspend fun assignCharacter(characterId: String, sessionId: String, ownerUserId: String?): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/characters/assign") {
                 contentType(ContentType.Application.Json)
@@ -252,7 +252,7 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun assignCharacterByUsername(characterId: String, sessionId: String, username: String?): Result<Unit> =
+    override suspend fun assignCharacterByUsername(characterId: String, sessionId: String, username: String?): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/characters/assign-by-username") {
                 contentType(ContentType.Application.Json)
@@ -266,13 +266,13 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun getMyCharacters(): Result<MyCharactersResponse> =
+    override suspend fun getMyCharacters(): Result<MyCharactersResponse> =
         safeApiCall { httpClient.get("${baseUrl()}/api/my-characters") }
 
-    suspend fun getMyCharacter(characterId: String): Result<Character> =
+    override suspend fun getMyCharacter(characterId: String): Result<Character> =
         safeApiCall { httpClient.get("${baseUrl()}/api/my-characters/$characterId") }
 
-    suspend fun createMyCharacter(character: Character): Result<Unit> =
+    override suspend fun createMyCharacter(character: Character): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/my-characters") {
                 contentType(ContentType.Application.Json)
@@ -280,23 +280,21 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun deleteMyCharacter(characterId: String): Result<Unit> =
+    override suspend fun deleteMyCharacter(characterId: String): Result<Unit> =
         safeApiCall { httpClient.delete("${baseUrl()}/api/my-characters/$characterId") }
 
-    suspend fun joinCampaign(characterId: String, gameId: String): Result<Unit> =
+    override suspend fun joinCampaign(characterId: String, gameId: String): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/my-characters/$characterId/join") {
                 contentType(ContentType.Application.Json)
-                setBody(
-                    com.dnd.helper.data.remote.dto.auth.JoinCampaignRequest(gameId = gameId)
-                )
+                setBody(JoinCampaignRequest(gameId = gameId))
             }
         }
 
-    suspend fun getCampaigns(): Result<List<CampaignDto>> =
+    override suspend fun getCampaigns(): Result<List<CampaignDto>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/campaigns") }
 
-    suspend fun toggleCampaignStart(campaignId: String, isStarted: Boolean): Result<Unit> =
+    override suspend fun toggleCampaignStart(campaignId: String, isStarted: Boolean): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/campaigns/$campaignId/toggle-start") {
                 contentType(ContentType.Application.Json)
@@ -304,7 +302,7 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun createCampaign(name: String, sessionId: String): Result<CampaignDto> =
+    override suspend fun createCampaign(name: String, sessionId: String): Result<CampaignDto> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/campaigns") {
                 contentType(ContentType.Application.Json)
@@ -321,7 +319,7 @@ class KtorRemoteDataSource(
 
     // --- Character Assignment Requests ---
 
-    suspend fun createAssignment(characterId: String, sessionId: String, playerUsername: String): Result<Unit> =
+    override suspend fun createAssignment(characterId: String, sessionId: String, playerUsername: String): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/assignments") {
                 contentType(ContentType.Application.Json)
@@ -335,10 +333,10 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun getPendingAssignments(): Result<List<PendingAssignmentDto>> =
+    override suspend fun getPendingAssignments(): Result<List<PendingAssignmentDto>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/assignments/pending") }
 
-    suspend fun respondToAssignment(assignmentId: String, accept: Boolean): Result<Unit> =
+    override suspend fun respondToAssignment(assignmentId: String, accept: Boolean): Result<Unit> =
         safeApiCall {
             httpClient.post("${baseUrl()}/api/assignments/respond") {
                 contentType(ContentType.Application.Json)
@@ -351,7 +349,7 @@ class KtorRemoteDataSource(
             }
         }
 
-    suspend fun getAssignmentStatuses(sessionId: String): Result<List<AssignmentStatusDto>> =
+    override suspend fun getAssignmentStatuses(sessionId: String): Result<List<AssignmentStatusDto>> =
         safeApiCall { httpClient.get("${baseUrl()}/api/assignments/status/$sessionId") }
 
     private suspend inline fun <reified T> safeApiCall(

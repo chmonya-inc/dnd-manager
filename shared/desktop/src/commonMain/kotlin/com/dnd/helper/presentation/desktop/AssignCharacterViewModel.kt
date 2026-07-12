@@ -2,7 +2,7 @@ package com.dnd.helper.presentation.desktop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dnd.helper.data.remote.KtorRemoteDataSource
+import com.dnd.helper.data.remote.RemoteDataSource
 import com.dnd.helper.data.remote.dto.auth.AssignmentStatusDto
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.common.toUserMessage
@@ -21,7 +21,7 @@ data class AssignCharacterState(
 )
 
 class AssignCharacterViewModel(
-    private val remoteDataSource: KtorRemoteDataSource,
+    private val remoteDataSource: RemoteDataSource,
     private val characterRepository: CharacterRepository,
 ) : ViewModel() {
 

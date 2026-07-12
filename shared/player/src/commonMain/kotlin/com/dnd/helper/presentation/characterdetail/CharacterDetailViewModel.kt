@@ -19,8 +19,10 @@ class CharacterDetailViewModel(
     private val repository: CharacterRepository,
     private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
     private val characterId: String,
+    coroutineScope: kotlinx.coroutines.CoroutineScope? = null
 ) : ViewModel() {
 
+    private val scope = coroutineScope ?: viewModelScope
     private val _state = MutableStateFlow(CharacterDetailState())
     val state: StateFlow<CharacterDetailState> = _state.asStateFlow()
 
@@ -53,7 +55,7 @@ class CharacterDetailViewModel(
         loadCharacter()
 
         // Listen for background image generation completion
-        viewModelScope.launch {
+        scope.launch {
             editingRepository.activeTasks.collect { tasks ->
                 val myTasks = tasks.filter {
                     it.entityId == characterId || it.entityId.startsWith("$characterId:")
@@ -179,7 +181,7 @@ class CharacterDetailViewModel(
         }
 
         // Listen for updates (local or remote) via the repository
-        viewModelScope.launch {
+        scope.launch {
             repository.characterUpdates.collect { updatedId ->
                 // If we have a specific ID, only update if it matches our character
                 if (updatedId != "all" && updatedId != characterId) {
@@ -581,10 +583,12 @@ class CharacterDetailViewModel(
         }
 
         // Optimistic update — reflect change in UI immediately
-        _state.value = _state.value.copy(
-            character = character,
-            hasUnsavedChanges = true,
-        )
+        _state.update {
+            it.copy(
+                character = character,
+                hasUnsavedChanges = true,
+            )
+        }
         pendingSaveCharacter = character
 
         // Push the optimistic change into the shared repository cache
@@ -594,7 +598,7 @@ class CharacterDetailViewModel(
         // Cancel any existing debounce timer
         debouncedSaveJob?.cancel()
 
-        debouncedSaveJob = viewModelScope.launch {
+        debouncedSaveJob = scope.launch {
             delay(1_000L)
             // Timer fired — user hasn't made another change in 1s
             val characterToSave = pendingSaveCharacter ?: character
@@ -609,7 +613,7 @@ class CharacterDetailViewModel(
      */
     private fun performSave(character: com.dnd.helper.domain.model.Character) {
         val previousUICharacter = _state.value.character
-        _state.value = _state.value.copy(isSaving = true)
+        _state.update { it.copy(isSaving = true) }
 
         // For logs, use the state BEFORE any edits in this cycle
         val initialJson = originalCharacter?.let { Json.encodeToString(it) }
@@ -622,21 +626,24 @@ class CharacterDetailViewModel(
             "Initial create"
         }
 
-        viewModelScope.launch {
+        scope.launch {
             when (val result = repository.saveCharacter(character)) {
                 is Result.Success -> {
                     // Update state IMMEDIATELY after data is saved.
                     // Don't wait for the secondary 'saveLog' network call.
-                    _state.value = _state.value.copy(
-                        character = character,
-                        isSaving = false,
-                        hasUnsavedChanges = false,
-                        isEditing = false
-                    )
+                    _state.update {
+                        it.copy(
+                            character = character,
+                            isSaving = false,
+                            hasUnsavedChanges = false,
+                            isEditing = false,
+                            editedCharacter = null
+                        )
+                    }
 
                     // Pause polling (skip remote updates) for 1 second after a successful save
                     isRecentlySaved = true
-                    viewModelScope.launch {
+                    scope.launch {
                         delay(1000)
                         isRecentlySaved = false
                     }
@@ -655,14 +662,17 @@ class CharacterDetailViewModel(
                         )
                     )
                 }
+
                 is Result.Error -> {
                     // Rollback UI on error
-                    _state.value = _state.value.copy(
-                        character = previousUICharacter,
-                        error = "Failed to update: ${result.error}",
-                        isSaving = false,
-                        hasUnsavedChanges = false,
-                    )
+                    _state.update {
+                        it.copy(
+                            character = previousUICharacter,
+                            error = "Failed to update: ${result.error}",
+                            isSaving = false,
+                            hasUnsavedChanges = false,
+                        )
+                    }
 
                     repository.saveLog(
                         com.dnd.helper.domain.model.LogEntry(
@@ -747,24 +757,29 @@ class CharacterDetailViewModel(
     }
 
     private fun loadCharacter(fromAutoRefresh: Boolean = false) {
-        viewModelScope.launch {
+        scope.launch {
             if (!fromAutoRefresh) {
-                _state.value = _state.value.copy(isLoading = true, error = null)
+                _state.update { it.copy(isLoading = true, error = null) }
             }
             when (val result = repository.getCharacter(characterId)) {
                 is Result.Success -> {
-                    _state.value = _state.value.copy(
-                        character = result.data,
-                        isLoading = false,
-                    )
-                    originalCharacter = result.data
-                }
-                is Result.Error -> {
-                    if (!fromAutoRefresh) {
-                        _state.value = _state.value.copy(
-                            error = result.error.toString(),
+                    _state.update {
+                        it.copy(
+                            character = result.data,
                             isLoading = false,
                         )
+                    }
+                    originalCharacter = result.data
+                }
+
+                is Result.Error -> {
+                    if (!fromAutoRefresh) {
+                        _state.update {
+                            it.copy(
+                                error = result.error.toString(),
+                                isLoading = false,
+                            )
+                        }
                     }
                 }
             }
@@ -773,7 +788,7 @@ class CharacterDetailViewModel(
 
     private fun deleteCharacter() {
         val currentCharacter = _state.value.character ?: return
-        viewModelScope.launch {
+        scope.launch {
             _state.value = _state.value.copy(isSaving = true)
             when (val result = repository.deleteCharacter(currentCharacter.id)) {
                 is Result.Success -> {

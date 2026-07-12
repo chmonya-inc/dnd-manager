@@ -159,6 +159,15 @@ kotlin {
                 implementation(libs.ktor.client.js)
             }
         }
+
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.turbine)
+                implementation(libs.ktor.client.mock)
+            }
+        }
     }
 }
 

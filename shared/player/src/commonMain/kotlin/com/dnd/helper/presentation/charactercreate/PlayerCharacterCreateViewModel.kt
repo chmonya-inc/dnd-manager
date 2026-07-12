@@ -25,19 +25,21 @@ import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class PlayerCharacterCreateViewModel(
-    private val remoteDataSource: com.dnd.helper.data.remote.KtorRemoteDataSource,
+    private val remoteDataSource: com.dnd.helper.data.remote.RemoteDataSource,
     private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
     private val api: com.dnd.helper.data.remote.DndApiDataSource,
     private val storage: com.dnd.helper.domain.storage.CharacterStorage,
+    coroutineScope: kotlinx.coroutines.CoroutineScope? = null
 ) : ViewModel() {
 
+    private val scope = coroutineScope ?: viewModelScope
     private var tempId = "temp-char-${Random.nextInt(1000000, 9999999)}"
     private val _state = MutableStateFlow(PlayerCharacterCreateState())
     val state: StateFlow<PlayerCharacterCreateState> = _state.asStateFlow()
 
     init {
         // Listen for background image generation completion
-        viewModelScope.launch {
+        scope.launch {
             editingRepository.activeTasks.collect { tasks ->
                 val myTasks = tasks.filter {
                     it.entityId == tempId || it.entityId.startsWith("$tempId:")
@@ -100,7 +102,7 @@ class PlayerCharacterCreateViewModel(
             }
         }
 
-        viewModelScope.launch {
+        scope.launch {
             when (val res = api.getClasses()) {
                 is Result.Success -> _state.update { it.copy(availableClasses = res.data.results) }
                 else -> {}
@@ -152,22 +154,21 @@ class PlayerCharacterCreateViewModel(
         when (event) {
             // Basic info
             is PlayerCharacterCreateEvent.NameChanged -> {
-                _state.value = _state.value.copy(name = event.value)
+                _state.update { it.copy(name = event.value) }
                 updateDefaultPrompt()
             }
 
             is PlayerCharacterCreateEvent.PlayerNameChanged ->
-                _state.value =
-                    _state.value.copy(playerName = event.value)
+                _state.update { it.copy(playerName = event.value) }
 
             is PlayerCharacterCreateEvent.RaceChanged -> {
-                _state.value = _state.value.copy(race = event.value, subrace = "")
+                _state.update { it.copy(race = event.value, subrace = "") }
                 updateDefaultPrompt()
 
                 val raceIndex = _state.value.availableRaces.find {
                     it.name == event.value
                 }?.index ?: event.value.lowercase().replace(" ", "-")
-                viewModelScope.launch {
+                scope.launch {
                     when (val res = api.getRace(raceIndex)) {
                         is Result.Success -> _state.update { it.copy(availableSubraces = res.data.subraces) }
                         else -> _state.update { it.copy(availableSubraces = emptyList()) }
@@ -176,19 +177,19 @@ class PlayerCharacterCreateViewModel(
             }
 
             is PlayerCharacterCreateEvent.SubraceChanged -> {
-                _state.value = _state.value.copy(subrace = event.value)
+                _state.update { it.copy(subrace = event.value) }
                 updateDefaultPrompt()
             }
 
             is PlayerCharacterCreateEvent.ClassChanged -> {
-                _state.value = _state.value.copy(characterClass = event.value, subclass = "")
+                _state.update { it.copy(characterClass = event.value, subclass = "") }
                 updateDefaultPrompt()
 
                 // Fetch subclasses for this class
                 val classIndex = _state.value.availableClasses.find {
                     it.name == event.value
                 }?.index ?: event.value.lowercase().replace(" ", "-")
-                viewModelScope.launch {
+                scope.launch {
                     when (val res = api.getClass(classIndex)) {
                         is Result.Success -> _state.update { it.copy(availableSubclasses = res.data.subclasses) }
                         else -> _state.update { it.copy(availableSubclasses = emptyList()) }
@@ -197,194 +198,155 @@ class PlayerCharacterCreateViewModel(
             }
 
             is PlayerCharacterCreateEvent.SubclassChanged -> {
-                _state.value = _state.value.copy(subclass = event.value)
+                _state.update { it.copy(subclass = event.value) }
                 updateDefaultPrompt()
             }
 
             is PlayerCharacterCreateEvent.BackgroundChanged -> {
-                _state.value = _state.value.copy(background = event.value)
+                _state.update { it.copy(background = event.value) }
                 updateDefaultPrompt()
             }
 
             is PlayerCharacterCreateEvent.AlignmentChanged -> {
-                _state.value = _state.value.copy(alignment = event.value)
+                _state.update { it.copy(alignment = event.value) }
                 updateDefaultPrompt()
             }
 
             is PlayerCharacterCreateEvent.LevelChanged ->
-                _state.value =
-                    _state.value.copy(level = event.value)
+                _state.update { it.copy(level = event.value) }
 
             is PlayerCharacterCreateEvent.ExperiencePointsChanged ->
-                _state.value =
-                    _state.value.copy(experiencePoints = event.value)
+                _state.update { it.copy(experiencePoints = event.value) }
 
             is PlayerCharacterCreateEvent.DescriptionChanged -> {
-                _state.value = _state.value.copy(description = event.value)
+                _state.update { it.copy(description = event.value) }
                 updateDefaultPrompt()
             }
 
             is PlayerCharacterCreateEvent.ImageUrlChanged ->
-                _state.value =
-                    _state.value.copy(imageUrl = event.value)
+                _state.update { it.copy(imageUrl = event.value) }
 
             // Appearance
             is PlayerCharacterCreateEvent.AgeChanged ->
-                _state.value =
-                    _state.value.copy(age = event.value)
+                _state.update { it.copy(age = event.value) }
 
             is PlayerCharacterCreateEvent.GenderChanged ->
-                _state.value =
-                    _state.value.copy(gender = event.value)
+                _state.update { it.copy(gender = event.value) }
 
             is PlayerCharacterCreateEvent.HeightChanged ->
-                _state.value =
-                    _state.value.copy(height = event.value)
+                _state.update { it.copy(height = event.value) }
 
             is PlayerCharacterCreateEvent.WeightChanged ->
-                _state.value =
-                    _state.value.copy(weight = event.value)
+                _state.update { it.copy(weight = event.value) }
 
             is PlayerCharacterCreateEvent.EyesChanged ->
-                _state.value =
-                    _state.value.copy(eyes = event.value)
+                _state.update { it.copy(eyes = event.value) }
 
             is PlayerCharacterCreateEvent.HairChanged ->
-                _state.value =
-                    _state.value.copy(hair = event.value)
+                _state.update { it.copy(hair = event.value) }
 
             is PlayerCharacterCreateEvent.SkinChanged ->
-                _state.value =
-                    _state.value.copy(skin = event.value)
+                _state.update { it.copy(skin = event.value) }
 
             // Ability Scores
             is PlayerCharacterCreateEvent.StrengthChanged ->
-                _state.value =
-                    _state.value.copy(strength = event.value)
+                _state.update { it.copy(strength = event.value) }
 
             is PlayerCharacterCreateEvent.DexterityChanged ->
-                _state.value =
-                    _state.value.copy(dexterity = event.value)
+                _state.update { it.copy(dexterity = event.value) }
 
             is PlayerCharacterCreateEvent.ConstitutionChanged ->
-                _state.value =
-                    _state.value.copy(constitution = event.value)
+                _state.update { it.copy(constitution = event.value) }
 
             is PlayerCharacterCreateEvent.IntelligenceChanged ->
-                _state.value =
-                    _state.value.copy(intelligence = event.value)
+                _state.update { it.copy(intelligence = event.value) }
 
             is PlayerCharacterCreateEvent.WisdomChanged ->
-                _state.value =
-                    _state.value.copy(wisdom = event.value)
+                _state.update { it.copy(wisdom = event.value) }
 
             is PlayerCharacterCreateEvent.CharismaChanged ->
-                _state.value =
-                    _state.value.copy(charisma = event.value)
+                _state.update { it.copy(charisma = event.value) }
 
             // HP & Combat
             is PlayerCharacterCreateEvent.MaxHpChanged ->
-                _state.value =
-                    _state.value.copy(maxHp = event.value)
+                _state.update { it.copy(maxHp = event.value) }
 
             is PlayerCharacterCreateEvent.CurrentHpChanged ->
-                _state.value =
-                    _state.value.copy(currentHp = event.value)
+                _state.update { it.copy(currentHp = event.value) }
 
             is PlayerCharacterCreateEvent.TempHpChanged ->
-                _state.value =
-                    _state.value.copy(tempHp = event.value)
+                _state.update { it.copy(tempHp = event.value) }
 
             is PlayerCharacterCreateEvent.ArmorClassChanged ->
-                _state.value =
-                    _state.value.copy(armorClass = event.value)
+                _state.update { it.copy(armorClass = event.value) }
 
             is PlayerCharacterCreateEvent.InitiativeChanged ->
-                _state.value =
-                    _state.value.copy(initiative = event.value)
+                _state.update { it.copy(initiative = event.value) }
 
             is PlayerCharacterCreateEvent.SpeedChanged ->
-                _state.value =
-                    _state.value.copy(speed = event.value)
+                _state.update { it.copy(speed = event.value) }
 
             is PlayerCharacterCreateEvent.ProficiencyBonusChanged ->
-                _state.value =
-                    _state.value.copy(proficiencyBonus = event.value)
+                _state.update { it.copy(proficiencyBonus = event.value) }
 
             is PlayerCharacterCreateEvent.HitDiceChanged ->
-                _state.value =
-                    _state.value.copy(hitDice = event.value)
+                _state.update { it.copy(hitDice = event.value) }
 
             is PlayerCharacterCreateEvent.HitDiceCurrentChanged ->
-                _state.value =
-                    _state.value.copy(hitDiceCurrent = event.value)
+                _state.update { it.copy(hitDiceCurrent = event.value) }
 
             // Status
             is PlayerCharacterCreateEvent.InspirationChanged ->
-                _state.value =
-                    _state.value.copy(inspiration = event.value)
+                _state.update { it.copy(inspiration = event.value) }
 
             is PlayerCharacterCreateEvent.ExhaustionChanged ->
-                _state.value =
-                    _state.value.copy(exhaustion = event.value)
+                _state.update { it.copy(exhaustion = event.value) }
 
             is PlayerCharacterCreateEvent.ConditionsChanged ->
-                _state.value =
-                    _state.value.copy(conditions = event.value)
+                _state.update { it.copy(conditions = event.value) }
 
             is PlayerCharacterCreateEvent.DeathSaveSuccessesChanged ->
-                _state.value =
-                    _state.value.copy(deathSaveSuccesses = event.value)
+                _state.update { it.copy(deathSaveSuccesses = event.value) }
 
             is PlayerCharacterCreateEvent.DeathSaveFailuresChanged ->
-                _state.value =
-                    _state.value.copy(deathSaveFailures = event.value)
+                _state.update { it.copy(deathSaveFailures = event.value) }
 
             // Proficiencies
             is PlayerCharacterCreateEvent.SavingThrowsChanged ->
-                _state.value =
-                    _state.value.copy(savingThrows = event.value)
+                _state.update { it.copy(savingThrows = event.value) }
 
             is PlayerCharacterCreateEvent.ArmorProficienciesChanged -> {
-                _state.value = _state.value.copy(armorProficiencies = event.value)
+                _state.update { it.copy(armorProficiencies = event.value) }
                 updateDefaultPrompt()
             }
 
             is PlayerCharacterCreateEvent.AddLanguage ->
-                _state.value =
-                    _state.value.copy(selectedLanguages = _state.value.selectedLanguages + event.value)
+                _state.update { it.copy(selectedLanguages = it.selectedLanguages + event.value) }
 
             is PlayerCharacterCreateEvent.RemoveLanguage ->
-                _state.value =
-                    _state.value.copy(selectedLanguages = _state.value.selectedLanguages - event.value)
+                _state.update { it.copy(selectedLanguages = it.selectedLanguages - event.value) }
 
             is PlayerCharacterCreateEvent.AddProficiencySkill ->
-                _state.value =
-                    _state.value.copy(selectedSkills = _state.value.selectedSkills + event.value)
+                _state.update { it.copy(selectedSkills = it.selectedSkills + event.value) }
 
             is PlayerCharacterCreateEvent.RemoveProficiencySkill ->
-                _state.value =
-                    _state.value.copy(selectedSkills = _state.value.selectedSkills - event.value)
+                _state.update { it.copy(selectedSkills = it.selectedSkills - event.value) }
 
             is PlayerCharacterCreateEvent.AddProficiencyWeapon -> {
-                _state.value =
-                    _state.value.copy(selectedWeapons = _state.value.selectedWeapons + event.value)
+                _state.update { it.copy(selectedWeapons = it.selectedWeapons + event.value) }
                 updateDefaultPrompt()
             }
 
             is PlayerCharacterCreateEvent.RemoveProficiencyWeapon -> {
-                _state.value =
-                    _state.value.copy(selectedWeapons = _state.value.selectedWeapons - event.value)
+                _state.update { it.copy(selectedWeapons = it.selectedWeapons - event.value) }
                 updateDefaultPrompt()
             }
 
             is PlayerCharacterCreateEvent.AddProficiencyTool ->
-                _state.value =
-                    _state.value.copy(selectedTools = _state.value.selectedTools + event.value)
+                _state.update { it.copy(selectedTools = it.selectedTools + event.value) }
 
             is PlayerCharacterCreateEvent.RemoveProficiencyTool ->
-                _state.value =
-                    _state.value.copy(selectedTools = _state.value.selectedTools - event.value)
+                _state.update { it.copy(selectedTools = it.selectedTools - event.value) }
 
             // Items
             PlayerCharacterCreateEvent.AddItem -> addItem()
@@ -466,41 +428,33 @@ class PlayerCharacterCreateViewModel(
             // Features
             // Features
             is PlayerCharacterCreateEvent.AddClassFeature ->
-                _state.value =
-                    _state.value.copy(selectedClassFeatures = _state.value.selectedClassFeatures + event.value)
+                _state.update { it.copy(selectedClassFeatures = it.selectedClassFeatures + event.value) }
 
             is PlayerCharacterCreateEvent.RemoveClassFeature ->
-                _state.value =
-                    _state.value.copy(selectedClassFeatures = _state.value.selectedClassFeatures - event.value)
+                _state.update { it.copy(selectedClassFeatures = it.selectedClassFeatures - event.value) }
 
             is PlayerCharacterCreateEvent.AddRacialTrait ->
-                _state.value =
-                    _state.value.copy(selectedRacialTraits = _state.value.selectedRacialTraits + event.value)
+                _state.update { it.copy(selectedRacialTraits = it.selectedRacialTraits + event.value) }
 
             is PlayerCharacterCreateEvent.RemoveRacialTrait ->
-                _state.value =
-                    _state.value.copy(selectedRacialTraits = _state.value.selectedRacialTraits - event.value)
+                _state.update { it.copy(selectedRacialTraits = it.selectedRacialTraits - event.value) }
 
             is PlayerCharacterCreateEvent.AddFeat ->
-                _state.value =
-                    _state.value.copy(selectedFeats = _state.value.selectedFeats + event.value)
+                _state.update { it.copy(selectedFeats = it.selectedFeats + event.value) }
 
             is PlayerCharacterCreateEvent.RemoveFeat ->
-                _state.value =
-                    _state.value.copy(selectedFeats = _state.value.selectedFeats - event.value)
+                _state.update { it.copy(selectedFeats = it.selectedFeats - event.value) }
 
             is PlayerCharacterCreateEvent.LoadCharacter -> loadCharacter(event.characterId)
             is PlayerCharacterCreateEvent.SaveCharacter -> saveCharacter()
-            is PlayerCharacterCreateEvent.DismissError -> _state.value = _state.value.copy(error = null)
+            is PlayerCharacterCreateEvent.DismissError -> _state.update { it.copy(error = null) }
             is PlayerCharacterCreateEvent.GenerateImage -> generateImage()
             is PlayerCharacterCreateEvent.GenerateItemImage -> generateItemImage(event.index)
             is PlayerCharacterCreateEvent.AiSizeChanged ->
-                _state.value =
-                    _state.value.copy(aiWidth = event.width, aiHeight = event.height)
+                _state.update { it.copy(aiWidth = event.width, aiHeight = event.height) }
 
             is PlayerCharacterCreateEvent.AiPromptChanged ->
-                _state.value =
-                    _state.value.copy(aiPrompt = event.value)
+                _state.update { it.copy(aiPrompt = event.value) }
         }
     }
 
@@ -653,7 +607,7 @@ class PlayerCharacterCreateViewModel(
 
     private fun loadCharacter(characterId: String) {
         _state.value = _state.value.copy(isLoading = true)
-        viewModelScope.launch {
+        scope.launch {
             val result = remoteDataSource.getMyCharacter(characterId)
             if (result is com.dnd.helper.domain.common.Result.Success) {
                 val character = result.data
@@ -838,22 +792,24 @@ class PlayerCharacterCreateViewModel(
             notes = s.notes,
         )
 
-        _state.value = s.copy(isSaving = true, error = null)
+        _state.update { it.copy(isSaving = true, error = null) }
 
-        viewModelScope.launch {
+        scope.launch {
             // Templates live in the player's personal session; createMyCharacter upserts by id,
             // so it handles both create and edit.
             val result = remoteDataSource.createMyCharacter(character)
             when (result) {
                 is Result.Success -> {
-                    _state.value = _state.value.copy(isSaving = false, isSaved = true, savedCharacterId = character.id)
+                    _state.update { it.copy(isSaving = false, isSaved = true, savedCharacterId = character.id) }
                 }
 
                 is Result.Error -> {
-                    _state.value = _state.value.copy(
-                        isSaving = false,
-                        error = result.error.toUserMessage(),
-                    )
+                    _state.update {
+                        it.copy(
+                            isSaving = false,
+                            error = result.error.toUserMessage(),
+                        )
+                    }
                 }
             }
         }

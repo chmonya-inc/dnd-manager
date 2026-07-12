@@ -1,6 +1,7 @@
 package com.dnd.helper.di
 
 import com.dnd.helper.data.remote.KtorRemoteDataSource
+import com.dnd.helper.data.remote.RemoteDataSource
 import com.dnd.helper.data.repository.CharacterRepositoryImpl
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.theme.ThemeViewModel
@@ -97,8 +98,13 @@ val coreModule = module {
         }
     }
 
-    single { KtorRemoteDataSource(get(), get()) }
-    single { com.dnd.helper.data.remote.DndApiDataSource(get(), get()) }
+    single<RemoteDataSource> { KtorRemoteDataSource(get(), get()) }
+    single<com.dnd.helper.data.remote.DndApiDataSource> {
+        com.dnd.helper.data.remote.KtorDndApiDataSource(
+            get(),
+            get()
+        )
+    }
     single { com.dnd.helper.data.remote.AiImageService(get(), get()) }
     single<com.dnd.helper.domain.repository.EditingRepository> {
         com.dnd.helper.data.repository.EditingRepositoryImpl(
