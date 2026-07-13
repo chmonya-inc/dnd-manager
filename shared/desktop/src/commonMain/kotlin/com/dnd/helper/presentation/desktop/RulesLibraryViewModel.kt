@@ -27,6 +27,7 @@ import com.dnd.helper.data.remote.dto.monster.MonsterDto
 import com.dnd.helper.data.remote.dto.spell.MagicSchoolDto
 import com.dnd.helper.data.remote.dto.spell.SpellDto
 import com.dnd.helper.domain.common.Result
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -34,6 +35,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class RuleCategory {
     CharacterData, Spells, Equipment, Monsters, Mechanics, Rules
@@ -80,7 +82,8 @@ data class RulesLibraryState(
 )
 
 class RulesLibraryViewModel(
-    private val api: DndApiDataSource
+    private val api: DndApiDataSource,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RulesLibraryState())
@@ -104,51 +107,54 @@ class RulesLibraryViewModel(
     }
 
     private fun loadData() {
-        viewModelScope.launch(Dispatchers.Default) {
+        viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
-            // Character Data
-            val abilityScoresAsync = async { fetchAll({ api.getAbilityScores() }, { api.getAbilityScore(it) }) }
-            val alignmentsAsync = async { fetchAll({ api.getAlignments() }, { api.getAlignment(it) }) }
-            val backgroundsAsync = async { fetchAll({ api.getBackgrounds() }, { api.getBackground(it) }) }
-            val classesAsync = async { fetchAll({ api.getClasses() }, { api.getClass(it) }) }
-            val racesAsync = async { fetchAll({ api.getRaces() }, { api.getRace(it) }) }
-            val subracesAsync = async { fetchAll({ api.getSubraces() }, { api.getSubrace(it) }) }
-            val subclassesAsync = async { fetchAll({ api.getSubclasses() }, { api.getSubclass(it) }) }
-            val traitsAsync = async { fetchAll({ api.getTraits() }, { api.getTrait(it) }) }
-            val featuresAsync = async { fetchAll({ api.getFeatures() }, { api.getFeature(it) }) }
-            val featsAsync = async { fetchAll({ api.getFeats() }, { api.getFeat(it) }) }
-            val skillsAsync = async { fetchAll({ api.getSkills() }, { api.getSkill(it) }) }
-            val proficienciesAsync = async { fetchAll({ api.getProficiencies() }, { api.getProficiency(it) }) }
-            val languagesAsync = async { fetchAll({ api.getLanguages() }, { api.getLanguage(it) }) }
+            val data = withContext(ioDispatcher) {
+                // Character Data
+                val abilityScoresAsync = async { fetchAll({ api.getAbilityScores() }, { api.getAbilityScore(it) }) }
+                val alignmentsAsync = async { fetchAll({ api.getAlignments() }, { api.getAlignment(it) }) }
+                val backgroundsAsync = async { fetchAll({ api.getBackgrounds() }, { api.getBackground(it) }) }
+                val classesAsync = async { fetchAll({ api.getClasses() }, { api.getClass(it) }) }
+                val racesAsync = async { fetchAll({ api.getRaces() }, { api.getRace(it) }) }
+                val subracesAsync = async { fetchAll({ api.getSubraces() }, { api.getSubrace(it) }) }
+                val subclassesAsync = async { fetchAll({ api.getSubclasses() }, { api.getSubclass(it) }) }
+                val traitsAsync = async { fetchAll({ api.getTraits() }, { api.getTrait(it) }) }
+                val featuresAsync = async { fetchAll({ api.getFeatures() }, { api.getFeature(it) }) }
+                val featsAsync = async { fetchAll({ api.getFeats() }, { api.getFeat(it) }) }
+                val skillsAsync = async { fetchAll({ api.getSkills() }, { api.getSkill(it) }) }
+                val proficienciesAsync = async { fetchAll({ api.getProficiencies() }, { api.getProficiency(it) }) }
+                val languagesAsync = async { fetchAll({ api.getLanguages() }, { api.getLanguage(it) }) }
 
-            // Spells
-            val spellsAsync = async { fetchAll({ api.getSpells() }, { api.getSpell(it) }) }
-            val magicSchoolsAsync = async { fetchAll({ api.getMagicSchools() }, { api.getMagicSchool(it) }) }
+                // Spells
+                val spellsAsync = async { fetchAll({ api.getSpells() }, { api.getSpell(it) }) }
+                val magicSchoolsAsync = async { fetchAll({ api.getMagicSchools() }, { api.getMagicSchool(it) }) }
 
-            // Equipment
-            val equipmentCategoriesAsync = async {
-                fetchAll(
-                    { api.getEquipmentCategories() },
-                    { api.getEquipmentCategory(it) }
-                )
-            }
-            val magicItemsAsync = async { fetchAll({ api.getMagicItems() }, { api.getMagicItem(it) }) }
-            val weaponPropertiesAsync = async { fetchAll({ api.getWeaponProperties() }, { api.getWeaponProperty(it) }) }
+                // Equipment
+                val equipmentCategoriesAsync = async {
+                    fetchAll(
+                        { api.getEquipmentCategories() },
+                        { api.getEquipmentCategory(it) }
+                    )
+                }
+                val magicItemsAsync = async { fetchAll({ api.getMagicItems() }, { api.getMagicItem(it) }) }
+                val weaponPropertiesAsync =
+                    async { fetchAll({ api.getWeaponProperties() }, { api.getWeaponProperty(it) }) }
 
-            // Monsters
-            val monstersAsync = async { fetchAll({ api.getMonsters() }, { api.getMonster(it) }) }
+                // Monsters
+                val monstersAsync = async { fetchAll({ api.getMonsters() }, { api.getMonster(it) }) }
 
-            // Mechanics
-            val conditionsAsync = async { fetchAll({ api.getConditions() }, { api.getCondition(it) }) }
-            val damageTypesAsync = async { fetchAll({ api.getDamageTypes() }, { api.getDamageType(it) }) }
+                // Mechanics
+                val conditionsAsync = async { fetchAll({ api.getConditions() }, { api.getCondition(it) }) }
+                val damageTypesAsync = async { fetchAll({ api.getDamageTypes() }, { api.getDamageType(it) }) }
 
-            // Rules
-            val rulesAsync = async { fetchAll({ api.getRules() }, { api.getRule(it) }) }
-            val ruleSectionsAsync = async { fetchAll({ api.getRuleSections() }, { api.getRuleSection(it) }) }
+                // Rules
+                val rulesAsync = async { fetchAll({ api.getRules() }, { api.getRule(it) }) }
+                val ruleSectionsAsync = async { fetchAll({ api.getRuleSections() }, { api.getRuleSection(it) }) }
 
-            _state.update {
-                it.copy(
+                RulesLibraryState(
+                    selectedCategory = _state.value.selectedCategory,
+                    searchQuery = _state.value.searchQuery,
                     abilityScores = abilityScoresAsync.await(),
                     alignments = alignmentsAsync.await(),
                     backgrounds = backgroundsAsync.await(),
@@ -175,6 +181,8 @@ class RulesLibraryViewModel(
                     isLoading = false
                 )
             }
+
+            _state.value = data
         }
     }
 

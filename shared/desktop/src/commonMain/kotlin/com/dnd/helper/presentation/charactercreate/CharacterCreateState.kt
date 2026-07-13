@@ -99,4 +99,5 @@ data class CharacterCreateState(
     val error: String? = null,
     val aiWidth: Int = 1024,
     val aiHeight: Int = 1024,
+    val templates: List<com.dnd.helper.domain.model.Character> = emptyList(),
 )

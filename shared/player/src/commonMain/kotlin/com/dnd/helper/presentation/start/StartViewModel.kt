@@ -2,11 +2,12 @@ package com.dnd.helper.presentation.start
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dnd.helper.data.remote.KtorRemoteDataSource
+import com.dnd.helper.data.remote.RemoteDataSource
 import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.domain.repository.AuthRepository
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,10 +16,13 @@ import kotlinx.coroutines.launch
 
 class StartViewModel(
     private val storage: CharacterStorage,
-    private val remoteDataSource: KtorRemoteDataSource,
+    private val remoteDataSource: RemoteDataSource,
     private val authRepository: AuthRepository,
     private val characterRepository: CharacterRepository,
+    coroutineScope: CoroutineScope? = null
 ) : ViewModel() {
+    private val scope = coroutineScope ?: viewModelScope
+
     private val _state = MutableStateFlow(
         StartState(
             characterId = storage.getCharacterId() ?: "",
@@ -36,52 +40,43 @@ class StartViewModel(
         startPolling()
     }
 
-    /**
-     * Observe WebSocket updates from the current session.
-     * Reacts to "characters" and "assignment" update types.
-     */
     private fun observeWebSocketUpdates() {
-        viewModelScope.launch {
+        scope.launch {
             characterRepository.remoteUpdates.collect { updateMessage ->
                 val parts = updateMessage.split(":")
                 val updateType = parts.firstOrNull() ?: return@collect
 
                 when (updateType) {
                     "characters", "assignment_accepted", "assignment_revoked" -> {
-                        // Character ownership or assignment status changed
-                        loadMyCharacters()
-                        loadPendingAssignments()
+                        refreshMyCharactersSilently()
+                        refreshPendingAssignmentsSilently()
                     }
                     "assignment" -> {
-                        // New incoming assignment request
-                        loadPendingAssignments()
+                        refreshPendingAssignmentsSilently()
                     }
                 }
             }
         }
     }
 
-    /**
-     * Periodic polling as a fallback — ensures the player sees updates
-     * even if the WebSocket isn't connected to the relevant session.
-     */
     private fun startPolling() {
-        viewModelScope.launch {
+        scope.launch {
             while (isActive) {
-                delay(15_000) // every 15 seconds
-                loadPendingAssignments()
-                loadMyCharacters()
+                delay(2_000)
+                refreshPendingAssignmentsSilently()
+                refreshMyCharactersSilently()
             }
         }
     }
 
     fun loadMyCharacters() {
-        viewModelScope.launch {
+        scope.launch {
             _state.value = _state.value.copy(isLoadingMyCharacters = true)
             when (val res = remoteDataSource.getMyCharacters()) {
                 is com.dnd.helper.domain.common.Result.Success -> {
                     _state.value = _state.value.copy(
-                        myCharacters = res.data,
+                        characterTemplates = res.data.templates,
+                        standaloneInstances = res.data.standaloneInstances,
                         isLoadingMyCharacters = false
                     )
                 }
@@ -92,8 +87,50 @@ class StartViewModel(
         }
     }
 
+    private fun refreshMyCharactersSilently() {
+        scope.launch {
+            when (val res = remoteDataSource.getMyCharacters()) {
+                is com.dnd.helper.domain.common.Result.Success -> {
+                    val current = _state.value
+                    if (current.characterTemplates != res.data.templates ||
+                        current.standaloneInstances != res.data.standaloneInstances
+                    ) {
+                        _state.value = _state.value.copy(
+                            characterTemplates = res.data.templates,
+                            standaloneInstances = res.data.standaloneInstances
+                        )
+                    }
+                }
+                is com.dnd.helper.domain.common.Result.Error -> {}
+            }
+        }
+    }
+
+    private fun refreshPendingAssignmentsSilently() {
+        scope.launch {
+            when (val res = remoteDataSource.getPendingAssignments()) {
+                is com.dnd.helper.domain.common.Result.Success -> {
+                    val current = _state.value.pendingAssignments
+                    val newAssignments = res.data
+                    if (current.size != newAssignments.size ||
+                        current.zip(newAssignments).any { (old, new) ->
+                            old.assignmentId != new.assignmentId ||
+                                old.status != new.status
+                        }
+                    ) {
+                        _state.value = _state.value.copy(
+                            pendingAssignments = newAssignments,
+                            assignmentError = null
+                        )
+                    }
+                }
+                is com.dnd.helper.domain.common.Result.Error -> {}
+            }
+        }
+    }
+
     fun loadPendingAssignments() {
-        viewModelScope.launch {
+        scope.launch {
             _state.value = _state.value.copy(isLoadingAssignments = true)
             when (val res = remoteDataSource.getPendingAssignments()) {
                 is com.dnd.helper.domain.common.Result.Success -> {
@@ -111,14 +148,12 @@ class StartViewModel(
     }
 
     private fun respondToAssignment(assignmentId: String, accept: Boolean) {
-        viewModelScope.launch {
+        scope.launch {
             when (val res = remoteDataSource.respondToAssignment(assignmentId, accept)) {
                 is com.dnd.helper.domain.common.Result.Success -> {
-                    // Remove from pending list
                     _state.value = _state.value.copy(
                         pendingAssignments = _state.value.pendingAssignments.filter { it.assignmentId != assignmentId }
                     )
-                    // If accepted, reload my characters so the new character appears
                     if (accept) {
                         loadMyCharacters()
                     }
@@ -141,16 +176,12 @@ class StartViewModel(
                 _state.value = _state.value.copy(tableId = event.id.trim())
             }
             is StartEvent.LoadMyCharacter -> {
-                // Save session context and navigate
-                val char = _state.value.myCharacters.find { it.character.id == event.characterId }
-                if (char != null) {
-                    storage.saveCharacterId(char.character.id)
-                    storage.saveTableId(char.sessionId)
-                    _state.value = _state.value.copy(
-                        characterId = char.character.id,
-                        tableId = char.sessionId
-                    )
-                }
+                storage.saveCharacterId(event.characterId)
+                storage.saveTableId(event.sessionId)
+                _state.value = _state.value.copy(
+                    characterId = event.characterId,
+                    tableId = event.sessionId
+                )
             }
             StartEvent.LoadCharacter -> {
                 if (_state.value.characterId.isNotBlank()) {
@@ -166,12 +197,46 @@ class StartViewModel(
                 loadPendingAssignments()
             }
             StartEvent.Logout -> {
-                viewModelScope.launch {
+                scope.launch {
                     authRepository.logout()
                 }
             }
             StartEvent.LoadPendingAssignments -> loadPendingAssignments()
             is StartEvent.RespondToAssignment -> respondToAssignment(event.assignmentId, event.accept)
+            is StartEvent.JoinCampaign -> joinCampaign(event.characterId, event.gameId)
+            is StartEvent.DeleteCharacter -> deleteCharacter(event.characterId)
+            StartEvent.DismissJoinError -> _state.value = _state.value.copy(joinError = null)
+        }
+    }
+
+    private fun deleteCharacter(characterId: String) {
+        scope.launch {
+            when (remoteDataSource.deleteMyCharacter(characterId)) {
+                is com.dnd.helper.domain.common.Result.Success -> {
+                    loadMyCharacters()
+                }
+                is com.dnd.helper.domain.common.Result.Error -> {}
+            }
+        }
+    }
+
+    private fun joinCampaign(characterId: String, gameId: String) {
+        val decodedGameId = IdUtils.decode(gameId)
+        scope.launch {
+            _state.value = _state.value.copy(isJoiningCampaign = true, joinError = null)
+            when (val res = remoteDataSource.joinCampaign(characterId, decodedGameId)) {
+                is com.dnd.helper.domain.common.Result.Success -> {
+                    _state.value = _state.value.copy(isJoiningCampaign = false)
+                    storage.saveTableId(decodedGameId)
+                    loadMyCharacters()
+                }
+                is com.dnd.helper.domain.common.Result.Error -> {
+                    _state.value = _state.value.copy(
+                        isJoiningCampaign = false,
+                        joinError = "Failed to join: ${res.error}"
+                    )
+                }
+            }
         }
     }
 }

@@ -11,14 +11,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class CharacterListViewModel(
     private val repository: CharacterRepository,
     private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
-    private val storage: CharacterStorage
+    private val storage: CharacterStorage,
+    coroutineScope: kotlinx.coroutines.CoroutineScope? = null
 ) : ViewModel() {
 
+    private val scope = coroutineScope ?: viewModelScope
     private val _state = MutableStateFlow(CharacterListState())
     val state: StateFlow<CharacterListState> = _state.asStateFlow()
 
@@ -28,7 +31,7 @@ class CharacterListViewModel(
 
     init {
         // Listen for server address changes to reload data
-        viewModelScope.launch {
+        scope.launch {
             storage.getServerAddressFlow().collect {
                 println("[CharacterList] Server address changed or initialized, reloading initial data...")
                 loadInitialData()
@@ -36,7 +39,7 @@ class CharacterListViewModel(
         }
 
         // Listen for background image generation completion
-        viewModelScope.launch {
+        scope.launch {
             editingRepository.activeTasks.collect { tasks ->
                 tasks.filter { it.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED && it.resultUrl != null }
                     .forEach { task ->
@@ -118,7 +121,7 @@ class CharacterListViewModel(
         }
 
         // Listen for local and remote updates via the repository's update flow
-        viewModelScope.launch {
+        scope.launch {
             repository.characterUpdates.collect { updatedId ->
                 if (pendingSaveCount > 0) {
                     println(
@@ -133,14 +136,16 @@ class CharacterListViewModel(
     }
 
     private fun loadInitialData() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+        scope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
             when (val result = repository.getInitialData()) {
                 is Result.Success -> {
-                    _state.value = _state.value.copy(
-                        characters = result.data.characters.sortedBy { it.name },
-                        isLoading = false,
-                    )
+                    _state.update {
+                        it.copy(
+                            characters = result.data.characters.sortedBy { it.name },
+                            isLoading = false,
+                        )
+                    }
                 }
                 is Result.Error -> {
                     // Fallback to separate loading if bulk loading fails
@@ -176,15 +181,17 @@ class CharacterListViewModel(
             val updatedFromChar = fromChar.copy(items = fromChar.items.filter { it.id != item.id })
             val updatedToChar = toChar.copy(items = toChar.items + newItem)
 
-            _state.value = currentState.copy(
-                characters = currentState.characters.map {
-                    when (it.id) {
-                        fromCharId -> updatedFromChar
-                        toCharId -> updatedToChar
-                        else -> it
+            _state.update { currentState ->
+                currentState.copy(
+                    characters = currentState.characters.map {
+                        when (it.id) {
+                            fromCharId -> updatedFromChar
+                            toCharId -> updatedToChar
+                            else -> it
+                        }
                     }
-                }
-            )
+                )
+            }
 
             // 2. Schedule server saves
             scheduleCharacterSave(updatedFromChar, "Move Item (Source): ${item.name}")
@@ -194,7 +201,7 @@ class CharacterListViewModel(
 
     private fun scheduleCharacterSave(character: com.dnd.helper.domain.model.Character, logAction: String) {
         saveJobs[character.id]?.cancel()
-        saveJobs[character.id] = viewModelScope.launch {
+        saveJobs[character.id] = scope.launch {
             pendingSaveCount++
             try {
                 delay(300)
@@ -217,23 +224,28 @@ class CharacterListViewModel(
     }
 
     private fun loadCharacters(forceRefresh: Boolean = false) {
-        viewModelScope.launch {
+        scope.launch {
             if (!forceRefresh) {
-                _state.value = _state.value.copy(isLoading = true, error = null)
+                _state.update { it.copy(isLoading = true, error = null) }
             }
             when (val result = repository.getCharacters(forceRefresh = forceRefresh)) {
                 is Result.Success -> {
-                    _state.value = _state.value.copy(
-                        characters = result.data.sortedBy { it.name },
-                        isLoading = false,
-                    )
+                    _state.update {
+                        it.copy(
+                            characters = result.data.sortedBy { it.name },
+                            isLoading = false,
+                        )
+                    }
                 }
+
                 is Result.Error -> {
                     if (!forceRefresh) {
-                        _state.value = _state.value.copy(
-                            isLoading = false,
-                            error = result.error.toUserMessage(),
-                        )
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = result.error.toUserMessage(),
+                            )
+                        }
                     }
                 }
             }

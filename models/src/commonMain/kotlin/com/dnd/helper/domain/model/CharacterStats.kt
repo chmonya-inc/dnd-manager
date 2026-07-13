@@ -12,24 +12,24 @@ data class CharacterStats(
     val charisma: Int = 10,
 )
 
-fun abilityModifier(score: Int): Int = (score - 10) / 2
+fun abilityModifier(score: Int): Int = if (score >= 10) (score - 10) / 2 else (score - 11) / 2
 
 fun CharacterStats.modifier(ability: String): Int = when (ability.lowercase()) {
-    "strength" -> abilityModifier(strength)
-    "dexterity" -> abilityModifier(dexterity)
-    "constitution" -> abilityModifier(constitution)
-    "intelligence" -> abilityModifier(intelligence)
-    "wisdom" -> abilityModifier(wisdom)
-    "charisma" -> abilityModifier(charisma)
+    "strength", "str" -> abilityModifier(strength)
+    "dexterity", "dex" -> abilityModifier(dexterity)
+    "constitution", "con" -> abilityModifier(constitution)
+    "intelligence", "int" -> abilityModifier(intelligence)
+    "wisdom", "wis" -> abilityModifier(wisdom)
+    "charisma", "cha" -> abilityModifier(charisma)
     else -> 0
 }
 
 fun CharacterStats.score(ability: String): Int = when (ability.lowercase()) {
-    "strength" -> strength
-    "dexterity" -> dexterity
-    "constitution" -> constitution
-    "intelligence" -> intelligence
-    "wisdom" -> wisdom
-    "charisma" -> charisma
+    "strength", "str" -> strength
+    "dexterity", "dex" -> dexterity
+    "constitution", "con" -> constitution
+    "intelligence", "int" -> intelligence
+    "wisdom", "wis" -> wisdom
+    "charisma", "cha" -> charisma
     else -> 10
 }

@@ -35,7 +35,12 @@ import java.util.UUID
 
 const val JWT_ISSUER = "dnd-helper-server"
 val jwtSecret: String = System.getenv("JWT_SECRET")
-    ?: error("JWT_SECRET environment variable must be set")
+    ?: System.getProperty("JWT_SECRET")
+    ?: if (System.getProperty("isTest") == "true") {
+        "test-secret-at-least-32-chars-long-123"
+    } else {
+        error("JWT_SECRET environment variable must be set")
+    }
 
 private const val ACCESS_TOKEN_EXPIRY_MS = 900_000L // 15 minutes
 private const val REFRESH_TOKEN_EXPIRY_MS = 7 * 86_400_000L // 7 days

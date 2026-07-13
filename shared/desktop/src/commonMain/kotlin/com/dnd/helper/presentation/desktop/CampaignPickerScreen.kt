@@ -318,6 +318,14 @@ fun CampaignPickerScreen(
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                Spacer(Modifier.height(8.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("Game Started: ", style = MaterialTheme.typography.bodyMedium)
+                                    Switch(
+                                        checked = campaign.isStarted,
+                                        onCheckedChange = { viewModel.toggleCampaignStart(campaign.id, it) }
+                                    )
+                                }
                             }
 
                             Button(
@@ -443,13 +451,33 @@ fun CampaignPickerScreen(
                                             style = MaterialTheme.typography.bodyLarge
                                         )
                                     }
-                                    Text(
-                                        "Campaign ID for players: ${com.dnd.helper.domain.common.IdUtils.encode(
-                                            campaign.id
-                                        )}",
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                    val encodedId = com.dnd.helper.domain.common.IdUtils.encode(campaign.id)
+                                    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    ) {
+                                        Text(
+                                            "Campaign ID for players: $encodedId",
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        IconButton(
+                                            onClick = {
+                                                clipboardManager.setText(
+                                                    androidx.compose.ui.text.AnnotatedString(encodedId)
+                                                )
+                                            },
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.ContentCopy,
+                                                contentDescription = "Copy Campaign ID",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }

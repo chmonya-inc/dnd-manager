@@ -61,7 +61,29 @@ data class AssignByUsernameRequest(
 data class MyCharacterDto(
     @SerialName("character") val character: com.dnd.helper.domain.model.Character,
     @SerialName("sessionId") val sessionId: String,
-    @SerialName("campaignName") val campaignName: String?
+    @SerialName("campaignName") val campaignName: String?,
+    @SerialName("isGameStarted") val isGameStarted: Boolean = false
+)
+
+/**
+ * A character template owned by the player, with all campaign instances
+ * (copies) derived from it.
+ */
+@Serializable
+data class CharacterTemplateDto(
+    @SerialName("template") val template: com.dnd.helper.domain.model.Character,
+    @SerialName("instances") val instances: List<MyCharacterDto> = emptyList()
+)
+
+/**
+ * Response of `GET /api/my-characters`. `templates` are the player's character
+ * templates grouped with their campaign instances; `standaloneInstances` are
+ * campaign copies whose template has been deleted (shown as separate cards).
+ */
+@Serializable
+data class MyCharactersResponse(
+    @SerialName("templates") val templates: List<CharacterTemplateDto> = emptyList(),
+    @SerialName("standaloneInstances") val standaloneInstances: List<MyCharacterDto> = emptyList(),
 )
 
 @Serializable
@@ -69,7 +91,8 @@ data class CampaignDto(
     @SerialName("id") val id: String,
     @SerialName("name") val name: String,
     @SerialName("ownerId") val ownerId: String,
-    @SerialName("sessionId") val sessionId: String
+    @SerialName("sessionId") val sessionId: String,
+    @SerialName("isStarted") val isStarted: Boolean = false
 )
 
 @Serializable
@@ -103,4 +126,9 @@ data class AssignmentStatusDto(
     @SerialName("sessionId") val sessionId: String,
     @SerialName("status") val status: String,
     @SerialName("playerUsername") val playerUsername: String? = null
+)
+
+@Serializable
+data class JoinCampaignRequest(
+    @SerialName("gameId") val gameId: String
 )

@@ -24,7 +24,8 @@ coreKtxVersion = "1.18.0"
 jlayer = "1.0.1"
 poi = "5.2.5"
 detekt = "1.23.7"
-kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
+turbine = "1.2.0"
+testcontainers = "1.20.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -68,6 +69,7 @@ ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", ver
 ktor-server-auth = { group = "io.ktor", name = "ktor-server-auth", version.ref = "ktor" }
 ktor-server-auth-jwt = { group = "io.ktor", name = "ktor-server-auth-jwt", version.ref = "ktor" }
 ktor-client-auth = { group = "io.ktor", name = "ktor-client-auth", version.ref = "ktor" }
+ktor-client-mock = { group = "io.ktor", name = "ktor-client-mock", version.ref = "ktor" }
 jbcrypt = { group = "org.mindrot", name = "jbcrypt", version = "0.4" }
 argon2 = { group = "de.mkammerer", name = "argon2-jvm", version = "2.12" }
 password4j = { group = "com.password4j", name = "password4j", version = "1.8.4" }
@@ -93,6 +95,12 @@ core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtxV
 jlayer = { group = "javazoom", name = "jlayer", version.ref = "jlayer" }
 poi = { group = "org.apache.poi", name = "poi", version.ref = "poi" }
 poi-ooxml = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poi" }
+
+kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+testcontainers = { group = "org.testcontainers", name = "testcontainers", version.ref = "testcontainers" }
+testcontainers-postgresql = { group = "org.testcontainers", name = "postgresql", version.ref = "testcontainers" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

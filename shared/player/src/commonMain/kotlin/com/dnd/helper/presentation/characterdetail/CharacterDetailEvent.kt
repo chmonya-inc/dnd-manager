@@ -4,6 +4,7 @@ import com.dnd.helper.domain.model.Character
 
 sealed interface CharacterDetailEvent {
     data object Refresh : CharacterDetailEvent
+    data object DeleteCharacter : CharacterDetailEvent
     data class UpdateStat(val statName: String, val delta: Int) : CharacterDetailEvent
     data class UpdateHp(val delta: Int) : CharacterDetailEvent
     data class UpdateMaxHp(val delta: Int) : CharacterDetailEvent

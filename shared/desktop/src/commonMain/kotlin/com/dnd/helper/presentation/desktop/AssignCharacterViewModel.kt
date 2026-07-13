@@ -2,7 +2,7 @@ package com.dnd.helper.presentation.desktop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dnd.helper.data.remote.KtorRemoteDataSource
+import com.dnd.helper.data.remote.RemoteDataSource
 import com.dnd.helper.data.remote.dto.auth.AssignmentStatusDto
 import com.dnd.helper.domain.common.Result
 import com.dnd.helper.domain.common.toUserMessage
@@ -21,7 +21,7 @@ data class AssignCharacterState(
 )
 
 class AssignCharacterViewModel(
-    private val remoteDataSource: KtorRemoteDataSource,
+    private val remoteDataSource: RemoteDataSource,
     private val characterRepository: CharacterRepository,
 ) : ViewModel() {
 
@@ -59,6 +59,10 @@ class AssignCharacterViewModel(
     }
 
     fun assignCharacter(characterId: String, sessionId: String) {
+        // Re-entry guard: the dialog button can't disable synchronously (Swing's Main dispatcher
+        // is not immediate, so the launched coroutine runs on a later EDT tick). A double-click
+        // would otherwise fire two requests and create two pending assignments.
+        if (_state.value.isAssigning) return
         activeSessionId = sessionId
         val username = _state.value.username.trim()
         if (username.isEmpty()) {
@@ -66,8 +70,9 @@ class AssignCharacterViewModel(
             return
         }
 
+        // Flip isAssigning synchronously (this EDT tick) so the button disables on this click.
+        _state.value = _state.value.copy(isAssigning = true, error = null, success = false)
         viewModelScope.launch {
-            _state.value = _state.value.copy(isAssigning = true, error = null, success = false)
             // Use the new assignment flow: sends a request to the player
             when (val res = remoteDataSource.createAssignment(characterId, sessionId, username)) {
                 is Result.Success -> {
@@ -88,9 +93,10 @@ class AssignCharacterViewModel(
     }
 
     fun unassignCharacter(characterId: String, sessionId: String) {
+        if (_state.value.isAssigning) return
         activeSessionId = sessionId
+        _state.value = _state.value.copy(isAssigning = true, error = null, success = false)
         viewModelScope.launch {
-            _state.value = _state.value.copy(isAssigning = true, error = null, success = false)
             when (val res = remoteDataSource.assignCharacterByUsername(characterId, sessionId, null)) {
                 is Result.Success -> {
                     _state.value = _state.value.copy(

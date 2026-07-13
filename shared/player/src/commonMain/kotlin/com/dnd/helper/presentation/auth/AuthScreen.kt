@@ -126,9 +126,20 @@ fun AuthScreen(
                     .padding(16.dp),
                 shape = MaterialTheme.shapes.extraLarge,
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    containerColor = if (state.isLoginMode) {
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    } else {
+                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                    }
                 ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (state.isLoginMode) {
+                        MaterialTheme.colorScheme.outlineVariant
+                    } else {
+                        MaterialTheme.colorScheme.secondary
+                    }
+                )
             ) {
                 Column(
                     modifier = Modifier
@@ -145,11 +156,20 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
-                        text = if (state.isRecoverMode) "Recover Password" else if (state.isLoginMode) "Login" else "Register",
+                        text = if (state.isRecoverMode) "Recover Password" else if (state.isLoginMode) "Login" else "Create Account",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+
+                    if (!state.isLoginMode && !state.isRecoverMode) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Join your party and start playing",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(32.dp))
 

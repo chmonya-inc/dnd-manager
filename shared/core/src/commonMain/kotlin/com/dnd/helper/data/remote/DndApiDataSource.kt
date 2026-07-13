@@ -40,18 +40,84 @@ import io.ktor.client.request.parameter
 import io.ktor.http.isSuccess
 import kotlinx.serialization.json.Json
 
-class DndApiDataSource(
+interface DndApiDataSource {
+    fun clearCache()
+
+    suspend fun getAbilityScores(): Result<ApiReferenceListDto>
+    suspend fun getAbilityScore(index: String): Result<AbilityScoreDto>
+    suspend fun getAlignments(): Result<ApiReferenceListDto>
+    suspend fun getAlignment(index: String): Result<AlignmentDto>
+    suspend fun getBackgrounds(): Result<ApiReferenceListDto>
+    suspend fun getBackground(index: String): Result<BackgroundDto>
+    suspend fun getClasses(): Result<ApiReferenceListDto>
+    suspend fun getClass(index: String): Result<ClassDto>
+    suspend fun getClassLevels(classIndex: String): Result<List<ClassLevelDto>>
+    suspend fun getRaces(): Result<ApiReferenceListDto>
+    suspend fun getRace(index: String): Result<RaceDto>
+    suspend fun getSubraces(): Result<ApiReferenceListDto>
+    suspend fun getSubrace(index: String): Result<SubraceDto>
+    suspend fun getSubclasses(): Result<ApiReferenceListDto>
+    suspend fun getSubclass(index: String): Result<SubclassDto>
+    suspend fun getTraits(): Result<ApiReferenceListDto>
+    suspend fun getTrait(index: String): Result<TraitDto>
+    suspend fun getFeatures(): Result<ApiReferenceListDto>
+    suspend fun getFeature(index: String): Result<FeatureDto>
+    suspend fun getFeats(): Result<ApiReferenceListDto>
+    suspend fun getFeat(index: String): Result<FeatDto>
+    suspend fun getSkills(): Result<ApiReferenceListDto>
+    suspend fun getSkill(index: String): Result<DndSkillDto>
+    suspend fun getProficiencies(): Result<ApiReferenceListDto>
+    suspend fun getProficiency(index: String): Result<ProficiencyDto>
+    suspend fun getLanguages(): Result<ApiReferenceListDto>
+    suspend fun getLanguage(index: String): Result<LanguageDto>
+
+    suspend fun getSpells(
+        levels: List<Int>? = null,
+        school: String? = null,
+        classes: String? = null,
+    ): Result<ApiReferenceListDto>
+    suspend fun getSpell(index: String): Result<SpellDto>
+    suspend fun getMagicSchools(): Result<ApiReferenceListDto>
+    suspend fun getMagicSchool(index: String): Result<MagicSchoolDto>
+
+    suspend fun getEquipment(): Result<ApiReferenceListDto>
+    suspend fun getWeapon(index: String): Result<WeaponDto>
+    suspend fun getArmor(index: String): Result<ArmorDto>
+    suspend fun getGear(index: String): Result<GearDto>
+    suspend fun getEquipmentPack(index: String): Result<EquipmentPackDto>
+    suspend fun getEquipmentCategories(): Result<ApiReferenceListDto>
+    suspend fun getEquipmentCategory(index: String): Result<EquipmentCategoryDto>
+    suspend fun getMagicItems(): Result<ApiReferenceListDto>
+    suspend fun getMagicItem(index: String): Result<MagicItemDto>
+    suspend fun getWeaponProperties(): Result<ApiReferenceListDto>
+    suspend fun getWeaponProperty(index: String): Result<WeaponPropertyDto>
+
+    suspend fun getMonsters(challengeRatings: List<Double>? = null): Result<ApiReferenceListDto>
+    suspend fun getMonster(index: String): Result<MonsterDto>
+
+    suspend fun getConditions(): Result<ApiReferenceListDto>
+    suspend fun getCondition(index: String): Result<ConditionDto>
+    suspend fun getDamageTypes(): Result<ApiReferenceListDto>
+    suspend fun getDamageType(index: String): Result<DamageTypeDto>
+
+    suspend fun getRules(): Result<ApiReferenceListDto>
+    suspend fun getRule(index: String): Result<RuleDto>
+    suspend fun getRuleSections(): Result<ApiReferenceListDto>
+    suspend fun getRuleSection(index: String): Result<RuleSectionDto>
+
+    companion object {
+        const val BASE = "https://www.dnd5eapi.co/api/2014"
+    }
+}
+
+class KtorDndApiDataSource(
     private val httpClient: HttpClient,
     private val storage: CharacterStorage
-) {
+) : DndApiDataSource {
 
     private val jsonParser = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
-    }
-
-    companion object {
-        private const val BASE = "https://www.dnd5eapi.co/api/2014"
     }
 
     // ── In-memory cache ───────────────────────────────────────────────────────
@@ -86,7 +152,7 @@ class DndApiDataSource(
     private val ruleCache = mutableMapOf<String, RuleDto>()
     private val ruleSectionCache = mutableMapOf<String, RuleSectionDto>()
 
-    fun clearCache() {
+    override fun clearCache() {
         listCache.clear()
         abilityScoreCache.clear()
         alignmentCache.clear()
@@ -121,106 +187,93 @@ class DndApiDataSource(
 
     // ── Character Data ────────────────────────────────────────────────────────
 
-    suspend fun getAbilityScores(): Result<ApiReferenceListDto> =
+    override suspend fun getAbilityScores(): Result<ApiReferenceListDto> =
         cachedList("ability-scores")
 
-    suspend fun getAbilityScore(index: String): Result<AbilityScoreDto> =
+    override suspend fun getAbilityScore(index: String): Result<AbilityScoreDto> =
         cached(abilityScoreCache, index) { getSrd("ability-scores/$index") }
 
-    suspend fun getAlignments(): Result<ApiReferenceListDto> =
+    override suspend fun getAlignments(): Result<ApiReferenceListDto> =
         cachedList("alignments")
 
-    suspend fun getAlignment(index: String): Result<AlignmentDto> =
+    override suspend fun getAlignment(index: String): Result<AlignmentDto> =
         cached(alignmentCache, index) { getSrd("alignments/$index") }
 
-    suspend fun getBackgrounds(): Result<ApiReferenceListDto> =
+    override suspend fun getBackgrounds(): Result<ApiReferenceListDto> =
         cachedList("backgrounds")
 
-    suspend fun getBackground(index: String): Result<BackgroundDto> =
+    override suspend fun getBackground(index: String): Result<BackgroundDto> =
         cached(backgroundCache, index) { getSrd("backgrounds/$index") }
 
-    suspend fun getClasses(): Result<ApiReferenceListDto> =
+    override suspend fun getClasses(): Result<ApiReferenceListDto> =
         cachedList("classes")
 
-    suspend fun getClass(index: String): Result<ClassDto> =
+    override suspend fun getClass(index: String): Result<ClassDto> =
         cached(classCache, index) { getSrd("classes/$index") }
 
-    /**
-     * Returns all 20 class levels for a given class (e.g. "wizard").
-     * Results are cached per class index.
-     */
-    suspend fun getClassLevels(classIndex: String): Result<List<ClassLevelDto>> =
+    override suspend fun getClassLevels(classIndex: String): Result<List<ClassLevelDto>> =
         cached(classLevelCache, classIndex) { getSrd("classes/$classIndex/levels") }
 
-    suspend fun getRaces(): Result<ApiReferenceListDto> =
+    override suspend fun getRaces(): Result<ApiReferenceListDto> =
         cachedList("races")
 
-    suspend fun getRace(index: String): Result<RaceDto> =
+    override suspend fun getRace(index: String): Result<RaceDto> =
         cached(raceCache, index) { getSrd("races/$index") }
 
-    suspend fun getSubraces(): Result<ApiReferenceListDto> =
+    override suspend fun getSubraces(): Result<ApiReferenceListDto> =
         cachedList("subraces")
 
-    suspend fun getSubrace(index: String): Result<SubraceDto> =
+    override suspend fun getSubrace(index: String): Result<SubraceDto> =
         cached(subraceCache, index) { getSrd("subraces/$index") }
 
-    suspend fun getSubclasses(): Result<ApiReferenceListDto> =
+    override suspend fun getSubclasses(): Result<ApiReferenceListDto> =
         cachedList("subclasses")
 
-    suspend fun getSubclass(index: String): Result<SubclassDto> =
+    override suspend fun getSubclass(index: String): Result<SubclassDto> =
         cached(subclassCache, index) { getSrd("subclasses/$index") }
 
-    suspend fun getTraits(): Result<ApiReferenceListDto> =
+    override suspend fun getTraits(): Result<ApiReferenceListDto> =
         cachedList("traits")
 
-    suspend fun getTrait(index: String): Result<TraitDto> =
+    override suspend fun getTrait(index: String): Result<TraitDto> =
         cached(traitCache, index) { getSrd("traits/$index") }
 
-    suspend fun getFeatures(): Result<ApiReferenceListDto> =
+    override suspend fun getFeatures(): Result<ApiReferenceListDto> =
         cachedList("features")
 
-    suspend fun getFeature(index: String): Result<FeatureDto> =
+    override suspend fun getFeature(index: String): Result<FeatureDto> =
         cached(featureCache, index) { getSrd("features/$index") }
 
-    suspend fun getFeats(): Result<ApiReferenceListDto> =
+    override suspend fun getFeats(): Result<ApiReferenceListDto> =
         cachedList("feats")
 
-    suspend fun getFeat(index: String): Result<FeatDto> =
+    override suspend fun getFeat(index: String): Result<FeatDto> =
         cached(featCache, index) { getSrd("feats/$index") }
 
-    suspend fun getSkills(): Result<ApiReferenceListDto> =
+    override suspend fun getSkills(): Result<ApiReferenceListDto> =
         cachedList("skills")
 
-    suspend fun getSkill(index: String): Result<DndSkillDto> =
+    override suspend fun getSkill(index: String): Result<DndSkillDto> =
         cached(skillApiCache, index) { getSrd("skills/$index") }
 
-    suspend fun getProficiencies(): Result<ApiReferenceListDto> =
+    override suspend fun getProficiencies(): Result<ApiReferenceListDto> =
         cachedList("proficiencies")
 
-    suspend fun getProficiency(index: String): Result<ProficiencyDto> =
+    override suspend fun getProficiency(index: String): Result<ProficiencyDto> =
         cached(proficiencyCache, index) { getSrd("proficiencies/$index") }
 
-    suspend fun getLanguages(): Result<ApiReferenceListDto> =
+    override suspend fun getLanguages(): Result<ApiReferenceListDto> =
         cachedList("languages")
 
-    suspend fun getLanguage(index: String): Result<LanguageDto> =
+    override suspend fun getLanguage(index: String): Result<LanguageDto> =
         cached(languageCache, index) { getSrd("languages/$index") }
 
     // ── Spells ────────────────────────────────────────────────────────────────
 
-    /**
-     * Returns the list of spells, optionally filtered.
-     *
-     * @param levels  List of spell levels to include (e.g. [0] for cantrips, [1, 2] for L1+L2).
-     * @param school  Magic school index (e.g. "evocation"). Null = all schools.
-     * @param classes Class index (e.g. "wizard"). Null = all classes.
-     *
-     * Note: filtered lists are NOT cached because the params vary.
-     */
-    suspend fun getSpells(
-        levels: List<Int>? = null,
-        school: String? = null,
-        classes: String? = null,
+    override suspend fun getSpells(
+        levels: List<Int>?,
+        school: String?,
+        classes: String?,
     ): Result<ApiReferenceListDto> {
         // Only cache unfiltered full list
         if (levels == null && school == null && classes == null) {
@@ -235,75 +288,53 @@ class DndApiDataSource(
         }
     }
 
-    suspend fun getSpell(index: String): Result<SpellDto> =
+    override suspend fun getSpell(index: String): Result<SpellDto> =
         cached(spellCache, index) { getSrd("spells/$index") }
 
-    suspend fun getMagicSchools(): Result<ApiReferenceListDto> =
+    override suspend fun getMagicSchools(): Result<ApiReferenceListDto> =
         cachedList("magic-schools")
 
-    suspend fun getMagicSchool(index: String): Result<MagicSchoolDto> =
+    override suspend fun getMagicSchool(index: String): Result<MagicSchoolDto> =
         cached(schoolCache, index) { getSrd("magic-schools/$index") }
 
     // ── Equipment ─────────────────────────────────────────────────────────────
 
-    suspend fun getEquipment(): Result<ApiReferenceListDto> =
+    override suspend fun getEquipment(): Result<ApiReferenceListDto> =
         cachedList("equipment")
 
-    /**
-     * Fetches a piece of equipment as a [WeaponDto].
-     * Use this for items in the "Weapon" equipment category.
-     */
-    suspend fun getWeapon(index: String): Result<WeaponDto> =
+    override suspend fun getWeapon(index: String): Result<WeaponDto> =
         cached(weaponDtoCache, index) { getSrd("equipment/$index") }
 
-    /**
-     * Fetches a piece of equipment as an [ArmorDto].
-     * Use this for items in the "Armor" equipment category.
-     */
-    suspend fun getArmor(index: String): Result<ArmorDto> =
+    override suspend fun getArmor(index: String): Result<ArmorDto> =
         cached(armorCache, index) { getSrd("equipment/$index") }
 
-    /**
-     * Fetches a piece of equipment as a [GearDto].
-     * Use this for adventuring gear.
-     */
-    suspend fun getGear(index: String): Result<GearDto> =
+    override suspend fun getGear(index: String): Result<GearDto> =
         cached(gearCache, index) { getSrd("equipment/$index") }
 
-    /**
-     * Fetches a piece of equipment as an [EquipmentPackDto].
-     * Use this for packs (e.g. "explorer's pack").
-     */
-    suspend fun getEquipmentPack(index: String): Result<EquipmentPackDto> =
+    override suspend fun getEquipmentPack(index: String): Result<EquipmentPackDto> =
         cached(packCache, index) { getSrd("equipment/$index") }
 
-    suspend fun getEquipmentCategories(): Result<ApiReferenceListDto> =
+    override suspend fun getEquipmentCategories(): Result<ApiReferenceListDto> =
         cachedList("equipment-categories")
 
-    suspend fun getEquipmentCategory(index: String): Result<EquipmentCategoryDto> =
+    override suspend fun getEquipmentCategory(index: String): Result<EquipmentCategoryDto> =
         cached(equipCategoryCache, index) { getSrd("equipment-categories/$index") }
 
-    suspend fun getMagicItems(): Result<ApiReferenceListDto> =
+    override suspend fun getMagicItems(): Result<ApiReferenceListDto> =
         cachedList("magic-items")
 
-    suspend fun getMagicItem(index: String): Result<MagicItemDto> =
+    override suspend fun getMagicItem(index: String): Result<MagicItemDto> =
         cached(magicItemCache, index) { getSrd("magic-items/$index") }
 
-    suspend fun getWeaponProperties(): Result<ApiReferenceListDto> =
+    override suspend fun getWeaponProperties(): Result<ApiReferenceListDto> =
         cachedList("weapon-properties")
 
-    suspend fun getWeaponProperty(index: String): Result<WeaponPropertyDto> =
+    override suspend fun getWeaponProperty(index: String): Result<WeaponPropertyDto> =
         cached(weaponPropertyCache, index) { getSrd("weapon-properties/$index") }
 
     // ── Monsters ──────────────────────────────────────────────────────────────
 
-    /**
-     * Returns the monster list, optionally filtered by challenge rating(s).
-     *
-     * @param challengeRatings List of CR values to include (e.g. [0.25, 0.5, 1.0]).
-     *                         Null = all monsters.
-     */
-    suspend fun getMonsters(challengeRatings: List<Double>? = null): Result<ApiReferenceListDto> {
+    override suspend fun getMonsters(challengeRatings: List<Double>?): Result<ApiReferenceListDto> {
         if (challengeRatings == null) return cachedList("monsters")
         return safeApiCall {
             httpClient.get("$BASE/monsters") {
@@ -312,35 +343,35 @@ class DndApiDataSource(
         }
     }
 
-    suspend fun getMonster(index: String): Result<MonsterDto> =
+    override suspend fun getMonster(index: String): Result<MonsterDto> =
         cached(monsterCache, index) { getSrd("monsters/$index") }
 
     // ── Game Mechanics ────────────────────────────────────────────────────────
 
-    suspend fun getConditions(): Result<ApiReferenceListDto> =
+    override suspend fun getConditions(): Result<ApiReferenceListDto> =
         cachedList("conditions")
 
-    suspend fun getCondition(index: String): Result<ConditionDto> =
+    override suspend fun getCondition(index: String): Result<ConditionDto> =
         cached(conditionCache, index) { getSrd("conditions/$index") }
 
-    suspend fun getDamageTypes(): Result<ApiReferenceListDto> =
+    override suspend fun getDamageTypes(): Result<ApiReferenceListDto> =
         cachedList("damage-types")
 
-    suspend fun getDamageType(index: String): Result<DamageTypeDto> =
+    override suspend fun getDamageType(index: String): Result<DamageTypeDto> =
         cached(damageTypeCache, index) { getSrd("damage-types/$index") }
 
     // ── Rules ─────────────────────────────────────────────────────────────────
 
-    suspend fun getRules(): Result<ApiReferenceListDto> =
+    override suspend fun getRules(): Result<ApiReferenceListDto> =
         cachedList("rules")
 
-    suspend fun getRule(index: String): Result<RuleDto> =
+    override suspend fun getRule(index: String): Result<RuleDto> =
         cached(ruleCache, index) { getSrd("rules/$index") }
 
-    suspend fun getRuleSections(): Result<ApiReferenceListDto> =
+    override suspend fun getRuleSections(): Result<ApiReferenceListDto> =
         cachedList("rule-sections")
 
-    suspend fun getRuleSection(index: String): Result<RuleSectionDto> =
+    override suspend fun getRuleSection(index: String): Result<RuleSectionDto> =
         cached(ruleSectionCache, index) { getSrd("rule-sections/$index") }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

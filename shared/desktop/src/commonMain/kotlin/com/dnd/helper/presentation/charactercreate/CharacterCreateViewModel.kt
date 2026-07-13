@@ -27,12 +27,14 @@ import kotlin.random.Random
 
 class CharacterCreateViewModel(
     private val repository: CharacterRepository,
+    private val remoteDataSource: com.dnd.helper.data.remote.RemoteDataSource,
     private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
     private val api: com.dnd.helper.data.remote.DndApiDataSource,
     private val storage: com.dnd.helper.domain.storage.CharacterStorage,
 ) : ViewModel() {
 
     private var tempId = "temp-char-${Random.nextInt(1000000, 9999999)}"
+    private var isEditing = false
     private val _state = MutableStateFlow(CharacterCreateState())
     val state: StateFlow<CharacterCreateState> = _state.asStateFlow()
 
@@ -485,6 +487,8 @@ class CharacterCreateViewModel(
                     _state.value.copy(selectedFeats = _state.value.selectedFeats - event.value)
 
             is CharacterCreateEvent.LoadCharacter -> loadCharacter(event.character)
+            is CharacterCreateEvent.StartFromTemplate -> startFromTemplate(event.character)
+            CharacterCreateEvent.LoadTemplates -> loadTemplates()
             is CharacterCreateEvent.SaveCharacter -> saveCharacter()
             is CharacterCreateEvent.GenerateImage -> generateImage()
             is CharacterCreateEvent.GenerateItemImage -> generateItemImage(event.index)
@@ -646,7 +650,34 @@ class CharacterCreateViewModel(
     }
 
     private fun loadCharacter(character: Character) {
-        _state.value = CharacterCreateState(
+        _state.value = stateFromCharacter(character)
+        tempId = character.id
+        isEditing = true
+        updateDefaultPrompt()
+    }
+
+    // Prefill the form from a saved template, but treat the result as a brand-new character
+    // (fresh id, create mode) so saving produces new template + campaign char, not an overwrite.
+    private fun startFromTemplate(character: Character) {
+        _state.value = stateFromCharacter(character)
+        tempId = "temp-char-${Random.nextInt(1000000, 9999999)}"
+        isEditing = false
+        updateDefaultPrompt()
+    }
+
+    private fun loadTemplates() {
+        viewModelScope.launch {
+            when (val res = remoteDataSource.getMyCharacters()) {
+                is Result.Success ->
+                    _state.value =
+                        _state.value.copy(templates = res.data.templates.map { it.template })
+                is Result.Error -> {}
+            }
+        }
+    }
+
+    private fun stateFromCharacter(character: Character): CharacterCreateState =
+        CharacterCreateState(
             name = character.name,
             playerName = character.playerName,
             race = character.race,
@@ -711,9 +742,6 @@ class CharacterCreateViewModel(
             availableTraits = _state.value.availableTraits,
             availableSpells = _state.value.availableSpells
         )
-        tempId = character.id
-        updateDefaultPrompt()
-    }
 
     private fun parseCommaList(input: String): List<String> =
         input.split(",").map { it.trim() }.filter { it.isNotBlank() }
@@ -824,7 +852,12 @@ class CharacterCreateViewModel(
         _state.value = s.copy(isSaving = true, error = null)
 
         viewModelScope.launch {
-            when (val result = repository.saveCharacter(character)) {
+            val result = repository.saveCharacter(character)
+            // On create, also keep a reusable template in the master's personal session.
+            if (result is Result.Success && !isEditing) {
+                remoteDataSource.createMyCharacter(character)
+            }
+            when (result) {
                 is Result.Success -> {
                     _state.value = _state.value.copy(isSaving = false, isSaved = true)
                 }
