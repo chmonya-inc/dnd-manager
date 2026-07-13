@@ -45,7 +45,7 @@ jobs:
 
   build-api:
     name: Build api
-    needs: [test, detekt, version]
+    needs: version
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-api
@@ -55,7 +55,7 @@ jobs:
 
   build-web:
     name: Build web
-    needs: [test, detekt, version]
+    needs: version
     uses: chmonya-inc/dnd-manager/.github/workflows/docker.yml@v2
     with:
       image-name: chmonya777/dndmanager-web
@@ -66,7 +66,7 @@ jobs:
 
   build-desktop:
     name: Build desktop
-    needs: [test, detekt, version]
+    needs: version
     permissions:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
@@ -85,7 +85,7 @@ jobs:
 
   build-app:
     name: Build mobile
-    needs: [test, detekt, version]
+    needs: version
     permissions:
       contents: write
     uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
