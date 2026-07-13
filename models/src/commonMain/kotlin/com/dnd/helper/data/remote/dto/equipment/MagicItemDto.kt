@@ -1,19 +1,20 @@
 package com.dnd.helper.data.remote.dto.equipment
 
 import com.dnd.helper.data.remote.dto.common.ApiReferenceDto
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class MagicItemDto(
-    val index: String = "",
-    val name: String = "",
-    val desc: List<String> = emptyList(),
-    val equipment_category: ApiReferenceDto = ApiReferenceDto(),
-    val rarity: MagicItemRarityDto = MagicItemRarityDto(),
-    val variants: List<ApiReferenceDto> = emptyList(),
-    val variant: Boolean = false,
-    val image: String? = null,
-    val url: String = "",
+    @SerialName("index") val index: String = "",
+    @SerialName("name") val name: String = "",
+    @SerialName("desc") val desc: List<String> = emptyList(),
+    @SerialName("equipment_category") val equipmentCategory: ApiReferenceDto = ApiReferenceDto(),
+    @SerialName("rarity") val rarity: MagicItemRarityDto = MagicItemRarityDto(),
+    @SerialName("variants") val variants: List<ApiReferenceDto> = emptyList(),
+    @SerialName("variant") val variant: Boolean = false,
+    @SerialName("image") val image: String? = null,
+    @SerialName("url") val url: String = "",
 )
 
 /**
@@ -21,5 +22,5 @@ data class MagicItemDto(
  */
 @Serializable
 data class MagicItemRarityDto(
-    val name: String = "Common",
+    @SerialName("name") val name: String = "Common",
 )

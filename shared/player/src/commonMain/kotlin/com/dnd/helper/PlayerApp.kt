@@ -5,6 +5,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.dnd.helper.presentation.charactercreate.PlayerCharacterCreateScreen
+import com.dnd.helper.presentation.charactercreate.PlayerCharacterCreateViewModel
 import com.dnd.helper.presentation.characterdetail.CharacterDetailScreen
 import com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
@@ -26,12 +28,23 @@ object Start
 @Serializable
 data class CharacterDetail(val id: String)
 
+@Serializable
+object AuthRoute
+
+@Serializable
+object PlayerCharacterCreate
+
+@Serializable
+data class PlayerCharacterEdit(val id: String)
+
 val playerModule = module {
-    factory { StartViewModel(get()) }
+    factory { com.dnd.helper.presentation.auth.AuthViewModel(get()) }
+    factory { StartViewModel(get(), get(), get(), get()) }
     factory { CharacterListViewModel(get(), get(), get()) }
     factory { (characterId: String) ->
         CharacterDetailViewModel(get(), get(), characterId)
     }
+    factory { PlayerCharacterCreateViewModel(get(), get(), get(), get()) }
 }
 
 @Composable
@@ -41,15 +54,56 @@ fun PlayerApp(koinConfiguration: KoinAppDeclaration = {}) {
         appModules = listOf(playerModule)
     ) {
         val navController = rememberNavController()
+        val authRepository = org.koin.compose.koinInject<com.dnd.helper.domain.repository.AuthRepository>()
+        val startDest: Any = if (authRepository.getRefreshToken() != null) Start else AuthRoute
 
         NavHost(
             navController = navController,
-            startDestination = Start
+            startDestination = startDest
         ) {
+            composable<AuthRoute> {
+                com.dnd.helper.presentation.auth.AuthScreen(
+                    onAuthSuccess = {
+                        navController.navigate(Start) {
+                            popUpTo(AuthRoute) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable<Start> {
                 StartScreen(
                     onLoadCharacter = { characterId ->
                         navController.navigate(CharacterDetail(id = characterId))
+                    },
+                    onLogout = {
+                        navController.navigate(AuthRoute) {
+                            popUpTo(Start) { inclusive = true }
+                        }
+                    },
+                    onCreateCharacter = {
+                        navController.navigate(PlayerCharacterCreate)
+                    },
+                    onEditCharacter = { characterId ->
+                        navController.navigate(PlayerCharacterEdit(id = characterId))
+                    }
+                )
+            }
+            composable<PlayerCharacterCreate> {
+                PlayerCharacterCreateScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onCharacterCreated = { _ ->
+                        // Go back to Start; StartScreen will reload my-characters on resume
+                        navController.popBackStack()
+                    }
+                )
+            }
+            composable<PlayerCharacterEdit> { backStackEntry ->
+                val editRoute: PlayerCharacterEdit = backStackEntry.toRoute()
+                com.dnd.helper.presentation.charactercreate.PlayerCharacterEditScreen(
+                    characterId = editRoute.id,
+                    onBackClick = { navController.popBackStack() },
+                    onCharacterUpdated = {
+                        navController.popBackStack()
                     }
                 )
             }
@@ -59,11 +113,7 @@ fun PlayerApp(koinConfiguration: KoinAppDeclaration = {}) {
                         navController.navigate(CharacterDetail(id = characterId))
                     },
                     onCreateCharacter = {
-                        // For PlayerApp, creating characters might not be supported or we could navigate to a web form
-                        // We will just leave it empty or print a log since player app is supposed to be view only for characters,
-                        // unless we keep character create in player. The plan says CharacterCreate is in desktop.
-                        // Let's just do nothing or maybe we need to bring it?
-                        // "For PlayerApp, creating characters might not be supported"
+                        navController.navigate(PlayerCharacterCreate)
                     }
                 )
             }

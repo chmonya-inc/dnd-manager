@@ -8,7 +8,7 @@ data class ItemCreateState(
     val itemId: String? = null,
     val name: String = "",
     val description: String = "",
-    val slot: EquipmentSlot? = null,
+    val slot: EquipmentSlot? = EquipmentSlot.MAIN_HAND,
     val rarity: ItemRarity = ItemRarity.COMMON,
     val cost: String = "",
     val weight: String = "",

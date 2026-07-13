@@ -1,6 +1,10 @@
 package com.dnd.helper.domain.model
 
-import com.dnd.helper.data.remote.dto.monster.*
+import com.dnd.helper.data.remote.dto.monster.MonsterActionDto
+import com.dnd.helper.data.remote.dto.monster.MonsterArmorClassDto
+import com.dnd.helper.data.remote.dto.monster.MonsterProficiencyDto
+import com.dnd.helper.data.remote.dto.monster.MonsterSpecialAbilityDto
+import com.dnd.helper.data.remote.dto.monster.MonsterSpeedDto
 import com.dnd.helper.domain.utils.ImageUrlHelper
 import kotlinx.serialization.Serializable
 

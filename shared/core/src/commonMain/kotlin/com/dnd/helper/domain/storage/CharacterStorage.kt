@@ -24,4 +24,13 @@ interface CharacterStorage {
     fun saveApiCache(key: String, json: String)
     fun getApiCache(key: String): String?
     fun clearApiCache()
+    fun saveAuthToken(token: String?)
+    fun getAuthToken(): String?
+    fun saveRefreshToken(token: String?)
+    fun getRefreshToken(): String?
+    fun saveUserId(userId: String?)
+    fun getUserId(): String?
+    fun getUserIdFlow(): kotlinx.coroutines.flow.Flow<String?>
+    fun saveUserRole(role: String?)
+    fun getUserRole(): String?
 }

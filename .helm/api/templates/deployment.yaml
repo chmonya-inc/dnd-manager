@@ -7,7 +7,7 @@ metadata:
 spec:
   strategy:
     type: Recreate
-  replicas: 1
+  replicas: {{ .Values.replicas | int }}
   selector:
     matchLabels:
       app: {{ .Release.Name }}
@@ -29,16 +29,16 @@ spec:
               name: {{ .Release.Name }}
         livenessProbe:
           httpGet:
-            path: /
-            port: {{ .Values.port | int  }}
+            path: /health
+            port: {{ .Values.port | int }}
           initialDelaySeconds: 15
           periodSeconds: 20
           timeoutSeconds: 3
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /
-            port: {{ .Values.port | int  }}
+            path: /health/ready
+            port: {{ .Values.port | int }}
           initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 3

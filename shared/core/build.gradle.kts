@@ -14,6 +14,11 @@ composeCompiler {
     enableIntrinsicRemember = true
 }
 
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.dnd.helper.shared.core.generated.resources"
+}
+
 // ── Read secret from local.properties ──────────────────────────────
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
@@ -117,6 +122,7 @@ kotlin {
                 implementation(libs.ktor.client.logging)
                 implementation(libs.ktor.client.websockets)
                 implementation(libs.ktor.serialization.kotlinx.json)
+                implementation(libs.ktor.client.auth)
 
                 implementation(libs.koin.core)
                 implementation(libs.koin.compose)
@@ -151,6 +157,15 @@ kotlin {
         val wasmJsMain by getting {
             dependencies {
                 implementation(libs.ktor.client.js)
+            }
+        }
+
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.turbine)
+                implementation(libs.ktor.client.mock)
             }
         }
     }

@@ -2,10 +2,10 @@ package com.dnd.helper.presentation.characterdetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.data.remote.GenerationType
 import com.dnd.helper.data.remote.PromptGenerator
+import com.dnd.helper.domain.common.Result
+import com.dnd.helper.domain.repository.CharacterRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,14 +14,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
 
 class CharacterDetailViewModel(
     private val repository: CharacterRepository,
     private val editingRepository: com.dnd.helper.domain.repository.EditingRepository,
     private val characterId: String,
+    coroutineScope: kotlinx.coroutines.CoroutineScope? = null
 ) : ViewModel() {
 
+    private val scope = coroutineScope ?: viewModelScope
     private val _state = MutableStateFlow(CharacterDetailState())
     val state: StateFlow<CharacterDetailState> = _state.asStateFlow()
 
@@ -54,19 +55,20 @@ class CharacterDetailViewModel(
         loadCharacter()
 
         // Listen for background image generation completion
-        viewModelScope.launch {
+        scope.launch {
             editingRepository.activeTasks.collect { tasks ->
-                val myTasks = tasks.filter { 
-                    it.entityId == characterId || it.entityId.startsWith("$characterId:") 
+                val myTasks = tasks.filter {
+                    it.entityId == characterId || it.entityId.startsWith("$characterId:")
                 }
-                
+
                 myTasks.forEach { task ->
                     // Handle completion or failure
-                    if ((task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED && task.resultUrl != null) || 
-                         task.status == com.dnd.helper.domain.repository.GenerationStatus.FAILED) {
-                        
+                    if ((task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED && task.resultUrl != null) ||
+                        task.status == com.dnd.helper.domain.repository.GenerationStatus.FAILED
+                    ) {
+
                         val resultUrl = if (task.status == com.dnd.helper.domain.repository.GenerationStatus.COMPLETED) task.resultUrl else ""
-                        
+
                         if (task.entityType == "character") {
                             var updatedChar: com.dnd.helper.domain.model.Character? = null
                             _state.update { currentState ->
@@ -88,14 +90,22 @@ class CharacterDetailViewModel(
                             updatedChar?.let { scheduleDebouncedSave(it) }
                         } else if (task.entityType == "item") {
                             val itemId = task.entityId.substringAfter(":")
-                            
+
                             var updatedChar: com.dnd.helper.domain.model.Character? = null
                             _state.update { currentState ->
                                 var nextState = currentState
                                 // Update in main character
                                 currentState.character?.let { char ->
                                     if (char.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
-                                        val newItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
+                                        val newItems = char.items.map {
+                                            if (it.id == itemId) {
+                                                it.copy(
+                                                    imageUrl = resultUrl
+                                                )
+                                            } else {
+                                                it
+                                            }
+                                        }
                                         val updated = char.copy(items = newItems)
                                         nextState = nextState.copy(character = updated)
                                         updatedChar = updated
@@ -104,7 +114,15 @@ class CharacterDetailViewModel(
                                 // Update in edited character
                                 currentState.editedCharacter?.let { char ->
                                     if (char.items.any { it.id == itemId && it.imageUrl == "generating:${task.id}" }) {
-                                        val newItems = char.items.map { if (it.id == itemId) it.copy(imageUrl = resultUrl) else it }
+                                        val newItems = char.items.map {
+                                            if (it.id == itemId) {
+                                                it.copy(
+                                                    imageUrl = resultUrl
+                                                )
+                                            } else {
+                                                it
+                                            }
+                                        }
                                         val updated = char.copy(items = newItems)
                                         nextState = nextState.copy(editedCharacter = updated)
                                         if (updatedChar == null) updatedChar = updated
@@ -115,14 +133,22 @@ class CharacterDetailViewModel(
                             updatedChar?.let { scheduleDebouncedSave(it) }
                         } else if (task.entityType == "spell") {
                             val spellId = task.entityId.substringAfter(":")
-                            
+
                             var updatedChar: com.dnd.helper.domain.model.Character? = null
                             _state.update { currentState ->
                                 var nextState = currentState
                                 // Update in main character
                                 currentState.character?.let { char ->
                                     if (char.spells.any { it.id == spellId && it.iconUrl == "generating:${task.id}" }) {
-                                        val newSpells = char.spells.map { if (it.id == spellId) it.copy(iconUrl = resultUrl) else it }
+                                        val newSpells = char.spells.map {
+                                            if (it.id == spellId) {
+                                                it.copy(
+                                                    iconUrl = resultUrl
+                                                )
+                                            } else {
+                                                it
+                                            }
+                                        }
                                         val updated = char.copy(spells = newSpells)
                                         nextState = nextState.copy(character = updated)
                                         updatedChar = updated
@@ -131,7 +157,15 @@ class CharacterDetailViewModel(
                                 // Update in edited character
                                 currentState.editedCharacter?.let { char ->
                                     if (char.spells.any { it.id == spellId && it.iconUrl == "generating:${task.id}" }) {
-                                        val newSpells = char.spells.map { if (it.id == spellId) it.copy(iconUrl = resultUrl) else it }
+                                        val newSpells = char.spells.map {
+                                            if (it.id == spellId) {
+                                                it.copy(
+                                                    iconUrl = resultUrl
+                                                )
+                                            } else {
+                                                it
+                                            }
+                                        }
                                         val updated = char.copy(spells = newSpells)
                                         nextState = nextState.copy(editedCharacter = updated)
                                         if (updatedChar == null) updatedChar = updated
@@ -147,7 +181,7 @@ class CharacterDetailViewModel(
         }
 
         // Listen for updates (local or remote) via the repository
-        viewModelScope.launch {
+        scope.launch {
             repository.characterUpdates.collect { updatedId ->
                 // If we have a specific ID, only update if it matches our character
                 if (updatedId != "all" && updatedId != characterId) {
@@ -155,7 +189,7 @@ class CharacterDetailViewModel(
                 }
 
                 val state = _state.value
-                
+
                 // If we are editing, we don't want to fully reload (and lose changes)
                 // but we might want to pick up some remote changes?
                 // For now, only reload if NOT editing and NOT saving
@@ -186,14 +220,27 @@ class CharacterDetailViewModel(
                 } else {
                     val char = state.character
                     val prompt = if (char != null) {
-                        PromptGenerator.getFullPrompt("${char.name}, ${char.race} ${char.characterClass}. ${char.description}", GenerationType.CHARACTER)
-                    } else ""
+                        PromptGenerator.getFullPrompt(
+                            "${char.name}, ${char.race} ${char.characterClass}. ${char.description}",
+                            GenerationType.CHARACTER
+                        )
+                    } else {
+                        ""
+                    }
                     _state.value = state.copy(isEditing = true, editedCharacter = char, aiPrompt = prompt)
                 }
             }
             is CharacterDetailEvent.EditCharacter -> {
                 val char = event.character
-                val prompt = PromptGenerator.getFullPrompt("${char.name}, ${char.alignment} ${char.subrace} ${char.race} ${char.characterClass} ${char.subclass}. Background: ${char.background}. Description: ${char.description}. Armor: ${char.proficiencies.armor.joinToString()}. Weapons: ${char.proficiencies.weapons.joinToString()}.", GenerationType.CHARACTER)
+                val prompt = PromptGenerator.getFullPrompt(
+                    "${char.name}, ${char.alignment} ${char.subrace} ${char.race}" +
+                        " ${char.characterClass} ${char.subclass}. " +
+                        "Background: ${char.background}. " +
+                        "Description: ${char.description}. " +
+                        "Armor: ${char.proficiencies.armor.joinToString()}. " +
+                        "Weapons: ${char.proficiencies.weapons.joinToString()}.",
+                    GenerationType.CHARACTER
+                )
                 _state.value = _state.value.copy(editedCharacter = char, aiPrompt = prompt)
             }
             is CharacterDetailEvent.UpdateAiPrompt -> {
@@ -203,6 +250,7 @@ class CharacterDetailViewModel(
                 _state.value = _state.value.copy(aiWidth = event.width, aiHeight = event.height)
             }
             CharacterDetailEvent.SaveChanges -> saveChanges()
+            CharacterDetailEvent.DeleteCharacter -> deleteCharacter()
             CharacterDetailEvent.ToggleMasterMode -> {
                 _state.value = _state.value.copy(isMasterMode = !_state.value.isMasterMode)
             }
@@ -224,11 +272,13 @@ class CharacterDetailViewModel(
     private fun generateImage() {
         val currentState = _state.value
         val edited = currentState.editedCharacter ?: return
-        val prompt = if (currentState.aiPrompt.isNotBlank()) currentState.aiPrompt else {
+        val prompt = if (currentState.aiPrompt.isNotBlank()) {
+            currentState.aiPrompt
+        } else {
             val text = "${edited.name}, ${edited.race} ${edited.characterClass}. ${edited.description}"
             PromptGenerator.getFullPrompt(text, GenerationType.CHARACTER)
         }
-        
+
         val mockUrl = editingRepository.startGeneration(
             entityId = characterId,
             entityType = "character",
@@ -237,11 +287,11 @@ class CharacterDetailViewModel(
             width = currentState.aiWidth,
             height = currentState.aiHeight
         )
-        
+
         _state.value = currentState.copy(
             editedCharacter = edited.copy(imageUrl = mockUrl)
         )
-        
+
         // If not in manual editing mode, update the character immediately so the list shows the mock URL
         if (!currentState.isEditing) {
             repository.optimisticUpdate(edited.copy(imageUrl = mockUrl))
@@ -256,7 +306,7 @@ class CharacterDetailViewModel(
         if (spell.name.isBlank()) return
 
         val fullPrompt = PromptGenerator.getFullPrompt(promptText, GenerationType.SKILL)
-        
+
         val mockUrl = editingRepository.startGeneration(
             entityId = "$characterId:$spellId",
             entityType = "spell",
@@ -268,7 +318,7 @@ class CharacterDetailViewModel(
             if (it.id == spellId) it.copy(iconUrl = mockUrl) else it
         }
         val updatedChar = edited.copy(spells = newSpells)
-        
+
         if (currentState.isEditing) {
             _state.value = currentState.copy(editedCharacter = updatedChar)
         } else {
@@ -284,7 +334,7 @@ class CharacterDetailViewModel(
         if (item.name.isBlank()) return
 
         val fullPrompt = PromptGenerator.getFullPrompt(promptText, GenerationType.ITEM)
-        
+
         val mockUrl = editingRepository.startGeneration(
             entityId = "$characterId:$itemId",
             entityType = "item",
@@ -296,7 +346,7 @@ class CharacterDetailViewModel(
             if (it.id == itemId) it.copy(imageUrl = mockUrl) else it
         }
         val updatedChar = edited.copy(items = newItems)
-        
+
         if (currentState.isEditing) {
             _state.value = currentState.copy(editedCharacter = updatedChar)
         } else {
@@ -379,14 +429,6 @@ class CharacterDetailViewModel(
         scheduleDebouncedSave(updatedCharacter)
     }
 
-    /** No-op for WebSocket version */
-    fun startAutoRefresh(intervalMs: Long = 1_000L) {
-    }
-
-    /** No-op for WebSocket version */
-    fun stopAutoRefresh() {
-    }
-
     /**
      * Cancels any pending debounced save and immediately flushes to the server.
      * Call when navigating away from the screen or when the app goes to background
@@ -407,7 +449,7 @@ class CharacterDetailViewModel(
         val state = _state.value
         if (state.isEditing) {
             val edited = state.editedCharacter ?: return
-            
+
             // Use originalCharacter from before the edit started
             if (originalCharacter == null) {
                 originalCharacter = state.character
@@ -481,7 +523,7 @@ class CharacterDetailViewModel(
     private fun toggleItemEquipped(itemId: String) {
         val currentCharacter = _state.value.character ?: return
         val itemToToggle = currentCharacter.items.find { it.id == itemId } ?: return
-        
+
         // Only allow equipping if there's a slot
         if (!itemToToggle.equipped && itemToToggle.slot == null) return
 
@@ -541,10 +583,12 @@ class CharacterDetailViewModel(
         }
 
         // Optimistic update — reflect change in UI immediately
-        _state.value = _state.value.copy(
-            character = character,
-            hasUnsavedChanges = true,
-        )
+        _state.update {
+            it.copy(
+                character = character,
+                hasUnsavedChanges = true,
+            )
+        }
         pendingSaveCharacter = character
 
         // Push the optimistic change into the shared repository cache
@@ -554,7 +598,7 @@ class CharacterDetailViewModel(
         // Cancel any existing debounce timer
         debouncedSaveJob?.cancel()
 
-        debouncedSaveJob = viewModelScope.launch {
+        debouncedSaveJob = scope.launch {
             delay(1_000L)
             // Timer fired — user hasn't made another change in 1s
             val characterToSave = pendingSaveCharacter ?: character
@@ -569,65 +613,77 @@ class CharacterDetailViewModel(
      */
     private fun performSave(character: com.dnd.helper.domain.model.Character) {
         val previousUICharacter = _state.value.character
-        _state.value = _state.value.copy(isSaving = true)
+        _state.update { it.copy(isSaving = true) }
 
         // For logs, use the state BEFORE any edits in this cycle
         val initialJson = originalCharacter?.let { Json.encodeToString(it) }
         val endJson = Json.encodeToString(character)
-        
+
         // Calculate diff for human readable logs using original state
         val diffDetails = if (originalCharacter != null) {
             calculateCharacterDiff(originalCharacter!!, character)
-        } else "Initial create"
+        } else {
+            "Initial create"
+        }
 
-        viewModelScope.launch {
+        scope.launch {
             when (val result = repository.saveCharacter(character)) {
                 is Result.Success -> {
                     // Update state IMMEDIATELY after data is saved.
                     // Don't wait for the secondary 'saveLog' network call.
-                    _state.value = _state.value.copy(
-                        character = character,
-                        isSaving = false,
-                        hasUnsavedChanges = false,
-                        isEditing = false
-                    )
-                    
+                    _state.update {
+                        it.copy(
+                            character = character,
+                            isSaving = false,
+                            hasUnsavedChanges = false,
+                            isEditing = false,
+                            editedCharacter = null
+                        )
+                    }
+
                     // Pause polling (skip remote updates) for 1 second after a successful save
                     isRecentlySaved = true
-                    viewModelScope.launch {
+                    scope.launch {
                         delay(1000)
                         isRecentlySaved = false
                     }
-                    
+
                     // On success, this new state becomes the original state for future edits
                     originalCharacter = character
 
                     // Log the change in background
-                    repository.saveLog(com.dnd.helper.domain.model.LogEntry(
-                        action = "Update Character: ${character.name}",
-                        details = diffDetails,
-                        initialState = initialJson,
-                        endState = endJson,
-                        success = true
-                    ))
+                    repository.saveLog(
+                        com.dnd.helper.domain.model.LogEntry(
+                            action = "Update Character: ${character.name}",
+                            details = diffDetails,
+                            initialState = initialJson,
+                            endState = endJson,
+                            success = true
+                        )
+                    )
                 }
+
                 is Result.Error -> {
                     // Rollback UI on error
-                    _state.value = _state.value.copy(
-                        character = previousUICharacter,
-                        error = "Failed to update: ${result.error}",
-                        isSaving = false,
-                        hasUnsavedChanges = false,
+                    _state.update {
+                        it.copy(
+                            character = previousUICharacter,
+                            error = "Failed to update: ${result.error}",
+                            isSaving = false,
+                            hasUnsavedChanges = false,
+                        )
+                    }
+
+                    repository.saveLog(
+                        com.dnd.helper.domain.model.LogEntry(
+                            action = "Update Character Failed: ${character.name}",
+                            details = diffDetails,
+                            initialState = initialJson,
+                            endState = endJson,
+                            success = false
+                        )
                     )
 
-                    repository.saveLog(com.dnd.helper.domain.model.LogEntry(
-                        action = "Update Character Failed: ${character.name}",
-                        details = diffDetails,
-                        initialState = initialJson,
-                        endState = endJson,
-                        success = false
-                    ))
-                    
                     // Keep originalCharacter as is, so if user retries they have the right base
                 }
             }
@@ -636,20 +692,32 @@ class CharacterDetailViewModel(
 
     private fun calculateCharacterDiff(old: com.dnd.helper.domain.model.Character, new: com.dnd.helper.domain.model.Character): String {
         val changes = mutableListOf<String>()
-        
+
         // Stats
         if (old.stats.strength != new.stats.strength) changes.add("STR: ${old.stats.strength} -> ${new.stats.strength}")
-        if (old.stats.dexterity != new.stats.dexterity) changes.add("DEX: ${old.stats.dexterity} -> ${new.stats.dexterity}")
-        if (old.stats.constitution != new.stats.constitution) changes.add("CON: ${old.stats.constitution} -> ${new.stats.constitution}")
-        if (old.stats.intelligence != new.stats.intelligence) changes.add("INT: ${old.stats.intelligence} -> ${new.stats.intelligence}")
+        if (old.stats.dexterity != new.stats.dexterity) {
+            changes.add(
+                "DEX: ${old.stats.dexterity} -> ${new.stats.dexterity}"
+            )
+        }
+        if (old.stats.constitution != new.stats.constitution) {
+            changes.add(
+                "CON: ${old.stats.constitution} -> ${new.stats.constitution}"
+            )
+        }
+        if (old.stats.intelligence != new.stats.intelligence) {
+            changes.add(
+                "INT: ${old.stats.intelligence} -> ${new.stats.intelligence}"
+            )
+        }
         if (old.stats.wisdom != new.stats.wisdom) changes.add("WIS: ${old.stats.wisdom} -> ${new.stats.wisdom}")
         if (old.stats.charisma != new.stats.charisma) changes.add("CHA: ${old.stats.charisma} -> ${new.stats.charisma}")
-        
+
         // Basic Info
         if (old.currentHp != new.currentHp) changes.add("HP: ${old.currentHp} -> ${new.currentHp}")
         if (old.maxHp != new.maxHp) changes.add("MaxHP: ${old.maxHp} -> ${new.maxHp}")
         if (old.level != new.level) changes.add("Level: ${old.level} -> ${new.level}")
-        
+
         // Inventory
         if (old.items.size != new.items.size) {
             changes.add("Items: ${old.items.size} -> ${new.items.size}")
@@ -658,7 +726,11 @@ class CharacterDetailViewModel(
             old.items.forEach { oldItem ->
                 new.items.find { it.id == oldItem.id }?.let { newItem ->
                     if (oldItem.name != newItem.name) changes.add("Item Name: ${oldItem.name} -> ${newItem.name}")
-                    if (oldItem.equipped != newItem.equipped) changes.add("${newItem.name}: ${if (newItem.equipped) "Equipped" else "Unequipped"}")
+                    if (oldItem.equipped != newItem.equipped) {
+                        changes.add(
+                            "${newItem.name}: ${if (newItem.equipped) "Equipped" else "Unequipped"}"
+                        )
+                    }
                 }
             }
         }
@@ -680,30 +752,53 @@ class CharacterDetailViewModel(
                 }
             }
         }
-        
+
         return if (changes.isEmpty()) "No significant changes" else changes.joinToString(", ")
     }
 
     private fun loadCharacter(fromAutoRefresh: Boolean = false) {
-        viewModelScope.launch {
+        scope.launch {
             if (!fromAutoRefresh) {
-                _state.value = _state.value.copy(isLoading = true, error = null)
+                _state.update { it.copy(isLoading = true, error = null) }
             }
             when (val result = repository.getCharacter(characterId)) {
                 is Result.Success -> {
-                    _state.value = _state.value.copy(
-                        character = result.data,
-                        isLoading = false,
-                    )
-                    originalCharacter = result.data
-                }
-                is Result.Error -> {
-                    if (!fromAutoRefresh) {
-                        _state.value = _state.value.copy(
-                            error = result.error.toString(),
+                    _state.update {
+                        it.copy(
+                            character = result.data,
                             isLoading = false,
                         )
                     }
+                    originalCharacter = result.data
+                }
+
+                is Result.Error -> {
+                    if (!fromAutoRefresh) {
+                        _state.update {
+                            it.copy(
+                                error = result.error.toString(),
+                                isLoading = false,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun deleteCharacter() {
+        val currentCharacter = _state.value.character ?: return
+        scope.launch {
+            _state.value = _state.value.copy(isSaving = true)
+            when (val result = repository.deleteCharacter(currentCharacter.id)) {
+                is Result.Success -> {
+                    _state.value = _state.value.copy(isSaving = false, character = null)
+                }
+                is Result.Error -> {
+                    _state.value = _state.value.copy(
+                        isSaving = false,
+                        error = "Failed to delete: ${result.error}"
+                    )
                 }
             }
         }

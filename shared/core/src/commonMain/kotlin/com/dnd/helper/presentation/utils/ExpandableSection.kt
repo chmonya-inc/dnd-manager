@@ -73,10 +73,11 @@ fun ExpandableSection(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = if (expanded)
+            containerColor = if (expanded) {
                 MaterialTheme.colorScheme.surface
-            else
+            } else {
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f)
+            }
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = if (expanded) 1.dp else 0.dp

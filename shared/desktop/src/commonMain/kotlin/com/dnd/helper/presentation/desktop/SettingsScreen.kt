@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -43,10 +44,11 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun SettingsScreen(
+    onLogout: () -> Unit = {},
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -60,7 +62,7 @@ fun SettingsScreen(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
-        
+
         HorizontalDivider()
 
         // Connection Settings Section
@@ -87,7 +89,7 @@ fun SettingsScreen(
         }
 
         HorizontalDivider()
-        
+
         // AI Settings Section
         SettingsSection(
             title = "Neural Network & AI",
@@ -104,15 +106,15 @@ fun SettingsScreen(
                     shape = MaterialTheme.shapes.medium,
                     leadingIcon = { Icon(Icons.Default.Dns, null) }
                 )
-                
+
                 Text(
                     "This address is used for all image generation requests.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 Spacer(Modifier.height(8.dp))
-                
+
                 // ComfyUI Workflow Picker
                 Column {
                     Text(
@@ -148,7 +150,7 @@ fun SettingsScreen(
                                 )
                             }
                         }
-                        
+
                         Button(
                             onClick = {
                                 val path = pickFile("Select ComfyUI Workflow JSON", listOf(".json"))
@@ -186,7 +188,7 @@ fun SettingsScreen(
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = state.generationSteps.toString(),
-                        onValueChange = { 
+                        onValueChange = {
                             val steps = it.toIntOrNull() ?: 1
                             viewModel.updateGenerationSteps(steps.coerceIn(1, 100))
                         },
@@ -206,9 +208,39 @@ fun SettingsScreen(
                 }
             }
         }
-        
+
         HorizontalDivider()
-        
+
+        // Account Section
+        SettingsSection(
+            title = "Account",
+            icon = Icons.Default.Person
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    "Manage your master account session.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Button(
+                    onClick = {
+                        viewModel.logout()
+                        onLogout()
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Icon(DndIcons.Filled.Logout, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Logout from Master Account")
+                }
+            }
+        }
+
+        HorizontalDivider()
+
         // App Info
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -247,7 +279,7 @@ private fun SettingsSection(
                 fontWeight = FontWeight.Bold
             )
         }
-        
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.large,

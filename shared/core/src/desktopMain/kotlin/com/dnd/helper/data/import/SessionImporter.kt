@@ -24,7 +24,7 @@ actual object SessionImporter {
 
         val dialog = FileDialog(activeWindow, "Select XLSX Session Export", FileDialog.LOAD)
         dialog.setFilenameFilter { _, name -> name.endsWith(".xlsx") }
-        
+
         // Force the dialog to be on top of everything
         dialog.isAlwaysOnTop = true
 

@@ -122,8 +122,8 @@ private fun CharacterListContent(
                 Surface(tonalElevation = 2.dp, shadowElevation = 2.dp) {
                     Column {
                         TopAppBar(
-                            title = { 
-                                Text("Characters", fontWeight = FontWeight.ExtraBold) 
+                            title = {
+                                Text("Characters", fontWeight = FontWeight.ExtraBold)
                             },
                             actions = {
                                 IconButton(onClick = onCreateCharacter) {
@@ -184,7 +184,12 @@ private fun CharacterListContent(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        Icon(Icons.Default.Refresh, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
+                        Icon(
+                            Icons.Default.Refresh,
+                            null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
                         Spacer(Modifier.height(16.dp))
                         Text(
                             text = "Failed to load characters",
@@ -219,7 +224,12 @@ private fun CharacterListContent(
                             color = MaterialTheme.colorScheme.surfaceVariant
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Person, null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Icon(
+                                    Icons.Default.Person,
+                                    null,
+                                    modifier = Modifier.size(40.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                         Spacer(Modifier.height(16.dp))
@@ -367,8 +377,16 @@ private fun SimpleCharacterCard(
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                         )
+                        character.ownerUsername?.let { owner ->
+                            Text(
+                                text = " (@$owner)",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                         IconButton(
-                            onClick = { 
+                            onClick = {
                                 clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(character.id))
                             },
                             modifier = Modifier.size(24.dp)
@@ -431,7 +449,9 @@ private fun SummaryCharacterCard(
 ) {
     val hpRatio = if (character.maxHp > 0) {
         (character.currentHp.toFloat() / character.maxHp).coerceIn(0f, 1f)
-    } else 0f
+    } else {
+        0f
+    }
     val hpColor = when {
         character.currentHp <= 0 -> Color(0xFF9E9E9E)
         hpRatio <= 0.4f -> Color(0xFFD32F2F)
@@ -511,8 +531,17 @@ private fun SummaryCharacterCard(
                                 maxLines = 1,
                                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
+                            character.ownerUsername?.let { owner ->
+                                Text(
+                                    text = " (@$owner)",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                )
+                            }
                             IconButton(
-                                onClick = { 
+                                onClick = {
                                     clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(character.id))
                                 },
                                 modifier = Modifier.size(24.dp)

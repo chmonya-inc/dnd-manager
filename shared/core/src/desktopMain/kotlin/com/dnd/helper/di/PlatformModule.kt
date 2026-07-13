@@ -3,10 +3,13 @@ package com.dnd.helper.di
 import com.dnd.helper.domain.music.AudioPlayer
 import com.dnd.helper.domain.storage.CharacterStorage
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.json.encodeToStream
 import org.koin.dsl.module
 import java.util.prefs.Preferences
-import kotlinx.serialization.json.*
-import kotlinx.serialization.*
 
 class DesktopAudioPlayer : AudioPlayer {
     private var player: javazoom.jl.player.Player? = null
@@ -31,8 +34,11 @@ class DesktopAudioPlayer : AudioPlayer {
         try {
             val url = java.net.URI(urlStr).toURL()
             val connection = url.openConnection()
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-            
+            connection.setRequestProperty(
+                "User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+
             val contentLength = connection.contentLengthLong
             if (contentLength <= 0) return
 
@@ -59,8 +65,11 @@ class DesktopAudioPlayer : AudioPlayer {
             try {
                 val url = java.net.URI(currentUrl!!).toURL()
                 val connection = url.openConnection()
-                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                
+                connection.setRequestProperty(
+                    "User-Agent",
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                )
+
                 val inputStream = java.io.BufferedInputStream(connection.getInputStream())
                 if (skipMs > 0 && bitrate > 0) {
                     // Skip precise bytes based on detected bitrate
@@ -68,13 +77,13 @@ class DesktopAudioPlayer : AudioPlayer {
                     val bytesToSkip = (skipMs * bitrate) / 8000
                     inputStream.skip(bytesToSkip)
                 }
-                
+
                 val p = javazoom.jl.player.Player(inputStream)
                 player = p
                 startTimeMs = System.currentTimeMillis() - skipMs
                 isPaused = false
                 p.play()
-                
+
                 // When play() returns, the song is finished naturally
                 if (player == p) {
                     lastPositionMs = if (estimatedDurationMs > 0) estimatedDurationMs else 0
@@ -109,7 +118,9 @@ class DesktopAudioPlayer : AudioPlayer {
         // Don't wipe estimatedDurationMs here, wipe it in play() for new track
     }
 
-    override fun setVolume(volume: Float) {}
+    override fun setVolume(volume: Float) {
+        // do nothing
+    }
 
     override fun isPlaying(): Boolean = player != null && !isPaused
 
@@ -119,7 +130,7 @@ class DesktopAudioPlayer : AudioPlayer {
             // Surgical stop: close player but don't reset lastPositionMs yet
             player?.close()
             player = null
-            
+
             lastPositionMs = position
             if (wasPlaying || isPaused) {
                 startThread(position)
@@ -144,6 +155,7 @@ class DesktopCharacterStorage : CharacterStorage {
     private val prefs = Preferences.userRoot().node("com.dnd.helper")
     private val _serverAddressFlow = kotlinx.coroutines.flow.MutableStateFlow(getServerAddress())
     private val _tableIdFlow = kotlinx.coroutines.flow.MutableStateFlow(getTableId())
+    private val _userIdFlow = kotlinx.coroutines.flow.MutableStateFlow(getUserId())
 
     override fun saveCharacterId(id: String) {
         prefs.put("last_character_id", id)
@@ -225,7 +237,9 @@ class DesktopCharacterStorage : CharacterStorage {
                 file.inputStream().use { stream ->
                     Json.decodeFromStream<JsonObject>(stream)
                 }
-            } else null
+            } else {
+                null
+            }
         } catch (e: Exception) {
             null
         }
@@ -271,6 +285,59 @@ class DesktopCharacterStorage : CharacterStorage {
             e.printStackTrace()
         }
     }
+
+    override fun saveAuthToken(token: String?) {
+        if (token == null) {
+            prefs.remove("auth_token")
+        } else {
+            prefs.put("auth_token", token)
+        }
+    }
+
+    override fun getAuthToken(): String? {
+        return prefs.get("auth_token", null)
+    }
+
+    override fun saveRefreshToken(token: String?) {
+        if (token == null) {
+            prefs.remove("refresh_token")
+        } else {
+            prefs.put("refresh_token", token)
+        }
+    }
+
+    override fun getRefreshToken(): String? {
+        return prefs.get("refresh_token", null)
+    }
+
+    override fun saveUserId(userId: String?) {
+        if (userId == null) {
+            prefs.remove("user_id")
+        } else {
+            prefs.put("user_id", userId)
+        }
+        _userIdFlow.value = userId
+    }
+
+    override fun getUserId(): String? {
+        return prefs.get("user_id", null)
+    }
+
+    override fun getUserIdFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _userIdFlow.asStateFlow()
+    }
+
+    override fun saveUserRole(role: String?) {
+        if (role == null) {
+            prefs.remove("user_role")
+        } else {
+            prefs.put("user_role", role)
+        }
+    }
+
+    override fun getUserRole(): String? {
+        return prefs.get("user_role", null)
+    }
 }
 
 actual val platformModule = module {
@@ -303,11 +370,11 @@ actual fun pickFile(title: String, allowedExtensions: List<String>): String? {
 
     val dialog = java.awt.FileDialog(activeWindow, title, java.awt.FileDialog.LOAD)
     if (allowedExtensions.isNotEmpty()) {
-        dialog.setFilenameFilter { _, name -> 
-            allowedExtensions.any { name.lowercase().endsWith(it.lowercase()) } 
+        dialog.setFilenameFilter { _, name ->
+            allowedExtensions.any { name.lowercase().endsWith(it.lowercase()) }
         }
     }
-    
+
     dialog.isAlwaysOnTop = true
     dialog.isVisible = true
     return if (dialog.file != null) dialog.directory + dialog.file else null
@@ -316,6 +383,16 @@ actual fun pickFile(title: String, allowedExtensions: List<String>): String? {
 actual fun readFileContent(path: String): String? {
     return try {
         java.io.File(path).readText()
+    } catch (e: Exception) {
+        null
+    }
+}
+
+actual suspend fun pasteFromClipboard(): String? {
+    return try {
+        val clipboard = java.awt.Toolkit.getDefaultToolkit().systemClipboard
+        val data = clipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor)
+        data as? String
     } catch (e: Exception) {
         null
     }

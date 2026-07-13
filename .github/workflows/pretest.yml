@@ -1,0 +1,40 @@
+name: Run pre-test build
+
+on:
+  pull_request:
+    branches:
+      - test
+
+jobs:
+  assemble:
+    name: Run assemble
+    permissions:
+      contents: write
+    uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
+    with:
+      runs-on: ubuntu-latest
+      build-script: "assemble"
+
+  detekt:
+    name: Run detekt
+    permissions:
+      contents: write
+    uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
+    with:
+      runs-on: ubuntu-latest
+      build-script: "detekt"
+      build-path: "**/build/reports/detekt/*"
+      archive: true
+      artifact-name: detekt
+
+  test:
+    name: Run test
+    permissions:
+      contents: write
+    uses: chmonya-inc/dnd-manager/.github/workflows/gradle.yml@v2
+    with:
+      runs-on: ubuntu-latest
+      build-script: "testDebugUnitTest"
+      build-path: "**/build/test-results/testDebugUnitTest/*"
+      archive: true
+      artifact-name: test

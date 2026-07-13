@@ -18,8 +18,13 @@ dependencies {
     implementation(libs.ktor.server.calllogging)
     implementation(libs.ktor.server.websockets)
     implementation(libs.ktor.server.statuspages)
+    implementation(libs.ktor.server.rate.limit)
     implementation(libs.ktor.serialization.kotlinx.json)
-    
+    implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.server.auth.jwt)
+    implementation(libs.jbcrypt)
+    implementation(libs.password4j)
+
     implementation(libs.exposed.core)
     implementation(libs.exposed.dao)
     implementation(libs.exposed.jdbc)
@@ -29,7 +34,9 @@ dependencies {
     
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.client.content.negotiation)
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.testcontainers)
+    testImplementation(libs.testcontainers.postgresql)
 }
 
 tasks.withType<Copy>().configureEach {

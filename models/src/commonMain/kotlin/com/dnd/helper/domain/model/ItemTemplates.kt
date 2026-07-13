@@ -1,5 +1,6 @@
 package com.dnd.helper.domain.model
 
+@Suppress("MaximumLineLength")
 object ItemTemplates {
     val genericItems = listOf(
         Item(
@@ -31,7 +32,10 @@ object ItemTemplates {
             name = "Spell Scroll: Fireball",
             slot = null,
             rarity = ItemRarity.RARE,
-            description = "A spell scroll bears the words of a single spell, written in a mystical cipher. If the spell is on your class's spell list, you can read the scroll and cast its spell without providing any material components.",
+            description = "A spell scroll bears the words of a single spell, " +
+                "written in a mystical cipher. " +
+                "If the spell is on your class's spell list, you can read the scroll " +
+                "and cast its spell without providing any material components.",
             imageUrl = "https://www.dndbeyond.com/avatars/7/413/636272449033325000.jpeg"
         ),
         Item(
@@ -39,7 +43,9 @@ object ItemTemplates {
             name = "Bag of Holding",
             slot = null,
             rarity = ItemRarity.UNCOMMON,
-            description = "This bag has an interior space considerably larger than its outside dimensions, roughly 2 feet in diameter at the mouth and 4 feet deep. The bag can hold up to 500 pounds, not exceeding a volume of 64 cubic feet.",
+            description = "This bag has an interior space considerably larger than its outside dimensions, " +
+                "roughly 2 feet in diameter at the mouth and 4 feet deep. " +
+                "The bag can hold up to 500 pounds, not exceeding a volume of 64 cubic feet.",
             imageUrl = "https://www.dndbeyond.com/avatars/7/111/636272314545560000.jpeg"
         ),
         Item(

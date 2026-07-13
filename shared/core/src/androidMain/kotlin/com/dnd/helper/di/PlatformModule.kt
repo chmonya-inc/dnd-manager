@@ -4,10 +4,10 @@ import android.content.Context
 import com.dnd.helper.domain.music.AndroidAudioPlayer
 import com.dnd.helper.domain.music.AudioPlayer
 import com.dnd.helper.domain.storage.CharacterStorage
-import kotlinx.serialization.json.*
-import kotlinx.serialization.encodeToString
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -15,6 +15,7 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
     private val prefs = context.getSharedPreferences("dnd_helper_prefs", Context.MODE_PRIVATE)
     private val _serverAddressFlow = MutableStateFlow(getServerAddress())
     private val _tableIdFlow = MutableStateFlow(getTableId())
+    private val _userIdFlow = MutableStateFlow(getUserId())
 
     override fun saveCharacterId(id: String) {
         prefs.edit().putString("last_character_id", id).apply()
@@ -106,6 +107,43 @@ class AndroidCharacterStorage(context: Context) : CharacterStorage {
     override fun clearApiCache() {
         // Android implementation placeholder
     }
+
+    override fun saveAuthToken(token: String?) {
+        prefs.edit().putString("auth_token", token).apply()
+    }
+
+    override fun getAuthToken(): String? {
+        return prefs.getString("auth_token", null)
+    }
+
+    override fun saveRefreshToken(token: String?) {
+        prefs.edit().putString("refresh_token", token).apply()
+    }
+
+    override fun getRefreshToken(): String? {
+        return prefs.getString("refresh_token", null)
+    }
+
+    override fun saveUserId(userId: String?) {
+        prefs.edit().putString("user_id", userId).apply()
+        _userIdFlow.value = userId
+    }
+
+    override fun getUserId(): String? {
+        return prefs.getString("user_id", null)
+    }
+
+    override fun getUserIdFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _userIdFlow.asStateFlow()
+    }
+
+    override fun saveUserRole(role: String?) {
+        prefs.edit().putString("user_role", role).apply()
+    }
+
+    override fun getUserRole(): String? {
+        return prefs.getString("user_role", null)
+    }
 }
 
 actual val platformModule = module {
@@ -126,4 +164,19 @@ actual fun pickFile(title: String, allowedExtensions: List<String>): String? {
 
 actual fun readFileContent(path: String): String? {
     return null
+}
+
+actual suspend fun pasteFromClipboard(): String? {
+    return try {
+        val context = org.koin.core.context.GlobalContext.get().get<Context>()
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        if (clipboard.hasPrimaryClip()) {
+            val item = clipboard.primaryClip?.getItemAt(0)
+            item?.text?.toString()
+        } else {
+            null
+        }
+    } catch (e: Exception) {
+        null
+    }
 }

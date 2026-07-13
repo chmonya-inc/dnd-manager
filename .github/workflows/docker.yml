@@ -27,26 +27,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle.properties', 'settings.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
       - name: Login to Docker Hub
         uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+
+      - name: Prepare build args
+        id: prepare
+        run: |
+          ARGS="${{ inputs.build-args }}"
+          if [[ "${{ inputs.use-config-secrets }}" == "true" ]]; then
+            ARGS="$ARGS --build-arg APPS_SCRIPT_URL_ANDROID=${{ secrets.APPS_SCRIPT_URL_ANDROID }}"
+            ARGS="$ARGS --build-arg APPS_SCRIPT_URL_DESKTOP=${{ secrets.APPS_SCRIPT_URL_DESKTOP }}"
+            ARGS="$ARGS --build-arg IMGBB_API_KEY=${{ secrets.IMGBB_API_KEY }}"
+          fi
+          echo "build_args=$ARGS" >> $GITHUB_OUTPUT
+
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
           push: true
           tags: ${{ inputs.image-name }}:${{ inputs.image-tag }}
           file: ${{ inputs.dockerfile-path }}
-          build-args: |
-            ${{ inputs.build-args }}
-            ${{ inputs.use-config-secrets && format('APPS_SCRIPT_URL_ANDROID={0}', secrets.APPS_SCRIPT_URL_ANDROID) || '' }}
-            ${{ inputs.use-config-secrets && format('APPS_SCRIPT_URL_DESKTOP={0}', secrets.APPS_SCRIPT_URL_DESKTOP) || '' }}
-            ${{ inputs.use-config-secrets && format('IMGBB_API_KEY={0}', secrets.IMGBB_API_KEY) || '' }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          build-args: ${{ steps.prepare.outputs.build_args }}
+          cache-from: type=registry,ref=${{ inputs.image-name }}:buildcache
+          cache-to: type=registry,ref=${{ inputs.image-name }}:buildcache,mode=max
           platforms: linux/arm64

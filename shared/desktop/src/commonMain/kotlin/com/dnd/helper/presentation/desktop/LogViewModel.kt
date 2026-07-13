@@ -3,11 +3,10 @@ package com.dnd.helper.presentation.desktop
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dnd.helper.domain.common.Result
+import com.dnd.helper.domain.common.toUserMessage
 import com.dnd.helper.domain.model.Character
 import com.dnd.helper.domain.model.LogEntry
 import com.dnd.helper.domain.repository.CharacterRepository
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +16,7 @@ import kotlinx.serialization.json.Json
 data class LogState(
     val logs: List<LogEntry> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
 )
 
 class LogViewModel(
@@ -43,22 +42,20 @@ class LogViewModel(
 
     fun refreshLogs(force: Boolean = false) {
         viewModelScope.launch {
-            if (!force) _state.value = _state.value.copy(isLoading = true)
-            val result = repository.getLogs()
-            if (result is Result.Success) {
-                _state.value = _state.value.copy(logs = result.data, isLoading = false)
-            } else {
-                _state.value = _state.value.copy(isLoading = false)
+            if (!force) _state.value = _state.value.copy(isLoading = true, error = null)
+            when (val result = repository.getLogs()) {
+                is Result.Success -> {
+                    _state.value = _state.value.copy(logs = result.data, isLoading = false, error = null)
+                }
+                is Result.Error -> {
+                    _state.value = _state.value.copy(
+                        logs = emptyList(),
+                        isLoading = false,
+                        error = result.error.toUserMessage()
+                    )
+                }
             }
         }
-    }
-
-    /** No-op for WebSocket version */
-    fun startPolling(intervalMs: Long = 1_000L) {
-    }
-
-    /** No-op for WebSocket version */
-    fun stopPolling() {
     }
 
     fun undoLog(log: LogEntry) {
@@ -69,11 +66,13 @@ class LogViewModel(
                     val oldCharacter = Json.decodeFromString<Character>(initialState)
                     val result = repository.saveCharacter(oldCharacter)
                     if (result is Result.Success) {
-                        repository.saveLog(LogEntry(
-                            action = "Undo: ${log.action}",
-                            details = "Reverted to state from ${log.timestamp}",
-                            success = true
-                        ))
+                        repository.saveLog(
+                            LogEntry(
+                                action = "Undo: ${log.action}",
+                                details = "Reverted to state from ${log.timestamp}",
+                                success = true
+                            )
+                        )
                         refreshLogs(force = true)
                     }
                 } catch (e: Exception) {

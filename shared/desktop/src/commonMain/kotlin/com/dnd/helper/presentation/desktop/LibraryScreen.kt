@@ -67,6 +67,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -107,12 +108,16 @@ import org.koin.compose.viewmodel.koinViewModel
 fun LibraryScreen(
     viewModel: LibraryViewModel = koinViewModel(),
     presentationViewModel: PresentationViewModel = koinViewModel(),
-    onNavigateToCreator: (CreatorType) -> Unit = {}
+    onNavigateToCreator: (CreatorType) -> Unit = {},
+    initialLibraryType: LibraryType? = null
 ) {
+    LaunchedEffect(initialLibraryType) {
+        initialLibraryType?.let { viewModel.onTypeSelected(it) }
+    }
     val state by viewModel.state.collectAsState()
     val dndColors = LocalDndColors.current
 
-    val currentThemeColor = when(state.selectedType) {
+    val currentThemeColor = when (state.selectedType) {
         LibraryType.Items -> dndColors.item
         LibraryType.Mobs -> dndColors.monster
         LibraryType.Npcs -> dndColors.npc
@@ -125,110 +130,135 @@ fun LibraryScreen(
     var draggedItemInfo by remember { mutableStateOf<Triple<Item, String, String>?>(null) } // Item, fromId, fromName
     var mousePosition by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     var dropTargetId by remember { mutableStateOf<String?>(null) }
-    val characterBounds = remember { mutableStateMapOf<String, androidx.compose.ui.layout.LayoutCoordinates>() }
-    var rootLayoutCoordinates by remember { mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(null) }
-    
+    val characterBounds =
+        remember { mutableStateMapOf<String, androidx.compose.ui.layout.LayoutCoordinates>() }
+    var rootLayoutCoordinates by remember {
+        mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(
+            null
+        )
+    }
+
     var showGenerateAllDialog by remember { mutableStateOf(false) }
     var forceRegenerate by remember { mutableStateOf(false) }
     var customWidthStr by remember { mutableStateOf("1024") }
     var customHeightStr by remember { mutableStateOf("1024") }
 
     if (showGenerateAllDialog) {
-        AlertDialog(
-            onDismissRequest = { 
-                showGenerateAllDialog = false 
-                forceRegenerate = false
-                customWidthStr = "1024"
-                customHeightStr = "1024"
-            },
-            title = { Text("Generate Missing Images") },
-            text = { 
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Are you sure you want to generate images for all entities in the library that do not currently have one? This will not overwrite existing images unless you check the box below.")
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().clickable { forceRegenerate = !forceRegenerate }
-                    ) {
-                        Checkbox(
-                            checked = forceRegenerate,
-                            onCheckedChange = { forceRegenerate = it }
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Force Regenerate All (Overwrite existing images)")
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = customWidthStr,
-                            onValueChange = { customWidthStr = it.filter { char -> char.isDigit() } },
-                            label = { Text("Width") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = customHeightStr,
-                            onValueChange = { customHeightStr = it.filter { char -> char.isDigit() } },
-                            label = { Text("Height") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val w = customWidthStr.toIntOrNull()?.coerceIn(256, 4096)
-                        val h = customHeightStr.toIntOrNull()?.coerceIn(256, 4096)
-                        viewModel.generateMissingImages(force = forceRegenerate, customWidth = w, customHeight = h)
-                        showGenerateAllDialog = false
-                        forceRegenerate = false
-                        customWidthStr = "1024"
-                        customHeightStr = "1024"
-                    }
+        AlertDialog(onDismissRequest = {
+            showGenerateAllDialog = false
+            forceRegenerate = false
+            customWidthStr = "1024"
+            customHeightStr = "1024"
+        }, title = { Text("Generate Missing Images") }, text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    "Are you sure you want to generate images for all entities in the library that do not currently have one? " +
+                        "This will not overwrite existing images unless you check the box below."
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                        .clickable { forceRegenerate = !forceRegenerate }
                 ) {
-                    Text("Generate")
+                    Checkbox(
+                        checked = forceRegenerate,
+                        onCheckedChange = { forceRegenerate = it }
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Force Regenerate All (Overwrite existing images)")
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { 
-                    showGenerateAllDialog = false 
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = customWidthStr,
+                        onValueChange = {
+                            customWidthStr = it.filter { char -> char.isDigit() }
+                        },
+                        label = { Text("Width") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = customHeightStr,
+                        onValueChange = {
+                            customHeightStr = it.filter { char -> char.isDigit() }
+                        },
+                        label = { Text("Height") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true
+                    )
+                }
+            }
+        }, confirmButton = {
+            Button(
+                onClick = {
+                    val w = customWidthStr.toIntOrNull()?.coerceIn(256, 4096)
+                    val h = customHeightStr.toIntOrNull()?.coerceIn(256, 4096)
+                    viewModel.generateMissingImages(
+                        force = forceRegenerate,
+                        customWidth = w,
+                        customHeight = h
+                    )
+                    showGenerateAllDialog = false
                     forceRegenerate = false
                     customWidthStr = "1024"
                     customHeightStr = "1024"
-                }) {
-                    Text("Cancel")
                 }
+            ) {
+                Text("Generate")
             }
-        )
+        }, dismissButton = {
+            TextButton(onClick = {
+                showGenerateAllDialog = false
+                forceRegenerate = false
+                customWidthStr = "1024"
+                customHeightStr = "1024"
+            }) {
+                Text("Cancel")
+            }
+        })
     }
 
     Box(modifier = Modifier.fillMaxSize().onGloballyPositioned { rootLayoutCoordinates = it }) {
         Column(modifier = Modifier.fillMaxSize()) {
             Surface(tonalElevation = 2.dp, shadowElevation = 2.dp) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), MaterialTheme.shapes.extraLarge)
-                            .padding(4.dp)
+                        modifier = Modifier.background(
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                            MaterialTheme.shapes.extraLarge
+                        ).padding(4.dp)
                     ) {
                         val tabs = listOf(
                             Triple(LibraryType.Items, dndColors.item, DndIcons.Filled.ShoppingBag),
                             Triple(LibraryType.Mobs, dndColors.monster, DndIcons.Filled.BugReport),
                             Triple(LibraryType.Npcs, dndColors.npc, DndIcons.Filled.EmojiPeople),
-                            Triple(LibraryType.Locations, dndColors.location, DndIcons.Filled.Explore),
-                            Triple(LibraryType.Battlefields, dndColors.location, DndIcons.Filled.Map),
-                            Triple(LibraryType.Templates, dndColors.item, DndIcons.Filled.AutoAwesome)
+                            Triple(
+                                LibraryType.Locations,
+                                dndColors.location,
+                                DndIcons.Filled.Explore
+                            ),
+                            Triple(
+                                LibraryType.Battlefields,
+                                dndColors.location,
+                                DndIcons.Filled.Map
+                            ),
+                            Triple(
+                                LibraryType.Templates,
+                                dndColors.item,
+                                DndIcons.Filled.AutoAwesome
+                            )
                         )
-                        
+
                         tabs.forEach { (type, color, icon) ->
                             val selected = state.selectedType == type
                             Surface(
@@ -239,12 +269,19 @@ fun LibraryScreen(
                                 contentColor = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    modifier = Modifier.padding(
+                                        horizontal = 16.dp,
+                                        vertical = 8.dp
+                                    ),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Icon(icon, null, modifier = Modifier.size(18.dp))
-                                    Text(type.title, style = MaterialTheme.typography.labelLarge, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
+                                    Text(
+                                        type.title,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                    )
                                 }
                             }
                         }
@@ -255,14 +292,25 @@ fun LibraryScreen(
                     ) {
                         Button(
                             onClick = { showGenerateAllDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer)
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
                         ) {
-                            Icon(DndIcons.Filled.AutoFixHigh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(
+                                DndIcons.Filled.AutoFixHigh,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
                             Spacer(Modifier.width(8.dp))
                             Text("Generate missing images")
                         }
                         IconButton(onClick = { viewModel.refreshData(force = true) }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = MaterialTheme.colorScheme.onSurface)
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     }
                 }
@@ -270,27 +318,40 @@ fun LibraryScreen(
 
             Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                 if (state.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = currentThemeColor)
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = currentThemeColor
+                    )
                 } else {
                     when (state.selectedType) {
                         LibraryType.Items -> ItemLibraryGrid(
-                            characters = state.characters, 
-                            presentationViewModel = presentationViewModel, 
+                            characters = state.characters,
+                            presentationViewModel = presentationViewModel,
                             onDeleteItem = viewModel::deleteItem,
                             onCreateNew = { onNavigateToCreator(CreatorType.Item()) },
-                            onEdit = { item, ownerId -> onNavigateToCreator(CreatorType.Item(item, ownerId)) },
+                            onEdit = { item, ownerId ->
+                                onNavigateToCreator(
+                                    CreatorType.Item(
+                                        item,
+                                        ownerId
+                                    )
+                                )
+                            },
                             dropTargetId = dropTargetId,
                             characterBounds = characterBounds,
                             onDragStart = { info -> draggedItemInfo = info },
-                            onDrag = { pos -> 
+                            onDrag = { pos ->
                                 mousePosition = pos
                                 // Check for drop target
                                 val rootCoords = rootLayoutCoordinates
                                 if (rootCoords != null) {
                                     dropTargetId = characterBounds.entries.find { (_, coords) ->
                                         if (coords.isAttached) {
-                                            rootCoords.localBoundingBoxOf(coords).contains(mousePosition)
-                                        } else false
+                                            rootCoords.localBoundingBoxOf(coords)
+                                                .contains(mousePosition)
+                                        } else {
+                                            false
+                                        }
                                     }?.key
                                 }
                             },
@@ -298,7 +359,11 @@ fun LibraryScreen(
                                 val itemToMove = draggedItemInfo
                                 val targetId = dropTargetId
                                 if (itemToMove != null && targetId != null && itemToMove.second != targetId) {
-                                    viewModel.moveItemBetweenCharacters(itemToMove.first, itemToMove.second, targetId)
+                                    viewModel.moveItemBetweenCharacters(
+                                        itemToMove.first,
+                                        itemToMove.second,
+                                        targetId
+                                    )
                                 }
                                 draggedItemInfo = null
                                 dropTargetId = null
@@ -309,34 +374,45 @@ fun LibraryScreen(
                             },
                             rootLayoutCoordinates = rootLayoutCoordinates
                         )
+
                         LibraryType.Mobs -> MonsterGrid(
-                            monsters = state.monsters, 
-                            presentationViewModel = presentationViewModel, 
+                            monsters = state.monsters,
+                            presentationViewModel = presentationViewModel,
                             onDelete = viewModel::deleteMonster,
                             onCreateNew = { onNavigateToCreator(CreatorType.Monster()) },
                             onEdit = { monster -> onNavigateToCreator(CreatorType.Monster(monster)) }
                         )
+
                         LibraryType.Npcs -> NpcGrid(
-                            npcs = state.npcs, 
-                            presentationViewModel = presentationViewModel, 
+                            npcs = state.npcs,
+                            presentationViewModel = presentationViewModel,
                             onDelete = viewModel::deleteNpc,
                             onCreateNew = { onNavigateToCreator(CreatorType.Npc()) },
                             onEdit = { npc -> onNavigateToCreator(CreatorType.Npc(npc)) }
                         )
+
                         LibraryType.Locations -> LocationGrid(
-                            locations = state.locations, 
-                            presentationViewModel = presentationViewModel, 
+                            locations = state.locations,
+                            presentationViewModel = presentationViewModel,
                             onDelete = viewModel::deleteLocation,
                             onCreateNew = { onNavigateToCreator(CreatorType.Location()) },
                             onEdit = { location -> onNavigateToCreator(CreatorType.Location(location)) }
                         )
+
                         LibraryType.Battlefields -> BattlefieldGrid(
                             battlefields = state.battlefields,
                             presentationViewModel = presentationViewModel,
                             onDelete = viewModel::deleteBattlefield,
                             onCreateNew = { onNavigateToCreator(CreatorType.Battlefield()) },
-                            onEdit = { battlefield -> onNavigateToCreator(CreatorType.Battlefield(battlefield)) }
+                            onEdit = { battlefield ->
+                                onNavigateToCreator(
+                                    CreatorType.Battlefield(
+                                        battlefield
+                                    )
+                                )
+                            }
                         )
+
                         LibraryType.Templates -> TemplateLibraryGrid(
                             characters = state.characters,
                             onAddItem = viewModel::addItem
@@ -349,19 +425,22 @@ fun LibraryScreen(
         // Ghost Overlay
         draggedItemInfo?.let { (item, _, _) ->
             Box(
-                modifier = Modifier
-                    .offset {
-                        IntOffset(
-                            mousePosition.x.toInt() - 50,
-                            mousePosition.y.toInt() - 20
-                        )
-                    }
-                    .size(width = 200.dp, height = 40.dp)
+                modifier = Modifier.offset {
+                    IntOffset(
+                        mousePosition.x.toInt() - 50,
+                        mousePosition.y.toInt() - 20
+                    )
+                }.size(width = 200.dp, height = 40.dp)
                     .background(dndColors.item.copy(alpha = 0.8f), MaterialTheme.shapes.small)
                     .border(1.dp, Color.White, MaterialTheme.shapes.small),
                 contentAlignment = Alignment.Center
             ) {
-                Text(item.name, color = Color.White, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                Text(
+                    item.name,
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -390,9 +469,13 @@ private fun CategoryHeader(
                 }
             }
             Spacer(Modifier.width(12.dp))
-            Text(title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+            Text(
+                title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold
+            )
         }
-        
+
         Button(
             onClick = onAdd,
             colors = ButtonDefaults.buttonColors(containerColor = color),
@@ -415,7 +498,7 @@ private fun NpcGrid(
 ) {
     Column {
         CategoryHeader("NPCs", LocalDndColors.current.npc, Icons.Default.EmojiPeople, onCreateNew)
-        
+
         if (npcs.isEmpty()) {
             EmptyLibraryState("No NPCs found", LocalDndColors.current.npc)
         } else {
@@ -426,12 +509,16 @@ private fun NpcGrid(
             ) {
                 val sortedNpcs = npcs.sortedBy { it.name }
                 items(sortedNpcs, key = { it.id }) { npc ->
-                    NpcLibraryCard(
-                        npc = npc,
-                        onPresent = { presentationViewModel.addItem(npc.name, type = "NPC", imageUrl = npc.displayImageUrl, sourceId = npc.id, description = npc.description, subInfo = npc.background) },
-                        onDelete = { onDelete(npc.id) },
-                        onEdit = { onEdit(npc) }
-                    )
+                    NpcLibraryCard(npc = npc, onPresent = {
+                        presentationViewModel.addItem(
+                            npc.name,
+                            type = "NPC",
+                            imageUrl = npc.displayImageUrl,
+                            sourceId = npc.id,
+                            description = npc.description,
+                            subInfo = npc.background
+                        )
+                    }, onDelete = { onDelete(npc.id) }, onEdit = { onEdit(npc) })
                 }
             }
         }
@@ -442,9 +529,18 @@ private fun NpcGrid(
 private fun EmptyLibraryState(message: String, color: Color) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(Icons.Default.Inbox, null, modifier = Modifier.size(64.dp), tint = color.copy(alpha = 0.3f))
+            Icon(
+                Icons.Default.Inbox,
+                null,
+                modifier = Modifier.size(64.dp),
+                tint = color.copy(alpha = 0.3f)
+            )
             Spacer(Modifier.height(16.dp))
-            Text(message, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -465,14 +561,23 @@ private fun LibraryCardActions(
             Icon(Icons.Default.Edit, "Edit", modifier = Modifier.size(18.dp))
         }
         IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, "Delete", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.error)
+            Icon(
+                Icons.Default.Delete,
+                "Delete",
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.error
+            )
         }
         FilledIconButton(
             onClick = onPresent,
             modifier = Modifier.size(32.dp),
             colors = IconButtonDefaults.filledIconButtonColors(containerColor = accentColor)
         ) {
-            Icon(Icons.Default.Tv, "Present", modifier = Modifier.size(16.dp))
+            Icon(
+                Icons.Default.Tv,
+                "Present",
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }
@@ -491,10 +596,7 @@ private fun NpcLibraryCard(
     val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .hoverable(interactionSource)
-            .scale(scale),
+        modifier = Modifier.fillMaxWidth().hoverable(interactionSource).scale(scale),
         shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -505,7 +607,11 @@ private fun NpcLibraryCard(
 
                 if (!imageUrl.isNullOrBlank()) {
                     if (isGenerating) {
-                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
                     } else {
@@ -517,40 +623,56 @@ private fun NpcLibraryCard(
                         )
                     }
                 } else {
-                    Box(modifier = Modifier.fillMaxSize().background(npcColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.EmojiPeople, null, modifier = Modifier.size(64.dp), tint = npcColor.copy(alpha = 0.3f))
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(npcColor.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.EmojiPeople,
+                            null,
+                            modifier = Modifier.size(64.dp),
+                            tint = npcColor.copy(alpha = 0.3f)
+                        )
                     }
                 }
-                
+
                 // Content overlay gradient
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
+                    modifier = Modifier.fillMaxSize().background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.6f)
+                            )
+                        )
+                    )
                 )
-                
+
                 Text(
-                    npc.name, 
+                    npc.name,
                     modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
             }
-            
+
             Column(modifier = Modifier.padding(12.dp)) {
                 if (npc.background.isNotBlank()) {
-                    Surface(color = npcColor.copy(alpha = 0.1f), shape = MaterialTheme.shapes.small) {
+                    Surface(
+                        color = npcColor.copy(alpha = 0.1f),
+                        shape = MaterialTheme.shapes.small
+                    ) {
                         Text(
-                            npc.background, 
+                            npc.background,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelMedium, 
+                            style = MaterialTheme.typography.labelMedium,
                             color = npcColor,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
-                
+
                 Spacer(Modifier.height(8.dp))
                 LibraryCardActions(onEdit, onDelete, onPresent, npcColor)
             }
@@ -567,8 +689,13 @@ private fun MonsterGrid(
     onEdit: (Monster) -> Unit
 ) {
     Column {
-        CategoryHeader("Monsters", LocalDndColors.current.monster, Icons.Default.BugReport, onCreateNew)
-        
+        CategoryHeader(
+            "Monsters",
+            LocalDndColors.current.monster,
+            Icons.Default.BugReport,
+            onCreateNew
+        )
+
         if (monsters.isEmpty()) {
             EmptyLibraryState("No monsters found", LocalDndColors.current.monster)
         } else {
@@ -579,25 +706,20 @@ private fun MonsterGrid(
             ) {
                 val sortedMonsters = monsters.sortedBy { it.name }
                 items(sortedMonsters, key = { it.id }) { monster ->
-                    MonsterLibraryCard(
-                        monster = monster,
-                        onPresent = { 
-                            presentationViewModel.addItem(
-                                title = monster.name, 
-                                type = "Monster", 
-                                imageUrl = monster.displayImageUrl,
-                                currentHp = monster.currentHp,
-                                maxHp = monster.maxHp,
-                                armorClass = monster.armorClass,
-                                stats = monster.stats,
-                                subInfo = "${monster.size} ${monster.type} · CR ${monster.challengeRating}",
-                                sourceId = monster.id,
-                                description = monster.description
-                            )
-                        },
-                        onDelete = { onDelete(monster.id) },
-                        onEdit = { onEdit(monster) }
-                    )
+                    MonsterLibraryCard(monster = monster, onPresent = {
+                        presentationViewModel.addItem(
+                            title = monster.name,
+                            type = "Monster",
+                            imageUrl = monster.displayImageUrl,
+                            currentHp = monster.currentHp,
+                            maxHp = monster.maxHp,
+                            armorClass = monster.armorClass,
+                            stats = monster.stats,
+                            subInfo = "${monster.size} ${monster.type} · CR ${monster.challengeRating}",
+                            sourceId = monster.id,
+                            description = monster.description
+                        )
+                    }, onDelete = { onDelete(monster.id) }, onEdit = { onEdit(monster) })
                 }
             }
         }
@@ -618,10 +740,7 @@ private fun MonsterLibraryCard(
     val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .hoverable(interactionSource)
-            .scale(scale),
+        modifier = Modifier.fillMaxWidth().hoverable(interactionSource).scale(scale),
         shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -632,7 +751,11 @@ private fun MonsterLibraryCard(
 
                 if (!imageUrl.isNullOrBlank()) {
                     if (isGenerating) {
-                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
                     } else {
@@ -644,18 +767,27 @@ private fun MonsterLibraryCard(
                         )
                     }
                 } else {
-                    Box(modifier = Modifier.fillMaxSize().background(monsterColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.BugReport, null, modifier = Modifier.size(64.dp), tint = monsterColor.copy(alpha = 0.3f))
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                            .background(monsterColor.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.BugReport,
+                            null,
+                            modifier = Modifier.size(64.dp),
+                            tint = monsterColor.copy(alpha = 0.3f)
+                        )
                     }
                 }
-                
+
                 Surface(
                     modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
                     color = Color.Black.copy(alpha = 0.7f),
                     shape = MaterialTheme.shapes.small
                 ) {
                     Text(
-                        "CR ${monster.challengeRating}", 
+                        "CR ${monster.challengeRating}",
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.White,
@@ -664,27 +796,32 @@ private fun MonsterLibraryCard(
                 }
 
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
+                    modifier = Modifier.fillMaxSize().background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.6f)
+                            )
+                        )
+                    )
                 )
 
                 Text(
-                    monster.name, 
+                    monster.name,
                     modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
             }
-            
+
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
-                    "${monster.size} ${monster.type} · ${monster.alignment}", 
-                    style = MaterialTheme.typography.bodySmall, 
+                    "${monster.size} ${monster.type} · ${monster.alignment}",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                
+
                 Spacer(Modifier.height(8.dp))
                 LibraryCardActions(onEdit, onDelete, onPresent, monsterColor)
             }
@@ -708,13 +845,13 @@ private fun ItemLibraryGrid(
     onDragCancel: () -> Unit,
     rootLayoutCoordinates: androidx.compose.ui.layout.LayoutCoordinates? = null
 ) {
-    val distinctCharacters = remember(characters) { 
+    val distinctCharacters = remember(characters) {
         characters.filter { it.id.isNotBlank() }.distinctBy { it.id.trim() }.sortedBy { it.name }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
         CategoryHeader("Items", LocalDndColors.current.item, Icons.Default.ShoppingBag, onCreateNew)
-        
+
         if (distinctCharacters.isEmpty()) {
             EmptyLibraryState("No characters found to assign items", LocalDndColors.current.item)
         } else {
@@ -732,7 +869,13 @@ private fun ItemLibraryGrid(
                         val isHighlighted = dropTargetId == character.id
                         val itemColor = LocalDndColors.current.item
                         Surface(
-                            color = if (isHighlighted) itemColor.copy(alpha = 0.2f) else itemColor.copy(alpha = 0.1f),
+                            color = if (isHighlighted) {
+                                itemColor.copy(alpha = 0.2f)
+                            } else {
+                                itemColor.copy(
+                                    alpha = 0.1f
+                                )
+                            },
                             shape = MaterialTheme.shapes.medium,
                             border = if (isHighlighted) BorderStroke(2.dp, itemColor) else null
                         ) {
@@ -740,7 +883,12 @@ private fun ItemLibraryGrid(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
-                                Icon(Icons.Default.Person, null, modifier = Modifier.size(16.dp), tint = itemColor)
+                                Icon(
+                                    Icons.Default.Person,
+                                    null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = itemColor
+                                )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     text = character.name,
@@ -750,13 +898,13 @@ private fun ItemLibraryGrid(
                                 )
                             }
                         }
-                        
+
                         Spacer(Modifier.height(12.dp))
-                        
+
                         if (character.items.isEmpty()) {
                             Text(
-                                "Inventory is empty", 
-                                style = MaterialTheme.typography.bodySmall, 
+                                "Inventory is empty",
+                                style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(start = 16.dp)
                             )
@@ -769,36 +917,52 @@ private fun ItemLibraryGrid(
                             ) {
                                 val sortedItems = character.items.sortedBy { it.name }
                                 sortedItems.forEach { item ->
-                                    var itemCoords: androidx.compose.ui.layout.LayoutCoordinates? by remember { mutableStateOf(null) }
-                                    Box(modifier = Modifier.width(240.dp)
-                                        .onGloballyPositioned { itemCoords = it }
-                                        .pointerInput(item.id) {
-                                            detectDragGestures(
-                                                onDragStart = { _ ->
-                                                    onDragStart(Triple(item, character.id, character.name))
-                                                },
-                                                onDrag = { change, _ ->
-                                                    val rootCoords = rootLayoutCoordinates
-                                                    if (rootCoords != null && itemCoords != null) {
-                                                        onDrag(rootCoords.localPositionOf(itemCoords!!, change.position))
-                                                    }
-                                                },
-                                                onDragEnd = onDragEnd,
-                                                onDragCancel = onDragCancel
-                                            )
-                                        }
+                                    var itemCoords: androidx.compose.ui.layout.LayoutCoordinates? by remember {
+                                        mutableStateOf(
+                                            null
+                                        )
+                                    }
+                                    Box(
+                                        modifier = Modifier.width(240.dp)
+                                            .onGloballyPositioned { itemCoords = it }
+                                            .pointerInput(item.id) {
+                                                detectDragGestures(
+                                                    onDragStart = { _ ->
+                                                        onDragStart(
+                                                            Triple(
+                                                                item,
+                                                                character.id,
+                                                                character.name
+                                                            )
+                                                        )
+                                                    },
+                                                    onDrag = { change, _ ->
+                                                        val rootCoords = rootLayoutCoordinates
+                                                        if (rootCoords != null && itemCoords != null) {
+                                                            onDrag(
+                                                                rootCoords.localPositionOf(
+                                                                    itemCoords!!,
+                                                                    change.position
+                                                                )
+                                                            )
+                                                        }
+                                                    },
+                                                    onDragEnd = onDragEnd,
+                                                    onDragCancel = onDragCancel
+                                                )
+                                            }
                                     ) {
                                         ItemLibraryCard(
                                             item = item,
-                                            onPresent = { 
+                                            onPresent = {
                                                 presentationViewModel.addItem(
-                                                    title = item.name, 
-                                                    type = "Item", 
+                                                    title = item.name,
+                                                    type = "Item",
                                                     imageUrl = item.imageUrl,
                                                     subInfo = "${item.rarity.name} · Owned by ${character.name}",
                                                     description = item.description,
                                                     sourceId = item.id
-                                                ) 
+                                                )
                                             },
                                             onDelete = { onDeleteItem(character.id, item.id) },
                                             onEdit = { onEdit(item, character.id) }
@@ -834,29 +998,39 @@ fun AddItemToCharacterDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Receiver:", style = MaterialTheme.typography.labelLarge)
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ),
                     shape = MaterialTheme.shapes.medium
                 ) {
-                    Column(modifier = Modifier.heightIn(max = 140.dp).verticalScroll(rememberScrollState()).padding(4.dp)) {
+                    Column(
+                        modifier = Modifier.heightIn(max = 140.dp)
+                            .verticalScroll(rememberScrollState()).padding(4.dp)
+                    ) {
                         characters.forEach { char ->
                             Row(
-                                modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small).clickable { selectedCharacterId = char.id },
+                                modifier = Modifier.fillMaxWidth().clip(
+                                    MaterialTheme.shapes.small
+                                ).clickable { selectedCharacterId = char.id },
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = selectedCharacterId == char.id, 
+                                    selected = selectedCharacterId == char.id,
                                     onClick = { selectedCharacterId = char.id },
                                     colors = RadioButtonDefaults.colors(selectedColor = LocalDndColors.current.item)
                                 )
-                                Text(char.name, fontWeight = if (selectedCharacterId == char.id) FontWeight.Bold else FontWeight.Normal)
+                                Text(
+                                    char.name,
+                                    fontWeight = if (selectedCharacterId == char.id) FontWeight.Bold else FontWeight.Normal
+                                )
                             }
                         }
                     }
                 }
-                
+
                 OutlinedTextField(
-                    value = itemName, 
-                    onValueChange = { itemName = it }, 
+                    value = itemName,
+                    onValueChange = { itemName = it },
                     label = { Text("Item Name") },
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
@@ -873,9 +1047,15 @@ fun AddItemToCharacterDialog(
                         ) {
                             Text(rarity.name, maxLines = 1)
                         }
-                        DropdownMenu(expanded = rarityExpanded, onDismissRequest = { rarityExpanded = false }) {
+                        DropdownMenu(
+                            expanded = rarityExpanded,
+                            onDismissRequest = { rarityExpanded = false }
+                        ) {
                             ItemRarity.entries.forEach { r ->
-                                DropdownMenuItem(text = { Text(r.name) }, onClick = { rarity = r; rarityExpanded = false })
+                                DropdownMenuItem(text = { Text(r.name) }, onClick = {
+                                    rarity = r
+                                    rarityExpanded = false
+                                })
                             }
                         }
                     }
@@ -889,25 +1069,34 @@ fun AddItemToCharacterDialog(
                         ) {
                             Text(slot?.name ?: "None", maxLines = 1)
                         }
-                        DropdownMenu(expanded = slotExpanded, onDismissRequest = { slotExpanded = false }) {
-                            DropdownMenuItem(text = { Text("None") }, onClick = { slot = null; slotExpanded = false })
+                        DropdownMenu(
+                            expanded = slotExpanded,
+                            onDismissRequest = { slotExpanded = false }
+                        ) {
+                            DropdownMenuItem(text = { Text("None") }, onClick = {
+                                slot = null
+                                slotExpanded = false
+                            })
                             EquipmentSlot.entries.forEach { s ->
-                                DropdownMenuItem(text = { Text(s.name) }, onClick = { slot = s; slotExpanded = false })
+                                DropdownMenuItem(text = { Text(s.name) }, onClick = {
+                                    slot = s
+                                    slotExpanded = false
+                                })
                             }
                         }
                     }
                 }
 
                 OutlinedTextField(
-                    value = itemDescription, 
-                    onValueChange = { itemDescription = it }, 
+                    value = itemDescription,
+                    onValueChange = { itemDescription = it },
                     label = { Text("Description") },
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
-                    value = itemImageUrl, 
-                    onValueChange = { itemImageUrl = it }, 
+                    value = itemImageUrl,
+                    onValueChange = { itemImageUrl = it },
                     label = { Text("Image URL") },
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
@@ -956,10 +1145,7 @@ private fun ItemLibraryCard(
     val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .hoverable(interactionSource)
-            .scale(scale),
+        modifier = Modifier.fillMaxWidth().hoverable(interactionSource).scale(scale),
         shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = BorderStroke(1.dp, rarityColor.copy(alpha = 0.5f))
@@ -971,7 +1157,11 @@ private fun ItemLibraryCard(
 
                 if (!imageUrl.isNullOrBlank()) {
                     if (isGenerating) {
-                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
                     } else {
@@ -984,8 +1174,7 @@ private fun ItemLibraryCard(
                     }
                 } else {
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
+                        modifier = Modifier.fillMaxSize()
                             .background(rarityColor.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
@@ -1000,9 +1189,14 @@ private fun ItemLibraryCard(
 
                 // Content overlay gradient
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
+                    modifier = Modifier.fillMaxSize().background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.6f)
+                            )
+                        )
+                    )
                 )
 
                 Text(
@@ -1056,8 +1250,13 @@ private fun LocationGrid(
     onEdit: (Location) -> Unit
 ) {
     Column {
-        CategoryHeader("Locations", LocalDndColors.current.location, Icons.Default.Explore, onCreateNew)
-        
+        CategoryHeader(
+            "Locations",
+            LocalDndColors.current.location,
+            Icons.Default.Explore,
+            onCreateNew
+        )
+
         if (locations.isEmpty()) {
             EmptyLibraryState("No locations found", LocalDndColors.current.location)
         } else {
@@ -1068,12 +1267,16 @@ private fun LocationGrid(
             ) {
                 val sortedLocations = locations.sortedBy { it.name }
                 items(sortedLocations, key = { it.id }) { location ->
-                    LocationLibraryCard(
-                        location = location,
-                        onPresent = { presentationViewModel.addItem(location.name, type = "Location", imageUrl = location.displayImageUrl, isBackground = true, sourceId = location.id, description = location.description) },
-                        onDelete = { onDelete(location.id) },
-                        onEdit = { onEdit(location) }
-                    )
+                    LocationLibraryCard(location = location, onPresent = {
+                        presentationViewModel.addItem(
+                            location.name,
+                            type = "Location",
+                            imageUrl = location.displayImageUrl,
+                            isBackground = true,
+                            sourceId = location.id,
+                            description = location.description
+                        )
+                    }, onDelete = { onDelete(location.id) }, onEdit = { onEdit(location) })
                 }
             }
         }
@@ -1094,10 +1297,7 @@ private fun LocationLibraryCard(
     val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .hoverable(interactionSource)
-            .scale(scale),
+        modifier = Modifier.fillMaxWidth().hoverable(interactionSource).scale(scale),
         shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -1108,7 +1308,11 @@ private fun LocationLibraryCard(
 
                 if (!imageUrl.isNullOrBlank()) {
                     if (isGenerating) {
-                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
                     } else {
@@ -1120,30 +1324,44 @@ private fun LocationLibraryCard(
                         )
                     }
                 } else {
-                    Box(modifier = Modifier.fillMaxSize().background(locationColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Map, null, modifier = Modifier.size(64.dp), tint = locationColor.copy(alpha = 0.3f))
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                            .background(locationColor.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Map,
+                            null,
+                            modifier = Modifier.size(64.dp),
+                            tint = locationColor.copy(alpha = 0.3f)
+                        )
                     }
                 }
-                
+
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))))
+                    modifier = Modifier.fillMaxSize().background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.7f)
+                            )
+                        )
+                    )
                 )
-                
+
                 Text(
-                    location.name, 
+                    location.name,
                     modifier = Modifier.align(Alignment.BottomStart).padding(20.dp),
                     style = MaterialTheme.typography.headlineSmall,
                     color = Color.White,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
-            
+
             Column(modifier = Modifier.padding(16.dp)) {
                 if (location.description.isNotBlank()) {
                     Text(
-                        location.description, 
+                        location.description,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 3,
@@ -1166,8 +1384,13 @@ private fun BattlefieldGrid(
     onEdit: (Battlefield) -> Unit
 ) {
     Column {
-        CategoryHeader("Battlefields", LocalDndColors.current.location, Icons.Default.Map, onCreateNew)
-        
+        CategoryHeader(
+            "Battlefields",
+            LocalDndColors.current.location,
+            Icons.Default.Map,
+            onCreateNew
+        )
+
         if (battlefields.isEmpty()) {
             EmptyLibraryState("No battlefields found", LocalDndColors.current.location)
         } else {
@@ -1177,12 +1400,16 @@ private fun BattlefieldGrid(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(battlefields, key = { it.id }) { bf ->
-                    BattlefieldLibraryCard(
-                        battlefield = bf,
-                        onPresent = { presentationViewModel.addItem(bf.name, type = "Battlefield", imageUrl = bf.displayImageUrl, isBackground = true, sourceId = bf.id, description = bf.description) },
-                        onDelete = { onDelete(bf.id) },
-                        onEdit = { onEdit(bf) }
-                    )
+                    BattlefieldLibraryCard(battlefield = bf, onPresent = {
+                        presentationViewModel.addItem(
+                            bf.name,
+                            type = "Battlefield",
+                            imageUrl = bf.displayImageUrl,
+                            isBackground = true,
+                            sourceId = bf.id,
+                            description = bf.description
+                        )
+                    }, onDelete = { onDelete(bf.id) }, onEdit = { onEdit(bf) })
                 }
             }
         }
@@ -1203,10 +1430,7 @@ private fun BattlefieldLibraryCard(
     val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .hoverable(interactionSource)
-            .scale(scale),
+        modifier = Modifier.fillMaxWidth().hoverable(interactionSource).scale(scale),
         shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -1217,7 +1441,11 @@ private fun BattlefieldLibraryCard(
 
                 if (!imageUrl.isNullOrBlank()) {
                     if (isGenerating) {
-                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentAlignment = Alignment.Center
+                        ) {
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
                     } else {
@@ -1229,30 +1457,44 @@ private fun BattlefieldLibraryCard(
                         )
                     }
                 } else {
-                    Box(modifier = Modifier.fillMaxSize().background(locationColor.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Map, null, modifier = Modifier.size(64.dp), tint = locationColor.copy(alpha = 0.3f))
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                            .background(locationColor.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Map,
+                            null,
+                            modifier = Modifier.size(64.dp),
+                            tint = locationColor.copy(alpha = 0.3f)
+                        )
                     }
                 }
-                
+
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))))
+                    modifier = Modifier.fillMaxSize().background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.7f)
+                            )
+                        )
+                    )
                 )
-                
+
                 Text(
-                    battlefield.name, 
+                    battlefield.name,
                     modifier = Modifier.align(Alignment.BottomStart).padding(20.dp),
                     style = MaterialTheme.typography.headlineSmall,
                     color = Color.White,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
-            
+
             Column(modifier = Modifier.padding(16.dp)) {
                 if (battlefield.description.isNotBlank()) {
                     Text(
-                        battlefield.description, 
+                        battlefield.description,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 3,
@@ -1272,9 +1514,9 @@ private fun TemplateLibraryGrid(
     onAddItem: (String, Item) -> Unit
 ) {
     var selectedTemplate by remember { mutableStateOf<Item?>(null) }
-    
-    val distinctCharacters = remember(characters) { 
-        characters.filter { it.id.isNotBlank() }.distinctBy { it.id.trim() } 
+
+    val distinctCharacters = remember(characters) {
+        characters.filter { it.id.isNotBlank() }.distinctBy { it.id.trim() }
     }
 
     if (selectedTemplate != null) {
@@ -1290,8 +1532,13 @@ private fun TemplateLibraryGrid(
     }
 
     Column {
-        CategoryHeader("Generic Templates", LocalDndColors.current.item, DndIcons.Filled.AutoAwesome, {})
-        
+        CategoryHeader(
+            "Generic Templates",
+            LocalDndColors.current.item,
+            DndIcons.Filled.AutoAwesome,
+            {}
+        )
+
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 240.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -1314,10 +1561,7 @@ private fun TemplateCard(template: Item, onClick: () -> Unit) {
     val scale by animateFloatAsState(if (hovered) 1.02f else 1f)
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .hoverable(interactionSource)
-            .clickable(onClick = onClick)
+        modifier = Modifier.fillMaxWidth().hoverable(interactionSource).clickable(onClick = onClick)
             .scale(scale),
         shape = MaterialTheme.shapes.large,
         border = BorderStroke(1.dp, rarityColor.copy(alpha = 0.3f))
@@ -1334,8 +1578,16 @@ private fun TemplateCard(template: Item, onClick: () -> Unit) {
             }
             Spacer(Modifier.width(16.dp))
             Column {
-                Text(template.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Text(template.rarity.name, style = MaterialTheme.typography.labelSmall, color = rarityColor)
+                Text(
+                    template.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    template.rarity.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = rarityColor
+                )
             }
         }
     }
@@ -1350,37 +1602,40 @@ private fun AssignTemplateDialog(
 ) {
     var selectedCharacterId by remember { mutableStateOf(characters.firstOrNull()?.id ?: "") }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Assign ${template.name}") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Select Character:")
-                LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
-                    items(characters) { char ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable { selectedCharacterId = char.id }.padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(selected = selectedCharacterId == char.id, onClick = { selectedCharacterId = char.id })
-                            Text(char.name)
-                        }
+    AlertDialog(onDismissRequest = onDismiss, title = { Text("Assign ${template.name}") }, text = {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Select Character:")
+            LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                items(characters) { char ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable { selectedCharacterId = char.id }.padding(
+                                vertical = 4.dp
+                            ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedCharacterId == char.id,
+                            onClick = { selectedCharacterId = char.id }
+                        )
+                        Text(char.name)
                     }
                 }
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = { 
-                    onConfirm(selectedCharacterId, template.copy(id = "item-${kotlin.random.Random.nextInt()}"))
-                },
-                enabled = selectedCharacterId.isNotBlank()
-            ) {
-                Text("Give to Character")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
-    )
+    }, confirmButton = {
+        Button(
+            onClick = {
+                onConfirm(
+                    selectedCharacterId,
+                    template.copy(id = "item-${kotlin.random.Random.nextInt()}")
+                )
+            },
+            enabled = selectedCharacterId.isNotBlank()
+        ) {
+            Text("Give to Character")
+        }
+    }, dismissButton = {
+        TextButton(onClick = onDismiss) { Text("Cancel") }
+    })
 }

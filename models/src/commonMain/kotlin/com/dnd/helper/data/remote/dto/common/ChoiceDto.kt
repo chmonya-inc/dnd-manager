@@ -1,5 +1,6 @@
 package com.dnd.helper.data.remote.dto.common
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -8,72 +9,72 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class ChoiceDto(
-    val desc: String? = null,
-    val choose: Int = 1,
-    val type: String = "",
-    val from: OptionSetDto = OptionSetDto(),
+    @SerialName("desc") val desc: String? = null,
+    @SerialName("choose") val choose: Int = 1,
+    @SerialName("type") val type: String = "",
+    @SerialName("from") val from: OptionSetDto = OptionSetDto(),
 )
 
 /**
  * An option set defines the pool of options for a [ChoiceDto].
- * Discriminated by [option_set_type]:
- * - "options_array"      → use [options_array]
- * - "equipment_category" → use [equipment_category]
- * - "resource_list"      → use [resource_list_url]
+ * Discriminated by [optionSetType]:
+ * - "options_array"      → use [optionsArray]
+ * - "equipment_category" → use [equipmentCategory]
+ * - "resource_list"      → use [resourceListUrl]
  */
 @Serializable
 data class OptionSetDto(
-    val option_set_type: String = "options_array",
-    val options_array: List<OptionDto>? = null,
-    val equipment_category: ApiReferenceDto? = null,
-    val resource_list_url: String? = null,
+    @SerialName("option_set_type") val optionSetType: String = "options_array",
+    @SerialName("options_array") val optionsArray: List<OptionDto>? = null,
+    @SerialName("equipment_category") val equipmentCategory: ApiReferenceDto? = null,
+    @SerialName("resource_list_url") val resourceListUrl: String? = null,
 )
 
 /**
  * A single option within an [OptionSetDto].
- * The active fields depend on [option_type]:
+ * The active fields depend on [optionType]:
  * - "reference"          → [item]
- * - "action"             → [action_name], [count], [type]
+ * - "action"             → [actionName], [count], [type]
  * - "multiple"           → [items]
  * - "choice"             → [choice]
  * - "string"             → [string]
  * - "ideal"              → [desc], [alignments]
  * - "counted_reference"  → [count], [of]
- * - "score_prerequisite" → [ability_score], [minimum_score]
- * - "ability_bonus"      → [ability_score], [bonus]
+ * - "score_prerequisite" → [abilityScore], [minimumScore]
+ * - "ability_bonus"      → [abilityScore], [bonus]
  * - "breath"             → [name], [dc], [damage]
- * - "damage"             → [damage_type], [damage_dice], [notes]
+ * - "damage"             → [damageType], [damageDice], [notes]
  */
 @Serializable
 data class OptionDto(
-    val option_type: String = "",
+    @SerialName("option_type") val optionType: String = "",
     // reference
-    val item: ApiReferenceDto? = null,
+    @SerialName("item") val item: ApiReferenceDto? = null,
     // action
-    val action_name: String? = null,
-    val count: kotlinx.serialization.json.JsonElement? = null,
-    val type: String? = null, // "melee" | "ranged" | "ability" | "magic"
+    @SerialName("action_name") val actionName: String? = null,
+    @SerialName("count") val count: kotlinx.serialization.json.JsonElement? = null,
+    @SerialName("type") val type: String? = null, // "melee" | "ranged" | "ability" | "magic"
     // multiple
-    val items: List<OptionDto>? = null,
+    @SerialName("items") val items: List<OptionDto>? = null,
     // choice (nested)
-    val choice: ChoiceDto? = null,
+    @SerialName("choice") val choice: ChoiceDto? = null,
     // string
-    val string: String? = null,
+    @SerialName("string") val string: String? = null,
     // ideal
-    val desc: String? = null,
-    val alignments: List<ApiReferenceDto>? = null,
+    @SerialName("desc") val desc: String? = null,
+    @SerialName("alignments") val alignments: List<ApiReferenceDto>? = null,
     // counted_reference
-    val of: ApiReferenceDto? = null,
+    @SerialName("of") val of: ApiReferenceDto? = null,
     // score_prerequisite / ability_bonus
-    val ability_score: ApiReferenceDto? = null,
-    val minimum_score: Double? = null,
-    val bonus: Double? = null,
+    @SerialName("ability_score") val abilityScore: ApiReferenceDto? = null,
+    @SerialName("minimum_score") val minimumScore: Double? = null,
+    @SerialName("bonus") val bonus: Double? = null,
     // breath
-    val name: String? = null,
-    val dc: DcDto? = null,
-    val damage: List<DamageDto>? = null,
+    @SerialName("name") val name: String? = null,
+    @SerialName("dc") val dc: DcDto? = null,
+    @SerialName("damage") val damage: List<DamageDto>? = null,
     // damage option
-    val damage_type: ApiReferenceDto? = null,
-    val damage_dice: String? = null,
-    val notes: String? = null,
+    @SerialName("damage_type") val damageType: ApiReferenceDto? = null,
+    @SerialName("damage_dice") val damageDice: String? = null,
+    @SerialName("notes") val notes: String? = null,
 )

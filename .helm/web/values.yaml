@@ -1,2 +1,3 @@
 subpath: "/"
 port: 80
+replicas: 1

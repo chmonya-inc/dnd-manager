@@ -1,7 +1,15 @@
 package com.dnd.helper.domain.repository
 
 import com.dnd.helper.domain.common.Result
-import com.dnd.helper.domain.model.*
+import com.dnd.helper.domain.model.Battlefield
+import com.dnd.helper.domain.model.Character
+import com.dnd.helper.domain.model.GameEvent
+import com.dnd.helper.domain.model.InitialData
+import com.dnd.helper.domain.model.Location
+import com.dnd.helper.domain.model.LogEntry
+import com.dnd.helper.domain.model.Monster
+import com.dnd.helper.domain.model.MusicTrack
+import com.dnd.helper.domain.model.Npc
 import kotlinx.coroutines.flow.Flow
 
 interface CharacterRepository {

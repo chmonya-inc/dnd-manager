@@ -1,10 +1,9 @@
 package com.dnd.helper.presentation.desktop
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -15,7 +14,6 @@ import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.rememberWindowState
 import java.awt.GraphicsEnvironment
-import kotlinx.coroutines.delay
 
 @Composable
 actual fun ExternalWindow(
@@ -34,7 +32,7 @@ actual fun ExternalWindow(
                 val device = if (screens.size > 1) screens[1] else screens[0]
                 val config = device.defaultConfiguration
                 val bounds = config.bounds
-                
+
                 // In AWT, coordinates are already in logical units on modern JDKs (HiDPI aware)
                 // We use Floating + undecorated instead of Fullscreen to avoid the 0xC000041D crash
                 Triple(

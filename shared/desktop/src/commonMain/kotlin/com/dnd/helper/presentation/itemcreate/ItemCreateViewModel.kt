@@ -3,22 +3,20 @@ package com.dnd.helper.presentation.itemcreate
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dnd.helper.data.remote.DndApiDataSource
+import com.dnd.helper.data.remote.GenerationType
+import com.dnd.helper.data.remote.PromptGenerator
+import com.dnd.helper.domain.common.AppError
 import com.dnd.helper.domain.common.Result
+import com.dnd.helper.domain.common.toUserMessage
 import com.dnd.helper.domain.model.Item
 import com.dnd.helper.domain.repository.CharacterRepository
+import com.dnd.helper.domain.repository.EditingRepository
+import com.dnd.helper.domain.repository.GenerationStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-import com.dnd.helper.domain.repository.EditingRepository
-import com.dnd.helper.domain.repository.GenerationStatus
-import com.dnd.helper.data.remote.GenerationType
-import com.dnd.helper.data.remote.PromptGenerator
-
-import com.dnd.helper.domain.common.AppError
-import com.dnd.helper.domain.common.toUserMessage
 
 class ItemCreateViewModel(
     private val repository: CharacterRepository,
@@ -35,7 +33,7 @@ class ItemCreateViewModel(
     fun initData(existingItem: Item?, ownerId: String?) {
         if (isInitialized) return
         isInitialized = true
-        
+
         _state.update { currentState ->
             if (existingItem != null) {
                 currentState.copy(
@@ -70,11 +68,13 @@ class ItemCreateViewModel(
                             if (task.entityType == "item" && currentState.imageUrl == "generating:${task.id}") {
                                 changed = true
                                 currentState.copy(imageUrl = task.resultUrl!!)
-                            } else currentState
+                            } else {
+                                currentState
+                            }
                         }
-                        
+
                         // If the image was successfully generated while this screen is open,
-                        // and we already have a character owner, auto-save the update 
+                        // and we already have a character owner, auto-save the update
                         // so the parent screen picks it up immediately.
                         if (changed && _state.value.characterId.isNotBlank()) {
                             saveItem()
@@ -157,7 +157,7 @@ class ItemCreateViewModel(
     private fun saveItem() {
         val currentState = _state.value
         _state.update { it.copy(isSaving = true, saveError = null) }
-        
+
         viewModelScope.launch {
             val weightDouble = currentState.weight.toDoubleOrNull() ?: 0.0
             val itemToSave = Item(
@@ -174,7 +174,7 @@ class ItemCreateViewModel(
                 properties = currentState.properties,
                 imageUrl = currentState.imageUrl.takeIf { it.isNotBlank() }
             )
-            
+
             // Also assign to character if needed
             val char = currentState.characters.find { it.id == currentState.characterId }
             val result = if (char != null) {
@@ -189,7 +189,7 @@ class ItemCreateViewModel(
                 // If no character, we can't save the item since it's connected to character
                 Result.Error(AppError.Unknown("Item must have an owner to be saved"))
             }
-            
+
             if (result is Result.Success) {
                 _state.update { it.copy(isSaving = false, isSaveSuccessful = true) }
             } else {
@@ -205,7 +205,7 @@ class ItemCreateViewModel(
     private fun generateImage() {
         val s = _state.value
         if (s.aiPrompt.isBlank()) return
-        
+
         val actualId = s.itemId ?: tempId
         val charId = s.characterId.ifBlank { "item-only" }
         val entityId = "$charId:$actualId"

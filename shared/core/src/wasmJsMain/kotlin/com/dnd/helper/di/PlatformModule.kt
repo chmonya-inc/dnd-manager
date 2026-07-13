@@ -1,16 +1,18 @@
 package com.dnd.helper.di
 
 import com.dnd.helper.domain.storage.CharacterStorage
-import kotlinx.serialization.json.*
-import kotlinx.serialization.encodeToString
-import org.koin.dsl.module
 import kotlinx.browser.localStorage
+import kotlinx.coroutines.await
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import org.koin.dsl.module
 
 class WasmCharacterStorage : CharacterStorage {
     private val _serverAddressFlow = MutableStateFlow(getServerAddress())
     private val _tableIdFlow = MutableStateFlow(getTableId())
+    private val _userIdFlow = MutableStateFlow(getUserId())
 
     override fun saveCharacterId(id: String) {
         localStorage.setItem("last_character_id", id)
@@ -102,6 +104,59 @@ class WasmCharacterStorage : CharacterStorage {
     override fun clearApiCache() {
         // Wasm implementation placeholder
     }
+
+    override fun saveAuthToken(token: String?) {
+        if (token == null) {
+            localStorage.removeItem("auth_token")
+        } else {
+            localStorage.setItem("auth_token", token)
+        }
+    }
+
+    override fun getAuthToken(): String? {
+        return localStorage.getItem("auth_token")
+    }
+
+    override fun saveRefreshToken(token: String?) {
+        if (token == null) {
+            localStorage.removeItem("refresh_token")
+        } else {
+            localStorage.setItem("refresh_token", token)
+        }
+    }
+
+    override fun getRefreshToken(): String? {
+        return localStorage.getItem("refresh_token")
+    }
+
+    override fun saveUserId(userId: String?) {
+        if (userId == null) {
+            localStorage.removeItem("user_id")
+        } else {
+            localStorage.setItem("user_id", userId)
+        }
+        _userIdFlow.value = userId
+    }
+
+    override fun getUserId(): String? {
+        return localStorage.getItem("user_id")
+    }
+
+    override fun getUserIdFlow(): kotlinx.coroutines.flow.Flow<String?> {
+        return _userIdFlow.asStateFlow()
+    }
+
+    override fun saveUserRole(role: String?) {
+        if (role == null) {
+            localStorage.removeItem("user_role")
+        } else {
+            localStorage.setItem("user_role", role)
+        }
+    }
+
+    override fun getUserRole(): String? {
+        return localStorage.getItem("user_role")
+    }
 }
 
 actual val platformModule = module {
@@ -121,4 +176,15 @@ actual fun pickFile(title: String, allowedExtensions: List<String>): String? {
 
 actual fun readFileContent(path: String): String? {
     return null
+}
+
+actual suspend fun pasteFromClipboard(): String? {
+    return try {
+        val clipboard = kotlinx.browser.window.navigator.clipboard
+        val promise: kotlin.js.Promise<JsString> = clipboard.readText().unsafeCast<kotlin.js.Promise<JsString>>()
+        val text: JsString = promise.await()
+        text.toString()
+    } catch (e: Exception) {
+        null
+    }
 }

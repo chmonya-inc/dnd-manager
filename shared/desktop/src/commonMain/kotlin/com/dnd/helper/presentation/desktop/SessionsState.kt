@@ -3,14 +3,19 @@ package com.dnd.helper.presentation.desktop
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Session(
+data class Campaign(
     val id: String,
     val name: String,
+    val isStarted: Boolean = false
 )
 
 data class SessionsState(
-    val sessions: List<Session> = emptyList(),
+    val campaigns: List<Campaign> = emptyList(),
     val activeTableId: String = "",
-    val isImporting: Boolean = false,
-    val importError: String? = null
+    val previewCampaignId: String? = null,
+    val previewData: com.dnd.helper.domain.model.InitialData? = null,
+    val isLoading: Boolean = false,
+    val isPreviewLoading: Boolean = false,
+    val isTransferring: Boolean = false,
+    val error: String? = null
 )

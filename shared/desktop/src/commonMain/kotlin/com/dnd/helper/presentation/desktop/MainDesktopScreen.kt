@@ -15,36 +15,22 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -62,12 +48,8 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.presentation.characterlist.CharacterListScreen
 import com.dnd.helper.presentation.diceroll.DiceRollDialog
 import com.dnd.helper.theme.DndIcons
@@ -99,36 +81,36 @@ private val secondaryTabs = listOf(
     DesktopTab.Settings,
 )
 
-private val tabs = primaryTabs + secondaryTabs
-
 @Composable
 fun MainDesktopScreen(
+    onLogout: () -> Unit = {},
+    onSwitchCampaign: () -> Unit = {},
     presentationViewModel: PresentationViewModel = koinViewModel()
 ) {
     var selectedTab by remember { mutableStateOf<DesktopTab>(DesktopTab.Characters) }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
     var initialCreatorType by remember { mutableStateOf<CreatorType?>(null) }
+    var pendingLibraryType by remember { mutableStateOf<LibraryType?>(null) }
     var showDiceDialog by remember { mutableStateOf(false) }
-    var showSessionsDialog by remember { mutableStateOf(false) }
     var showMusicPlayer by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var musicPlayerOffset by remember { mutableStateOf(IntOffset(0, 0)) }
 
-    // Track active session for forcing ViewModel recreation on session switch
-    var activeTableId by remember { mutableStateOf<String?>(null) }
+    val storage = org.koin.compose.koinInject<com.dnd.helper.domain.storage.CharacterStorage>()
+    val activeTableId = storage.getTableId() ?: ""
 
     val isWindowOpen by presentationViewModel.isWindowOpen.collectAsState()
     val showStats by presentationViewModel.showStats.collectAsState()
     val activeItems = presentationViewModel.activeItems
 
-    // Secondary Window for Players - Persists across tab switching
+    // Secondary Window for Players
     ExternalWindow(
         isOpen = isWindowOpen,
         onCloseRequest = { presentationViewModel.setWindowOpen(false) }
     ) {
         com.dnd.helper.theme.DndHelperTheme {
             PlayerViewContent(
-                activeItems = activeItems, 
+                activeItems = activeItems,
                 showStats = showStats,
                 onCloseRequest = { presentationViewModel.setWindowOpen(false) }
             )
@@ -137,18 +119,6 @@ fun MainDesktopScreen(
 
     if (showDiceDialog) {
         DiceRollDialog(onDismiss = { showDiceDialog = false })
-    }
-
-    if (showSessionsDialog) {
-        SessionsDialog(
-            onDismiss = { showSessionsDialog = false },
-            onSessionSelected = { newTableId ->
-                activeTableId = newTableId
-                selectedCharacterId = null
-                selectedTab = DesktopTab.Characters
-                showSessionsDialog = false
-            }
-        )
     }
 
     if (showThemeDialog) {
@@ -161,14 +131,38 @@ fun MainDesktopScreen(
             .onPreviewKeyEvent { keyEvent ->
                 if (keyEvent.type == KeyEventType.KeyDown && keyEvent.isCtrlPressed) {
                     when (keyEvent.key) {
-                        Key.One -> { selectedTab = DesktopTab.Characters; true }
-                        Key.Two -> { selectedTab = DesktopTab.Library; true }
-                        Key.Three -> { selectedTab = DesktopTab.Creator; true }
-                        Key.Four -> { selectedTab = DesktopTab.Presenter; true }
-                        Key.Five -> { selectedTab = DesktopTab.Logs; true }
-                        Key.Six -> { selectedTab = DesktopTab.Settings; true }
-                        Key.M -> { showMusicPlayer = !showMusicPlayer; true }
-                        Key.D -> { showDiceDialog = !showDiceDialog; true }
+                        Key.One -> {
+                            selectedTab = DesktopTab.Characters
+                            true
+                        }
+                        Key.Two -> {
+                            selectedTab = DesktopTab.Library
+                            true
+                        }
+                        Key.Three -> {
+                            selectedTab = DesktopTab.Creator
+                            true
+                        }
+                        Key.Four -> {
+                            selectedTab = DesktopTab.Presenter
+                            true
+                        }
+                        Key.Five -> {
+                            selectedTab = DesktopTab.Logs
+                            true
+                        }
+                        Key.Six -> {
+                            selectedTab = DesktopTab.Settings
+                            true
+                        }
+                        Key.M -> {
+                            showMusicPlayer = !showMusicPlayer
+                            true
+                        }
+                        Key.D -> {
+                            showDiceDialog = !showDiceDialog
+                            true
+                        }
                         else -> false
                     }
                 } else {
@@ -188,14 +182,14 @@ fun MainDesktopScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Spacer(Modifier.weight(1f))
-                    
+
                     // Primary tabs
                     primaryTabs.forEach { tab ->
                         NavigationRailItem(
                             selected = selectedTab == tab,
-                            onClick = { 
+                            onClick = {
                                 selectedTab = tab
-                                if (tab != DesktopTab.Creator) initialCreatorType = null 
+                                if (tab != DesktopTab.Creator) initialCreatorType = null
                             },
                             icon = { Icon(tab.icon, contentDescription = tab.title) },
                             label = { Text(tab.title) }
@@ -214,15 +208,15 @@ fun MainDesktopScreen(
                     secondaryTabs.forEach { tab ->
                         NavigationRailItem(
                             selected = selectedTab == tab,
-                            onClick = { 
+                            onClick = {
                                 selectedTab = tab
-                                if (tab != DesktopTab.Creator) initialCreatorType = null 
+                                if (tab != DesktopTab.Creator) initialCreatorType = null
                             },
                             icon = { Icon(tab.icon, contentDescription = tab.title) },
                             label = { Text(tab.title) }
                         )
                     }
-                    
+
                     Spacer(Modifier.weight(1f))
 
                     // Music Player Button
@@ -241,16 +235,16 @@ fun MainDesktopScreen(
 
                     Spacer(Modifier.height(12.dp))
 
-                    // Sessions Button
+                    // Switch Campaign Button
                     FloatingActionButton(
-                        onClick = { showSessionsDialog = true },
+                        onClick = onSwitchCampaign,
                         modifier = Modifier.size(48.dp),
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
                     ) {
                         Icon(
                             imageVector = DndIcons.Filled.Storage,
-                            contentDescription = "Sessions",
+                            contentDescription = "Switch Campaign",
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
                         )
                     }
@@ -264,7 +258,10 @@ fun MainDesktopScreen(
                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
                     ) {
-                        Text(text = "🎲", style = MaterialTheme.typography.titleLarge)
+                        Icon(
+                            imageVector = DndIcons.Filled.Casino,
+                            contentDescription = "Roll Dice"
+                        )
                     }
 
                     Spacer(Modifier.height(12.dp))
@@ -294,22 +291,26 @@ fun MainDesktopScreen(
                             CharactersSplitPane(
                                 selectedCharacterId = selectedCharacterId,
                                 onCharacterSelected = { selectedCharacterId = it },
-                                onCreateCharacter = { 
+                                onCreateCharacter = {
                                     initialCreatorType = CreatorType.Character()
-                                    selectedTab = DesktopTab.Creator 
+                                    selectedTab = DesktopTab.Creator
                                 },
                                 onEditCharacter = { character ->
                                     initialCreatorType = CreatorType.Character(character)
                                     selectedTab = DesktopTab.Creator
                                 },
-                                sessionKey = activeTableId ?: "",
+                                onDeleteCharacter = { characterId ->
+                                    selectedCharacterId = null
+                                },
+                                sessionKey = activeTableId,
                             )
                         }
                         DesktopTab.Library -> LibraryScreen(
                             onNavigateToCreator = { type ->
                                 initialCreatorType = type
                                 selectedTab = DesktopTab.Creator
-                            }
+                            },
+                            initialLibraryType = pendingLibraryType
                         )
                         DesktopTab.RulesLibrary -> RulesLibraryScreen()
                         DesktopTab.Creator -> CreatorScreen(
@@ -322,8 +323,25 @@ fun MainDesktopScreen(
                                     null -> {
                                         selectedTab = DesktopTab.Characters
                                     }
-                                    else -> {
+                                    is CreatorType.Monster -> {
                                         selectedTab = DesktopTab.Library
+                                        pendingLibraryType = LibraryType.Mobs
+                                    }
+                                    is CreatorType.Npc -> {
+                                        selectedTab = DesktopTab.Library
+                                        pendingLibraryType = LibraryType.Npcs
+                                    }
+                                    is CreatorType.Location -> {
+                                        selectedTab = DesktopTab.Library
+                                        pendingLibraryType = LibraryType.Locations
+                                    }
+                                    is CreatorType.Battlefield -> {
+                                        selectedTab = DesktopTab.Library
+                                        pendingLibraryType = LibraryType.Battlefields
+                                    }
+                                    is CreatorType.Item -> {
+                                        selectedTab = DesktopTab.Library
+                                        pendingLibraryType = LibraryType.Items
                                     }
                                 }
                                 initialCreatorType = null
@@ -345,7 +363,7 @@ fun MainDesktopScreen(
                         )
                         DesktopTab.Logs -> LogScreen()
                         DesktopTab.Presenter -> PresentationScreen()
-                        DesktopTab.Settings -> SettingsScreen()
+                        DesktopTab.Settings -> SettingsScreen(onLogout = onLogout)
                     }
                 }
 
@@ -377,6 +395,7 @@ fun CharactersSplitPane(
     onCharacterSelected: (String) -> Unit,
     onCreateCharacter: () -> Unit,
     onEditCharacter: (com.dnd.helper.domain.model.Character) -> Unit = {},
+    onDeleteCharacter: (String) -> Unit = {},
     sessionKey: String = "",
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
@@ -397,12 +416,14 @@ fun CharactersSplitPane(
         // Right Panel: Character Detail (70%)
         Box(modifier = Modifier.fillMaxSize()) {
             if (selectedCharacterId != null) {
-                val viewModel: com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel = koinViewModel(key = selectedCharacterId) {
-                    parametersOf(selectedCharacterId)
-                }
+                val viewModel: com.dnd.helper.presentation.characterdetail.CharacterDetailViewModel =
+                    koinViewModel(key = selectedCharacterId) {
+                        parametersOf(selectedCharacterId)
+                    }
                 MasterCharacterDetailScreen(
                     viewModel = viewModel,
-                    onEditClick = onEditCharacter
+                    onEditClick = onEditCharacter,
+                    onDeleteClick = { onDeleteCharacter(selectedCharacterId) }
                 )
             } else {
                 Column(
@@ -433,223 +454,3 @@ fun CharactersSplitPane(
         }
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SessionsDialog(
-    onDismiss: () -> Unit,
-    onSessionSelected: (String) -> Unit,
-    viewModel: SessionsViewModel = koinViewModel(),
-) {
-    val clipboardManager = LocalClipboardManager.current
-    val state by viewModel.state.collectAsState()
-    
-    var newName by remember { mutableStateOf("") }
-    var newId by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Sessions") },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // Active session info
-                if (state.activeTableId.isNotBlank()) {
-                    val activeSession = state.sessions.find { it.id == state.activeTableId }
-                    Text(
-                        text = "Active: ${activeSession?.name ?: "Unknown"}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                }
-
-                // Saved sessions list
-                if (state.sessions.isNotEmpty()) {
-                    Text(
-                        text = "Saved Sessions",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 200.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(state.sessions, key = { it.id }) { session ->
-                            SessionRow(
-                                session = session,
-                                isActive = session.id == state.activeTableId,
-                                onSelect = {
-                                    viewModel.selectSession(session.id)
-                                    onSessionSelected(session.id)
-                                },
-                                onDelete = {
-                                    viewModel.deleteSession(session.id)
-                                },
-                                onCopy = {
-                                    val encoded = IdUtils.encode(session.id)
-                                    clipboardManager.setText(AnnotatedString(encoded))
-                                }
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(16.dp))
-                } else {
-                    Text(
-                        text = "No saved sessions.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(16.dp))
-                }
-
-                HorizontalDivider()
-                Spacer(Modifier.height(16.dp))
-
-                // Add new session
-                Text(
-                    text = "Add New Session",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = newName,
-                    onValueChange = { newName = it },
-                    label = { Text("Session Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = newId,
-                    onValueChange = { newId = it },
-                    label = { Text("Join Existing Session ID (Optional)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                )
-                Spacer(Modifier.height(8.dp))
-                Button(
-                    onClick = {
-                        if (newName.isNotBlank()) {
-                            viewModel.addSession(newName, newId)
-                            newName = ""
-                            newId = ""
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = newName.isNotBlank(),
-                ) {
-                    Text(if (newId.isNotBlank()) "Join Session" else "Create Session")
-                }
-
-                if (state.activeTableId.isNotBlank()) {
-                    Spacer(Modifier.height(16.dp))
-                    HorizontalDivider()
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        text = "Import Data to Active Session",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.importData()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !state.isImporting
-                        ) {
-                            if (state.isImporting) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Importing...")
-                            } else {
-                                Icon(DndIcons.Filled.UploadFile, null)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Import from XLSX")
-                            }
-                        }
-                    state.importError?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        },
-        dismissButton = null,
-    )
-}
-
-@Composable
-private fun SessionRow(
-    session: Session,
-    isActive: Boolean,
-    onSelect: () -> Unit,
-    onDelete: () -> Unit,
-    onCopy: () -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isActive)
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        ),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = session.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "Ready to share",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onCopy, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = DndIcons.Filled.ContentCopy,
-                        contentDescription = "Copy Game ID",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                TextButton(
-                    onClick = onSelect,
-                    enabled = !isActive,
-                ) {
-                    Text(if (isActive) "Active" else "Select")
-                }
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-        }
-    }
-}
-
-

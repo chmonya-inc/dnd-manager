@@ -2,95 +2,328 @@ package com.dnd.helper.presentation.desktop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dnd.helper.data.remote.RemoteDataSource
 import com.dnd.helper.domain.common.IdUtils
 import com.dnd.helper.domain.common.Result
+import com.dnd.helper.domain.common.toUserMessage
 import com.dnd.helper.domain.repository.CharacterRepository
 import com.dnd.helper.domain.storage.CharacterStorage
-import com.dnd.helper.data.import.SessionImporter
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 class SessionsViewModel(
     private val storage: CharacterStorage,
-    private val repository: CharacterRepository
+    private val remoteDataSource: RemoteDataSource,
+    private val characterRepository: CharacterRepository,
+    private val pollingIntervalMs: Long = 2_000L
 ) : ViewModel() {
 
-    private val json = Json { ignoreUnknownKeys = true }
-    
     private val _state = MutableStateFlow(
         SessionsState(
-            sessions = loadSessions(),
             activeTableId = storage.getTableId() ?: ""
         )
     )
     val state = _state.asStateFlow()
 
-    private fun loadSessions(): List<Session> {
-        val raw = storage.getSessions() ?: return emptyList()
-        return try {
-            json.decodeFromString<List<Session>>(raw)
-        } catch (e: Exception) {
-            emptyList()
+    init {
+        loadCampaigns()
+        observeWebSocketUpdates()
+        if (pollingIntervalMs > 0) {
+            startPolling()
         }
     }
 
-    private fun saveSessions(sessions: List<Session>) {
-        storage.saveSessions(json.encodeToString(sessions))
+    /**
+     * Observe WebSocket updates — react to character changes
+     * by refreshing the campaign preview and campaign list.
+     */
+    private fun observeWebSocketUpdates() {
+        viewModelScope.launch {
+            characterRepository.remoteUpdates.collect { updateMessage ->
+                val updateType = updateMessage.split(":").firstOrNull() ?: return@collect
+                when (updateType) {
+                    "characters" -> {
+                        refreshCampaignsSilently()
+                        refreshPreviewSilently()
+                    }
+                }
+            }
+        }
     }
 
-    fun selectSession(id: String) {
+    /**
+     * Periodic polling every 2 seconds — silently refreshes campaigns
+     * and preview data without showing loading indicators.
+     */
+    private fun startPolling() {
+        viewModelScope.launch {
+            while (isActive) {
+                delay(pollingIntervalMs)
+                refreshCampaignsSilently()
+                refreshPreviewSilently()
+            }
+        }
+    }
+
+    /**
+     * Silently refresh campaigns without showing loading indicator.
+     * Only updates if data has changed.
+     */
+    private fun refreshCampaignsSilently() {
+        viewModelScope.launch {
+            when (val res = remoteDataSource.getCampaigns()) {
+                is Result.Success -> {
+                    val campaigns = res.data.map {
+                        Campaign(
+                            id = it.sessionId,
+                            name = it.name,
+                            isStarted = it.isStarted
+                        )
+                    }
+                    val current = _state.value.campaigns
+                    if (current.size != campaigns.size ||
+                        current.zip(campaigns).any { (old, new) ->
+                            old.id != new.id ||
+                                old.name != new.name ||
+                                old.isStarted != new.isStarted
+                        }
+                    ) {
+                        _state.value = _state.value.copy(campaigns = campaigns)
+
+                        // Auto-select if not already selected
+                        if (_state.value.previewCampaignId == null && campaigns.isNotEmpty()) {
+                            val currentActive = storage.getTableId()
+                            if (!currentActive.isNullOrBlank() && campaigns.any { it.id == currentActive }) {
+                                selectCampaignForPreview(currentActive)
+                            } else {
+                                selectCampaignForPreview(campaigns.first().id)
+                            }
+                        }
+                    }
+                }
+                is Result.Error -> {}
+            }
+        }
+    }
+
+    /**
+     * Silently refresh the preview data without showing loading indicator.
+     */
+    private fun refreshPreviewSilently() {
+        val previewId = _state.value.previewCampaignId ?: return
+        viewModelScope.launch {
+            val oldId = storage.getTableId()
+            storage.saveTableId(previewId)
+            when (val res = remoteDataSource.getInitialData()) {
+                is Result.Success -> {
+                    if (_state.value.previewCampaignId == previewId) {
+                        _state.value = _state.value.copy(previewData = res.data)
+                    }
+                }
+                is Result.Error -> {}
+            }
+            if (oldId != null) storage.saveTableId(oldId) else storage.saveTableId("")
+        }
+    }
+
+    fun loadCampaigns() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            when (val res = remoteDataSource.getCampaigns()) {
+                is Result.Success -> {
+                    val campaigns = res.data.map {
+                        Campaign(
+                            id = it.sessionId,
+                            name = it.name,
+                            isStarted = it.isStarted
+                        )
+                    }
+                    _state.value = _state.value.copy(
+                        campaigns = campaigns,
+                        isLoading = false
+                    )
+
+                    // Auto-select logic
+                    val currentActive = storage.getTableId()
+                    if (!currentActive.isNullOrBlank() && campaigns.any { it.id == currentActive }) {
+                        selectCampaignForPreview(currentActive)
+                    } else if (campaigns.isNotEmpty()) {
+                        selectCampaignForPreview(campaigns.first().id)
+                    }
+                }
+                is Result.Error -> {
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = res.error.toUserMessage()
+                    )
+                }
+            }
+        }
+    }
+
+    fun selectCampaign(id: String) {
         storage.saveTableId(id)
         _state.value = _state.value.copy(activeTableId = id)
     }
 
-    fun deleteSession(id: String) {
-        val updated = _state.value.sessions.filter { it.id != id }
+    fun toggleCampaignStart(id: String, isStarted: Boolean) {
+        // Optimistic update: reflect the change immediately
         _state.value = _state.value.copy(
-            sessions = updated,
-            activeTableId = if (_state.value.activeTableId == id) "" else _state.value.activeTableId
+            campaigns = _state.value.campaigns.map {
+                if (it.id == id) it.copy(isStarted = isStarted) else it
+            }
         )
-        saveSessions(updated)
-        if (_state.value.activeTableId == id) {
-            storage.saveTableId("")
+        viewModelScope.launch {
+            val res = remoteDataSource.toggleCampaignStart(id, isStarted)
+            if (res is Result.Success) {
+                // Silently refresh to confirm server state
+                refreshCampaignsSilently()
+            } else {
+                // Revert on failure
+                _state.value = _state.value.copy(
+                    campaigns = _state.value.campaigns.map {
+                        if (it.id == id) it.copy(isStarted = !isStarted) else it
+                    },
+                    error = (res as Result.Error).error.toUserMessage()
+                )
+            }
         }
     }
 
-    fun addSession(name: String, joinId: String) {
+    fun selectCampaignForPreview(id: String) {
+        if (_state.value.previewCampaignId == id) return
+
+        _state.value = _state.value.copy(
+            previewCampaignId = id,
+            isPreviewLoading = true,
+            previewData = null
+        )
+
+        viewModelScope.launch {
+            // Temporarily set table ID in storage to fetch initial data for preview
+            val oldId = storage.getTableId()
+            storage.saveTableId(id)
+
+            when (val res = remoteDataSource.getInitialData()) {
+                is Result.Success -> {
+                    if (_state.value.previewCampaignId == id) {
+                        _state.value = _state.value.copy(
+                            previewData = res.data,
+                            isPreviewLoading = false
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    if (_state.value.previewCampaignId == id) {
+                        _state.value = _state.value.copy(isPreviewLoading = false)
+                    }
+                }
+            }
+
+            // Restore old ID if we didn't officially "switch" yet
+            if (oldId != null) storage.saveTableId(oldId) else storage.saveTableId("")
+        }
+    }
+
+    fun addCampaign(name: String, joinId: String) {
         val finalId = if (joinId.isNotBlank()) {
             IdUtils.decode(joinId)
         } else {
             IdUtils.generateSessionId()
         }
-        
-        val updated = _state.value.sessions.toMutableList()
-        updated.removeAll { it.id == finalId }
-        updated.add(Session(id = finalId, name = name))
-        
-        _state.value = _state.value.copy(sessions = updated)
-        saveSessions(updated)
-    }
 
-    fun importData() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isImporting = true, importError = null)
-            when (val res = SessionImporter.import(repository)) {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            val res = remoteDataSource.createCampaign(name, finalId)
+            when (res) {
+                is Result.Success -> {
+                    loadCampaigns() // Refresh list
+                    if (_state.value.activeTableId.isEmpty()) {
+                        selectCampaign(finalId)
+                    }
+                }
                 is Result.Error -> {
                     _state.value = _state.value.copy(
-                        importError = "Import failed: ${res.error}",
-                        isImporting = false
+                        isLoading = false,
+                        error = res.error.toUserMessage()
                     )
-                }
-                is Result.Success -> {
-                    _state.value = _state.value.copy(isImporting = false)
                 }
             }
         }
     }
-    
+
+    fun deleteCampaignLocal(id: String) {
+        val currentActiveId = _state.value.activeTableId
+        val updated = _state.value.campaigns.filter { it.id != id }
+        _state.value = _state.value.copy(
+            campaigns = updated,
+            activeTableId = if (currentActiveId == id) "" else currentActiveId
+        )
+        if (currentActiveId == id) {
+            storage.saveTableId("")
+        }
+    }
+
     fun clearError() {
-        _state.value = _state.value.copy(importError = null)
+        _state.value = _state.value.copy(error = null)
+    }
+
+    fun transferOrCopyCharacter(
+        character: com.dnd.helper.domain.model.Character,
+        sourceSessionId: String,
+        targetCampaign: Campaign,
+        isCopy: Boolean,
+        transferItems: Boolean
+    ) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isTransferring = true, error = null)
+
+            // Build the character for the target session
+            val targetCharacter = if (isCopy) {
+                character.copy(
+                    id = com.dnd.helper.domain.common.IdUtils.generateSessionId(), // new ID for copy
+                    ownerUserId = null,
+                    ownerUsername = null
+                )
+            } else {
+                character.copy()
+            }
+
+            val finalCharacter = if (!transferItems) {
+                targetCharacter.copy(items = emptyList())
+            } else {
+                targetCharacter
+            }
+
+            // 1. Save character to target session
+            val saveResult = remoteDataSource.saveCharacterToSession(finalCharacter, targetCampaign.id)
+            if (saveResult is Result.Error) {
+                _state.value = _state.value.copy(
+                    isTransferring = false,
+                    error = saveResult.error.toUserMessage()
+                )
+                return@launch
+            }
+
+            // 2. If move (not copy), delete from source session
+            if (!isCopy) {
+                val deleteResult = remoteDataSource.deleteCharacterFromSession(character.id, sourceSessionId)
+                if (deleteResult is Result.Error) {
+                    _state.value = _state.value.copy(
+                        isTransferring = false,
+                        error = deleteResult.error.toUserMessage()
+                    )
+                    return@launch
+                }
+            }
+
+            _state.value = _state.value.copy(isTransferring = false)
+
+            // 3. Refresh preview data to reflect the change
+            selectCampaignForPreview(sourceSessionId)
+        }
     }
 }

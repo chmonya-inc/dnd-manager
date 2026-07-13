@@ -4,6 +4,7 @@ import com.dnd.helper.domain.model.Character
 
 sealed interface CharacterDetailEvent {
     data object Refresh : CharacterDetailEvent
+    data object DeleteCharacter : CharacterDetailEvent
     data class UpdateStat(val statName: String, val delta: Int) : CharacterDetailEvent
     data class UpdateHp(val delta: Int) : CharacterDetailEvent
     data class UpdateMaxHp(val delta: Int) : CharacterDetailEvent
@@ -19,13 +20,13 @@ sealed interface CharacterDetailEvent {
     data class UpdateAiSize(val width: Int, val height: Int) : CharacterDetailEvent
     data object SaveChanges : CharacterDetailEvent
     data object ToggleMasterMode : CharacterDetailEvent
-    
+
     // Spells
     data object AddSpell : CharacterDetailEvent
     data class RemoveSpell(val spellId: String) : CharacterDetailEvent
     data class UpdateSpell(val spell: com.dnd.helper.domain.model.Spell) : CharacterDetailEvent
     data class GenerateSpellImage(val spellId: String) : CharacterDetailEvent
-    
+
     // Items
     data object AddItem : CharacterDetailEvent
     data class RemoveItem(val itemId: String) : CharacterDetailEvent

@@ -1,10 +1,12 @@
 package com.dnd.helper.presentation.desktop
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.dnd.helper.domain.storage.CharacterStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
@@ -16,7 +18,8 @@ data class SettingsState(
 )
 
 class SettingsViewModel(
-    private val storage: CharacterStorage
+    private val storage: CharacterStorage,
+    private val authRepository: com.dnd.helper.domain.repository.AuthRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -52,5 +55,11 @@ class SettingsViewModel(
     fun updateGenerationSteps(steps: Int) {
         storage.saveGenerationSteps(steps)
         _state.value = _state.value.copy(generationSteps = steps)
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            authRepository.logout()
+        }
     }
 }

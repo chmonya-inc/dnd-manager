@@ -215,3 +215,27 @@ User defined full project scope:
 - Skill file `.kimi/skills/dnd-kmp/SKILL.md` created on 2026-05-30.
 - `ARCHITECTURE.md`, `STATE.md`, and `DESCRIPTION.md` are the single source of truth for project context.
 - Always update `STATE.md` after each work session.
+
+## Implemented 2026-07-11 — Player Character Creation & Campaign Joining (CHAR.md plan)
+
+### Server
+- `POST /api/my-characters` — player creates own character; stored in personal session `user-{userId}`. No schema changes needed (Characters table already had `userId` nullable and `sessionId` as string).
+- `POST /api/my-characters/{id}/join` — player links their character to a campaign by providing `gameId` (sessionId). Upserts character into the game session, removes from personal session.
+- `JoinCampaignRequest` DTO added to `AuthModels.kt` in `:models`.
+- Master path (Master creates char → assigns to user) is unchanged.
+
+### Client (shared/player + shared/core)
+- `KtorRemoteDataSource.createMyCharacter()` — POSTs to `/api/my-characters`; client generates UUID so no ID parsing needed.
+- `KtorRemoteDataSource.joinCampaign()` — POSTs to `/api/my-characters/{id}/join` with `JoinCampaignRequest`.
+- `PlayerCharacterCreateState/Event/ViewModel/Screen` — minimal creation form (name, race, class, subclass, background, level, HP, 6 ability scores).
+- `StartState` — added `isJoiningCampaign`, `joinError`.
+- `StartEvent` — added `JoinCampaign`, `DismissJoinError`.
+- `StartViewModel.joinCampaign()` — calls data source, saves tableId on success, reloads my-characters.
+- `StartScreen` — added `+ Create` button in My Characters header; per-character `Join Campaign` button (shown when `campaignName == null`); Join Campaign dialog with gameId input.
+- `PlayerApp` — added `PlayerCharacterCreate` route and `factory { PlayerCharacterCreateViewModel(get()) }`.
+
+### ponytail decisions
+- Personal session = `user-{userId}` as sessionId (no new DB column needed; ceiling: chars in personal session aren't visible to WS sessions).
+- Client-generated UUID for new chars (no server-to-client ID round-trip needed).
+- Minimal create form (9 fields); power users use Desktop for full creation.
+- 15s polling refresh after create (no lifecycle wiring needed for acceptable UX).

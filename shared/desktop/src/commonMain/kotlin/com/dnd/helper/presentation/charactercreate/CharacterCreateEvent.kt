@@ -56,7 +56,7 @@ sealed interface CharacterCreateEvent {
     // Proficiencies
     data class SavingThrowsChanged(val value: String) : CharacterCreateEvent
     data class ArmorProficienciesChanged(val value: String) : CharacterCreateEvent
-    
+
     // Multi-select actions
     data class AddLanguage(val value: String) : CharacterCreateEvent
     data class RemoveLanguage(val value: String) : CharacterCreateEvent
@@ -107,6 +107,8 @@ sealed interface CharacterCreateEvent {
 
     // Features
     data class LoadCharacter(val character: com.dnd.helper.domain.model.Character) : CharacterCreateEvent
+    data class StartFromTemplate(val character: com.dnd.helper.domain.model.Character) : CharacterCreateEvent
+    data object LoadTemplates : CharacterCreateEvent
 
     data object SaveCharacter : CharacterCreateEvent
 

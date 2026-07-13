@@ -1,21 +1,22 @@
 package com.dnd.helper.data.remote.dto.game
 
 import com.dnd.helper.data.remote.dto.common.ApiReferenceDto
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class RuleDto(
-    val index: String = "",
-    val name: String = "",
-    val desc: String = "",
-    val subsections: List<ApiReferenceDto> = emptyList(),
-    val url: String = "",
+    @SerialName("index") val index: String = "",
+    @SerialName("name") val name: String = "",
+    @SerialName("desc") val desc: String = "",
+    @SerialName("subsections") val subsections: List<ApiReferenceDto> = emptyList(),
+    @SerialName("url") val url: String = "",
 )
 
 @Serializable
 data class RuleSectionDto(
-    val index: String = "",
-    val name: String = "",
-    val desc: String = "",
-    val url: String = "",
+    @SerialName("index") val index: String = "",
+    @SerialName("name") val name: String = "",
+    @SerialName("desc") val desc: String = "",
+    @SerialName("url") val url: String = "",
 )

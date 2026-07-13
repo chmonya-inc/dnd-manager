@@ -104,7 +104,7 @@ fun ImageGenerationButton(
                     "item" -> GenerationType.ITEM
                     else -> GenerationType.CHARACTER
                 }
-                
+
                 val mockUrl = editingRepository.startGeneration(
                     entityId = entityId,
                     entityType = entityType,
@@ -129,18 +129,39 @@ fun ImageGenerationButton(
 }
 
 sealed class CreatorType(val title: String, val icon: ImageVector) {
-    data class Character(val existingCharacter: com.dnd.helper.domain.model.Character? = null) : CreatorType("Character", DndIcons.Filled.PersonAdd)
-    data class Item(val existingItem: com.dnd.helper.domain.model.Item? = null, val ownerId: String? = null) : CreatorType("Item", DndIcons.Filled.ShoppingBag)
-    data class Monster(val existingMonster: com.dnd.helper.domain.model.Monster? = null) : CreatorType("Monster", DndIcons.Filled.BugReport)
-    data class Npc(val existingNpc: com.dnd.helper.domain.model.Npc? = null) : CreatorType("NPC", DndIcons.Filled.EmojiPeople)
-    data class Location(val existingLocation: com.dnd.helper.domain.model.Location? = null) : CreatorType("Location", DndIcons.Filled.Explore)
-    data class Battlefield(val existingBattlefield: com.dnd.helper.domain.model.Battlefield? = null) : CreatorType("Battlefield", DndIcons.Filled.Map)
+    data class Character(val existingCharacter: com.dnd.helper.domain.model.Character? = null) : CreatorType(
+        "Character",
+        DndIcons.Filled.PersonAdd
+    )
+    data class Item(
+        val existingItem: com.dnd.helper.domain.model.Item? = null,
+        val ownerId: String? = null
+    ) : CreatorType(
+        "Item",
+        DndIcons.Filled.ShoppingBag
+    )
+    data class Monster(val existingMonster: com.dnd.helper.domain.model.Monster? = null) : CreatorType(
+        "Monster",
+        DndIcons.Filled.BugReport
+    )
+    data class Npc(val existingNpc: com.dnd.helper.domain.model.Npc? = null) : CreatorType(
+        "NPC",
+        DndIcons.Filled.EmojiPeople
+    )
+    data class Location(val existingLocation: com.dnd.helper.domain.model.Location? = null) : CreatorType(
+        "Location",
+        DndIcons.Filled.Explore
+    )
+    data class Battlefield(val existingBattlefield: com.dnd.helper.domain.model.Battlefield? = null) : CreatorType(
+        "Battlefield",
+        DndIcons.Filled.Map
+    )
 }
 
 @Composable
 fun CreatorType.themeColor(): Color {
     val colors = LocalDndColors.current
-    return when(this) {
+    return when (this) {
         is CreatorType.Character -> colors.character
         is CreatorType.Item -> colors.item
         is CreatorType.Monster -> colors.monster
@@ -180,7 +201,7 @@ fun CreatorScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = { 
+                    IconButton(onClick = {
                         selectedType = null
                         onBack()
                     }) {
@@ -203,55 +224,39 @@ fun CreatorScreen(
                     }
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        text = if (isEditing) "Edit ${selectedType!!.title}" else "Create New ${selectedType!!.title}", 
+                        text = if (isEditing) "Edit ${selectedType!!.title}" else "Create New ${selectedType!!.title}",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
-            
+
             Box(modifier = Modifier.fillMaxSize()) {
                 when (val type = selectedType!!) {
                     is CreatorType.Character -> CharacterCreateScreen(
                         existingCharacter = type.existingCharacter,
-                        onBackClick = { 
-                            selectedType = null
-                            onBack()
-                        },
-                        onCharacterCreated = { 
+                        onCharacterCreated = {
                             selectedType = null
                             onCreated()
                         }
                     )
                     is CreatorType.Location -> LocationCreateForm(
                         existing = type.existingLocation,
-                        onBackClick = { 
-                            selectedType = null
-                            onBack()
-                        },
-                        onCreated = { 
+                        onCreated = {
                             selectedType = null
                             onCreated()
                         }
                     )
                     is CreatorType.Battlefield -> BattlefieldCreateForm(
                         existing = type.existingBattlefield,
-                        onBackClick = { 
-                            selectedType = null
-                            onBack()
-                        },
-                        onCreated = { 
+                        onCreated = {
                             selectedType = null
                             onCreated()
                         }
                     )
                     is CreatorType.Monster -> com.dnd.helper.presentation.monstercreate.MonsterCreateScreen(
                         initialMonster = type.existingMonster,
-                        onBackClick = { 
-                            selectedType = null
-                            onBack()
-                        },
-                        onMonsterCreated = { 
+                        onMonsterCreated = {
                             selectedType = null
                             onCreated()
                         }
@@ -260,18 +265,14 @@ fun CreatorScreen(
                         existingItem = type.existingItem,
                         ownerId = type.ownerId,
                         viewModel = koinInject(),
-                        onNavigateBack = { 
+                        onNavigateBack = {
                             selectedType = null
                             onBack()
                         }
                     )
                     is CreatorType.Npc -> NpcCreateForm(
                         existing = type.existingNpc,
-                        onBackClick = { 
-                            selectedType = null
-                            onBack()
-                        },
-                        onCreated = { 
+                        onCreated = {
                             selectedType = null
                             onCreated()
                         }
@@ -299,9 +300,9 @@ private fun CreatorFormLayout(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         content()
-        
+
         Spacer(Modifier.height(16.dp))
-        
+
         Button(
             onClick = onSave,
             enabled = saveEnabled && !isSaving,
@@ -337,7 +338,6 @@ private fun SectionHeader(icon: ImageVector, title: String, color: Color) {
 @Composable
 private fun NpcCreateForm(
     existing: Npc? = null,
-    onBackClick: () -> Unit,
     onCreated: () -> Unit
 ) {
     val repository: CharacterRepository = koinInject()
@@ -348,7 +348,13 @@ private fun NpcCreateForm(
     var background by remember { mutableStateOf(existing?.background ?: "") }
     var description by remember { mutableStateOf(existing?.description ?: "") }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
-    var customPrompt by remember { mutableStateOf(existing?.let { PromptGenerator.getFullPrompt("${it.name}, ${it.background}. ${it.description}", GenerationType.NPC) } ?: "") }
+    var customPrompt by remember {
+        mutableStateOf(
+            existing?.let {
+                PromptGenerator.getFullPrompt("${it.name}, ${it.background}. ${it.description}", GenerationType.NPC)
+            } ?: ""
+        )
+    }
     var aiWidth by remember { mutableStateOf("1024") }
     var aiHeight by remember { mutableStateOf("1024") }
     var isSaving by remember { mutableStateOf(false) }
@@ -396,7 +402,7 @@ private fun NpcCreateForm(
                 shape = MaterialTheme.shapes.medium
             )
         }
-        
+
         SectionHeader(Icons.Default.Image, "Appearance", colors.npc)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
@@ -407,8 +413,22 @@ private fun NpcCreateForm(
                 shape = MaterialTheme.shapes.medium,
                 placeholder = { Text("https://...") }
             )
-            OutlinedTextField(value = aiWidth, onValueChange = { aiWidth = it }, label = { Text("W") }, modifier = Modifier.width(70.dp), shape = MaterialTheme.shapes.small, singleLine = true)
-            OutlinedTextField(value = aiHeight, onValueChange = { aiHeight = it }, label = { Text("H") }, modifier = Modifier.width(70.dp), shape = MaterialTheme.shapes.small, singleLine = true)
+            OutlinedTextField(
+                value = aiWidth,
+                onValueChange = { aiWidth = it },
+                label = { Text("W") },
+                modifier = Modifier.width(70.dp),
+                shape = MaterialTheme.shapes.small,
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = aiHeight,
+                onValueChange = { aiHeight = it },
+                label = { Text("H") },
+                modifier = Modifier.width(70.dp),
+                shape = MaterialTheme.shapes.small,
+                singleLine = true
+            )
             ImageGenerationButton(
                 prompt = customPrompt.ifBlank { "NPC: $name, $background. $description" },
                 onImageUrlGenerated = { imageUrl = it },
@@ -419,7 +439,7 @@ private fun NpcCreateForm(
                 height = aiHeight.toIntOrNull()
             )
         }
-        
+
         SectionHeader(DndIcons.Filled.Notes, "Backstory & Notes", colors.npc)
         OutlinedTextField(
             value = description,
@@ -446,7 +466,6 @@ private fun NpcCreateForm(
 @Composable
 private fun LocationCreateForm(
     existing: Location? = null,
-    onBackClick: () -> Unit,
     onCreated: () -> Unit
 ) {
     val repository: CharacterRepository = koinInject()
@@ -456,7 +475,11 @@ private fun LocationCreateForm(
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var description by remember { mutableStateOf(existing?.description ?: "") }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
-    var customPrompt by remember { mutableStateOf(existing?.let { PromptGenerator.getFullPrompt("${it.name}. ${it.description}", GenerationType.LOCATION) } ?: "") }
+    var customPrompt by remember {
+        mutableStateOf(
+            existing?.let { PromptGenerator.getFullPrompt("${it.name}. ${it.description}", GenerationType.LOCATION) } ?: ""
+        )
+    }
     var aiWidth by remember { mutableStateOf("2048") }
     var aiHeight by remember { mutableStateOf("2048") }
     var isSaving by remember { mutableStateOf(false) }
@@ -494,7 +517,7 @@ private fun LocationCreateForm(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium
         )
-        
+
         SectionHeader(Icons.Default.Image, "Media", colors.location)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
@@ -505,8 +528,22 @@ private fun LocationCreateForm(
                 shape = MaterialTheme.shapes.medium,
                 placeholder = { Text("https://...") }
             )
-            OutlinedTextField(value = aiWidth, onValueChange = { aiWidth = it }, label = { Text("W") }, modifier = Modifier.width(70.dp), shape = MaterialTheme.shapes.small, singleLine = true)
-            OutlinedTextField(value = aiHeight, onValueChange = { aiHeight = it }, label = { Text("H") }, modifier = Modifier.width(70.dp), shape = MaterialTheme.shapes.small, singleLine = true)
+            OutlinedTextField(
+                value = aiWidth,
+                onValueChange = { aiWidth = it },
+                label = { Text("W") },
+                modifier = Modifier.width(70.dp),
+                shape = MaterialTheme.shapes.small,
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = aiHeight,
+                onValueChange = { aiHeight = it },
+                label = { Text("H") },
+                modifier = Modifier.width(70.dp),
+                shape = MaterialTheme.shapes.small,
+                singleLine = true
+            )
             ImageGenerationButton(
                 prompt = customPrompt.ifBlank { "Location: $name. $description" },
                 onImageUrlGenerated = { imageUrl = it },
@@ -517,7 +554,7 @@ private fun LocationCreateForm(
                 height = aiHeight.toIntOrNull()
             )
         }
-        
+
         SectionHeader(DndIcons.Filled.Notes, "Description", colors.location)
         OutlinedTextField(
             value = description,
@@ -555,19 +592,19 @@ private fun CreatorSelection(onSelect: (CreatorType) -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
             Text(
-                "Dungeon Master Toolkit", 
+                "Dungeon Master Toolkit",
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                "Choose what to weave into your world next", 
+                "Choose what to weave into your world next",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             Spacer(Modifier.height(48.dp))
-            
+
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 types.forEach { type ->
                     CreatorCard(type, onClick = { onSelect(type) })
@@ -580,7 +617,7 @@ private fun CreatorSelection(onSelect: (CreatorType) -> Unit) {
 @Composable
 private fun CreatorCard(type: CreatorType, onClick: () -> Unit) {
     var hovered by remember { mutableStateOf(false) }
-    
+
     ElevatedCard(
         onClick = onClick,
         modifier = Modifier
@@ -616,13 +653,13 @@ private fun CreatorCard(type: CreatorType, onClick: () -> Unit) {
             }
             Spacer(Modifier.height(20.dp))
             Text(
-                type.title, 
+                type.title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = type.themeColor()
             )
             Text(
-                "New", 
+                "New",
                 style = MaterialTheme.typography.labelMedium,
                 color = type.themeColor().copy(alpha = 0.6f)
             )
@@ -633,7 +670,6 @@ private fun CreatorCard(type: CreatorType, onClick: () -> Unit) {
 @Composable
 private fun BattlefieldCreateForm(
     existing: Battlefield? = null,
-    onBackClick: () -> Unit,
     onCreated: () -> Unit
 ) {
     val repository: CharacterRepository = koinInject()
@@ -643,7 +679,11 @@ private fun BattlefieldCreateForm(
     var name by remember { mutableStateOf(existing?.name ?: "") }
     var description by remember { mutableStateOf(existing?.description ?: "") }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: "") }
-    var customPrompt by remember { mutableStateOf(existing?.let { PromptGenerator.getFullPrompt("${it.name}. ${it.description}", GenerationType.BATTLEFIELD) } ?: "") }
+    var customPrompt by remember {
+        mutableStateOf(
+            existing?.let { PromptGenerator.getFullPrompt("${it.name}. ${it.description}", GenerationType.BATTLEFIELD) } ?: ""
+        )
+    }
     var aiWidth by remember { mutableStateOf("2048") }
     var aiHeight by remember { mutableStateOf("2048") }
     var isSaving by remember { mutableStateOf(false) }
@@ -681,7 +721,7 @@ private fun BattlefieldCreateForm(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium
         )
-        
+
         SectionHeader(Icons.Default.Image, "Media", colors.location)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
@@ -692,8 +732,22 @@ private fun BattlefieldCreateForm(
                 shape = MaterialTheme.shapes.medium,
                 placeholder = { Text("https://...") }
             )
-            OutlinedTextField(value = aiWidth, onValueChange = { aiWidth = it }, label = { Text("W") }, modifier = Modifier.width(70.dp), shape = MaterialTheme.shapes.small, singleLine = true)
-            OutlinedTextField(value = aiHeight, onValueChange = { aiHeight = it }, label = { Text("H") }, modifier = Modifier.width(70.dp), shape = MaterialTheme.shapes.small, singleLine = true)
+            OutlinedTextField(
+                value = aiWidth,
+                onValueChange = { aiWidth = it },
+                label = { Text("W") },
+                modifier = Modifier.width(70.dp),
+                shape = MaterialTheme.shapes.small,
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = aiHeight,
+                onValueChange = { aiHeight = it },
+                label = { Text("H") },
+                modifier = Modifier.width(70.dp),
+                shape = MaterialTheme.shapes.small,
+                singleLine = true
+            )
             ImageGenerationButton(
                 prompt = customPrompt.ifBlank { "Battlefield: $name. $description" },
                 onImageUrlGenerated = { imageUrl = it },
@@ -704,7 +758,7 @@ private fun BattlefieldCreateForm(
                 height = aiHeight.toIntOrNull()
             )
         }
-        
+
         SectionHeader(DndIcons.Filled.Notes, "Description", colors.location)
         OutlinedTextField(
             value = description,

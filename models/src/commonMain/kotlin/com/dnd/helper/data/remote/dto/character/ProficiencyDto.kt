@@ -1,15 +1,16 @@
 package com.dnd.helper.data.remote.dto.character
 
 import com.dnd.helper.data.remote.dto.common.ApiReferenceDto
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ProficiencyDto(
-    val index: String = "",
-    val name: String = "",
-    val type: String = "", // "Armor" | "Weapons" | "Artisan's Tools" | "Skills" | "Saving Throws"
-    val classes: List<ApiReferenceDto> = emptyList(),
-    val races: List<ApiReferenceDto> = emptyList(),
-    val reference: ApiReferenceDto? = null,
-    val url: String = "",
+    @SerialName("index") val index: String = "",
+    @SerialName("name") val name: String = "",
+    @SerialName("type") val type: String = "", // "Armor" | "Weapons" | "Artisan's Tools" | "Skills" | "Saving Throws"
+    @SerialName("classes") val classes: List<ApiReferenceDto> = emptyList(),
+    @SerialName("races") val races: List<ApiReferenceDto> = emptyList(),
+    @SerialName("reference") val reference: ApiReferenceDto? = null,
+    @SerialName("url") val url: String = "",
 )
