@@ -106,7 +106,7 @@ jobs:
     needs: [build-api, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
-      version: ${{ needs.version.outputs.version }}
+      version: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       image-name: chmonya777/dndmanager-api
       image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       release-name: dndmanager-api
@@ -119,7 +119,7 @@ jobs:
     needs: [build-web, version]
     uses: chmonya-inc/dnd-manager/.github/workflows/deploy.yml@v2
     with:
-      version: ${{ needs.version.outputs.version }}
+      version: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       image-name: chmonya777/dndmanager-web
       image-tag: ${{ needs.version.outputs.version }}-${{ github.run_number }}
       release-name: dndmanager-web
