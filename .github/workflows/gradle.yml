@@ -43,17 +43,14 @@ jobs:
         with:
           fetch-depth: 0 # Полная история для работы git-версионирования
 
-      - name: Validate build-env JSON
-        env:
-          ENV_JSON: ${{ inputs.build-envs }}
-        run: |
-          echo "$ENV_JSON" | jq empty || { echo "Invalid JSON"; exit 1; }
-
       - name: Load build-envs into Environment
-        env:
-          ENV_JSON: ${{ inputs.build-envs }}
-        run: |
-          echo "$ENV_JSON" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const envs = ${{ inputs.build-envs }};
+            for (const [key, value] of Object.entries(envs)) {
+              core.exportVariable(key, value);
+            }
 
       - uses: actions/setup-java@v4
         with:
