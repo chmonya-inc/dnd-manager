@@ -53,7 +53,7 @@ compose.desktop {
                 proguard {
                     version.set("7.5.0")
                     isEnabled.set(true)
-                    optimize.set(true)
+                    optimize.set(false)
                     configurationFiles.from(project.file("proguard-rules.pro"))
                 }
             }
