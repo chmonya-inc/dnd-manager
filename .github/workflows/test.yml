@@ -78,8 +78,7 @@ jobs:
         {
           "APP_BUILD_NUMBER": "${{ github.run_number }}",
           "APP_VERSION_NUMBER": "${{ needs.version.outputs.version }}",
-          "APPS_SCRIPT_URL_DESKTOP": "${{ vars.APPS_SCRIPT_URL_DESKTOP_TEST }}",
-          "APPS_SCRIPT_URL_ANDROID": "${{ vars.APPS_SCRIPT_URL_ANDROID_TEST }}"
+          "APPS_SCRIPT_URL_DESKTOP": "${{ vars.APPS_SCRIPT_URL_DESKTOP_TEST }}"
         }
     secrets: inherit
 
@@ -97,7 +96,6 @@ jobs:
         {
           "APP_BUILD_NUMBER": "${{ github.run_number }}",
           "APP_VERSION_NUMBER": "${{ needs.version.outputs.version }}",
-          "APPS_SCRIPT_URL_DESKTOP": "${{ vars.APPS_SCRIPT_URL_DESKTOP_TEST }}",
           "APPS_SCRIPT_URL_ANDROID": "${{ vars.APPS_SCRIPT_URL_ANDROID_TEST }}"
         }
     secrets: inherit
